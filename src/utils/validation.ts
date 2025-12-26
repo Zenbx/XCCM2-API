@@ -104,3 +104,188 @@ export type CreateProjectInput = z.infer<typeof createProjectSchema>;
  * Type inféré du schéma de modification de projet
  */
 export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
+
+// ==========================================
+// SCHÉMAS DE VALIDATION POUR LES GRANULES
+// ==========================================
+
+/**
+ * Schéma de validation pour la création d'une Partie (Part)
+ */
+export const createPartSchema = z.object({
+    part_title: z
+        .string()
+        .min(3, "Le titre doit contenir au moins 3 caractères")
+        .max(200, "Le titre ne peut pas dépasser 200 caractères")
+        .trim(),
+
+    part_intro: z
+        .string()
+        .max(1000, "L'introduction ne peut pas dépasser 1000 caractères")
+        .trim()
+        .optional(),
+
+    part_number: z
+        .number()
+        .int("Le numéro doit être un entier")
+        .positive("Le numéro doit être positif"),
+});
+
+/**
+ * Schéma de validation pour la modification d'une Partie
+ */
+export const updatePartSchema = z.object({
+    part_title: z
+        .string()
+        .min(3, "Le titre doit contenir au moins 3 caractères")
+        .max(200, "Le titre ne peut pas dépasser 200 caractères")
+        .trim()
+        .optional(),
+
+    part_intro: z
+        .string()
+        .max(1000, "L'introduction ne peut pas dépasser 1000 caractères")
+        .trim()
+        .optional(),
+
+    part_number: z
+        .number()
+        .int("Le numéro doit être un entier")
+        .positive("Le numéro doit être positif")
+        .optional(),
+}).refine(
+    (data) => data.part_title || data.part_intro !== undefined || data.part_number,
+    {
+        message: "Au moins un champ doit être fourni pour la modification",
+    }
+);
+
+/**
+ * Schéma de validation pour la création d'un Chapitre (Chapter)
+ */
+export const createChapterSchema = z.object({
+    chapter_title: z
+        .string()
+        .min(3, "Le titre doit contenir au moins 3 caractères")
+        .max(200, "Le titre ne peut pas dépasser 200 caractères")
+        .trim(),
+
+    chapter_number: z
+        .number()
+        .int("Le numéro doit être un entier")
+        .positive("Le numéro doit être positif"),
+});
+
+/**
+ * Schéma de validation pour la modification d'un Chapitre
+ */
+export const updateChapterSchema = z.object({
+    chapter_title: z
+        .string()
+        .min(3, "Le titre doit contenir au moins 3 caractères")
+        .max(200, "Le titre ne peut pas dépasser 200 caractères")
+        .trim()
+        .optional(),
+
+    chapter_number: z
+        .number()
+        .int("Le numéro doit être un entier")
+        .positive("Le numéro doit être positif")
+        .optional(),
+}).refine(
+    (data) => data.chapter_title || data.chapter_number,
+    {
+        message: "Au moins un champ doit être fourni pour la modification",
+    }
+);
+
+/**
+ * Schéma de validation pour la création d'un Paragraphe (Paragraph)
+ */
+export const createParagraphSchema = z.object({
+    para_name: z
+        .string()
+        .min(3, "Le nom doit contenir au moins 3 caractères")
+        .max(200, "Le nom ne peut pas dépasser 200 caractères")
+        .trim(),
+
+    para_number: z
+        .string()
+        .min(1, "Le numéro du paragraphe est requis")
+        .trim()
+        .regex(/^[0-9.]+$/, "Le numéro doit être au format numérique (ex: 1.1, 2.3.4)"),
+});
+
+/**
+ * Schéma de validation pour la modification d'un Paragraphe
+ */
+export const updateParagraphSchema = z.object({
+    para_name: z
+        .string()
+        .min(3, "Le nom doit contenir au moins 3 caractères")
+        .max(200, "Le nom ne peut pas dépasser 200 caractères")
+        .trim()
+        .optional(),
+
+    para_number: z
+        .string()
+        .trim()
+        .regex(/^[0-9.]+$/, "Le numéro doit être au format numérique (ex: 1.1, 2.3.4)")
+        .optional(),
+}).refine(
+    (data) => data.para_name || data.para_number,
+    {
+        message: "Au moins un champ doit être fourni pour la modification",
+    }
+);
+
+/**
+ * Schéma de validation pour la création d'une Notion
+ */
+export const createNotionSchema = z.object({
+    notion_name: z
+        .string()
+        .min(3, "Le nom doit contenir au moins 3 caractères")
+        .max(200, "Le nom ne peut pas dépasser 200 caractères")
+        .trim(),
+
+    notion_content: z
+        .string()
+        .min(1, "Le contenu ne peut pas être vide")
+        .trim(),
+});
+
+/**
+ * Schéma de validation pour la modification d'une Notion
+ */
+export const updateNotionSchema = z.object({
+    notion_name: z
+        .string()
+        .min(3, "Le nom doit contenir au moins 3 caractères")
+        .max(200, "Le nom ne peut pas dépasser 200 caractères")
+        .trim()
+        .optional(),
+
+    notion_content: z
+        .string()
+        .min(1, "Le contenu ne peut pas être vide")
+        .trim()
+        .optional(),
+}).refine(
+    (data) => data.notion_name || data.notion_content,
+    {
+        message: "Au moins un champ doit être fourni pour la modification",
+    }
+);
+
+/**
+ * Types inférés des schémas
+ */
+export type CreatePartInput = z.infer<typeof createPartSchema>;
+export type UpdatePartInput = z.infer<typeof updatePartSchema>;
+export type CreateChapterInput = z.infer<typeof createChapterSchema>;
+export type UpdateChapterInput = z.infer<typeof updateChapterSchema>;
+export type CreateParagraphInput = z.infer<typeof createParagraphSchema>;
+export type UpdateParagraphInput = z.infer<typeof updateParagraphSchema>;
+export type CreateNotionInput = z.infer<typeof createNotionSchema>;
+export type UpdateNotionInput = z.infer<typeof updateNotionSchema>;

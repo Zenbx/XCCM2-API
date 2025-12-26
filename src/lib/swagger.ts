@@ -193,6 +193,103 @@ const swaggerOptions: swaggerJSDoc.Options = {
                             },
                         },
                     },
+                    Part: {
+                        type: "object",
+                        properties: {
+                            part_id: {
+                                type: "string",
+                                description: "ID unique de la partie",
+                            },
+                            part_title: {
+                                type: "string",
+                                description: "Titre de la partie",
+                                example: "Introduction",
+                            },
+                            part_intro: {
+                                type: "string",
+                                nullable: true,
+                                description: "Introduction de la partie (optionnel)",
+                            },
+                            part_number: {
+                                type: "integer",
+                                description: "Numéro de la partie",
+                                example: 1,
+                            },
+                            parent_pr: {
+                                type: "string",
+                                description: "ID du projet parent",
+                            },
+                        },
+                    },
+                    Chapter: {
+                        type: "object",
+                        properties: {
+                            chapter_id: {
+                                type: "string",
+                                description: "ID unique du chapitre",
+                            },
+                            chapter_title: {
+                                type: "string",
+                                description: "Titre du chapitre",
+                                example: "Contexte historique",
+                            },
+                            chapter_number: {
+                                type: "integer",
+                                description: "Numéro du chapitre",
+                                example: 1,
+                            },
+                            parent_part: {
+                                type: "string",
+                                description: "ID de la partie parente",
+                            },
+                        },
+                    },
+                    Paragraph: {
+                        type: "object",
+                        properties: {
+                            para_id: {
+                                type: "string",
+                                description: "ID unique du paragraphe",
+                            },
+                            para_name: {
+                                type: "string",
+                                description: "Nom du paragraphe",
+                                example: "Définitions",
+                            },
+                            para_number: {
+                                type: "string",
+                                description: "Numéro du paragraphe",
+                                example: "1.1",
+                            },
+                            parent_chapter: {
+                                type: "string",
+                                description: "ID du chapitre parent",
+                            },
+                        },
+                    },
+                    Notion: {
+                        type: "object",
+                        properties: {
+                            notion_id: {
+                                type: "string",
+                                description: "ID unique de la notion",
+                            },
+                            notion_name: {
+                                type: "string",
+                                description: "Nom de la notion",
+                                example: "Concept de base",
+                            },
+                            notion_content: {
+                                type: "string",
+                                description: "Contenu de la notion",
+                                example: "Le contenu détaillé de la notion...",
+                            },
+                            parent_para: {
+                                type: "string",
+                                description: "ID du paragraphe parent",
+                            },
+                        },
+                    },
                 },
             },
         },
@@ -209,6 +306,22 @@ const swaggerOptions: swaggerJSDoc.Options = {
             {
                 name: "Health",
                 description: "Endpoints de santé de l'API",
+            },
+            {
+                name: "Parts",
+                description: "Gestion des parties (granules de niveau 1)",
+            },
+            {
+                name: "Chapters",
+                description: "Gestion des chapitres (granules de niveau 2)",
+            },
+            {
+                name: "Paragraphs",
+                description: "Gestion des paragraphes (granules de niveau 3)",
+            },
+            {
+                name: "Notions",
+                description: "Gestion des notions (granules de niveau 4)",
             },
         ],
     },
