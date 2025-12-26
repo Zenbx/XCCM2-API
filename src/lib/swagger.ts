@@ -132,12 +132,79 @@ const swaggerOptions: swaggerJSDoc.Options = {
                         },
                     },
                 },
+                Project: {
+                    type: "object",
+                    properties: {
+                        pr_id: {
+                            type: "string",
+                            description: "ID unique du projet (MongoDB ObjectId)",
+                        },
+                        pr_name: {
+                            type: "string",
+                            description: "Nom du projet",
+                            example: "Mon Super Projet",
+                        },
+                        owner_id: {
+                            type: "string",
+                            description: "ID du propriétaire du projet",
+                        },
+                        created_at: {
+                            type: "string",
+                            format: "date-time",
+                            description: "Date de création du projet",
+                        },
+                        updated_at: {
+                            type: "string",
+                            format: "date-time",
+                            description: "Date de dernière modification",
+                        },
+                    },
+                },
+                ProjectWithOwner: {
+                    type: "object",
+                    properties: {
+                        pr_id: {
+                            type: "string",
+                            description: "ID unique du projet",
+                        },
+                        pr_name: {
+                            type: "string",
+                            description: "Nom du projet",
+                        },
+                        owner_id: {
+                            type: "string",
+                            description: "ID du propriétaire",
+                        },
+                        created_at: {
+                            type: "string",
+                            format: "date-time",
+                        },
+                        updated_at: {
+                            type: "string",
+                            format: "date-time",
+                        },
+                        owner: {
+                            type: "object",
+                            properties: {
+                                user_id: { type: "string" },
+                                email: { type: "string" },
+                                firstname: { type: "string" },
+                                lastname: { type: "string" },
+                            },
+                        },
+                    },
+                },
             },
         },
+        // Remplacer la section tags pour y ajouter Projects :
         tags: [
             {
                 name: "Authentication",
                 description: "Endpoints d'authentification et gestion de session",
+            },
+            {
+                name: "Projects",
+                description: "Gestion des projets collaboratifs",
             },
             {
                 name: "Health",

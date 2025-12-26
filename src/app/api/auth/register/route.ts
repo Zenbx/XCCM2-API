@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
         const publicUser = toPublicUser(user);
 
         // Génère le token JWT
-        const token = generateToken(publicUser);
+        const token = await generateToken(publicUser);
 
         // Retourne la réponse de succès
         return successResponse(

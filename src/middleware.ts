@@ -24,7 +24,7 @@ const PUBLIC_ROUTES = [
  * @param request - Requête Next.js
  * @returns NextResponse (continue ou redirige)
  */
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // Laisse passer les routes publiques
@@ -56,7 +56,8 @@ export function middleware(request: NextRequest) {
             );
         }
 
-        const payload = verifyToken(token);
+        // Vérification asynchrone du token avec jose
+        const payload = await verifyToken(token);
 
         if (!payload) {
             return NextResponse.json(

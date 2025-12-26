@@ -3,6 +3,9 @@
  * Définit les interfaces pour les utilisateurs, JWT, et les requêtes d'authentification
  */
 
+import type { JWTPayload as JosePayload } from "jose";
+
+
 /**
  * Interface représentant un utilisateur dans l'application
  */
@@ -32,11 +35,9 @@ export interface PublicUser {
 /**
  * Payload du JSON Web Token
  */
-export interface JWTPayload {
+export interface JWTPayload extends JosePayload {
     userId: string;
     email: string;
-    iat?: number;
-    exp?: number;
 }
 
 /**

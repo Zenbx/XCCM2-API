@@ -1,10 +1,10 @@
 /**
  * @fileoverview Fonctions utilitaires pour l'authentification
- * Gère le hachage des mots de passe, la création et vérification des JWT
+ * Gère le hachage des mots de passe, la création et vérification des JWT avec jose
  */
 
 import bcrypt from "bcryptjs";
-import jwt, { SignOptions } from "jsonwebtoken";
+import { SignJWT, jwtVerify } from "jose";
 import type { JWTPayload, PublicUser } from "@/types/auth.types";
 
 /**
@@ -18,9 +18,40 @@ const SALT_ROUNDS = 10;
 const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_change_me";
 
 /**
- * Durée de validité du JWT
+ * Durée de validité du JWT (par défaut 7 jours)
  */
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
+
+/**
+ * Convertit la clé secrète en Uint8Array pour jose
+ */
+const getSecretKey = () => new TextEncoder().encode(JWT_SECRET);
+
+/**
+ * Convertit la durée (ex: "7d", "24h") en secondes
+ * @param duration - Durée au format string (ex: "7d", "24h", "60m")
+ * @returns Nombre de secondes
+ */
+function parseDuration(duration: string): number {
+    const match = duration.match(/^(\d+)([smhd])$/);
+    if (!match) return 7 * 24 * 60 * 60; // Par défaut 7 jours
+
+    const value = parseInt(match[1]);
+    const unit = match[2];
+
+    switch (unit) {
+        case "s":
+            return value;
+        case "m":
+            return value * 60;
+        case "h":
+            return value * 60 * 60;
+        case "d":
+            return value * 24 * 60 * 60;
+        default:
+            return 7 * 24 * 60 * 60;
+    }
+}
 
 /**
  * Hache un mot de passe avec bcrypt
@@ -45,31 +76,41 @@ export async function verifyPassword(
 }
 
 /**
- * Génère un token JWT pour un utilisateur
+ * Génère un token JWT pour un utilisateur avec jose
  * @param user - Utilisateur pour lequel générer le token
- * @returns Token JWT signé
+ * @returns Promise du token JWT signé
  */
-export function generateToken(user: PublicUser): string {
+export async function generateToken(user: PublicUser): Promise<string> {
     const payload: JWTPayload = {
         userId: user.user_id,
         email: user.email,
     };
 
-    return jwt.sign(payload, JWT_SECRET, {
-        expiresIn: JWT_EXPIRES_IN as SignOptions["expiresIn"],
-    });
+    const expiresInSeconds = parseDuration(JWT_EXPIRES_IN);
+
+    const token = await new SignJWT(payload)
+        .setProtectedHeader({ alg: "HS256" })
+        .setIssuedAt()
+        .setExpirationTime(Math.floor(Date.now() / 1000) + expiresInSeconds)
+        .sign(getSecretKey());
+
+    return token;
 }
 
 /**
- * Vérifie et décode un token JWT
+ * Vérifie et décode un token JWT avec jose
  * @param token - Token JWT à vérifier
- * @returns Payload décodé ou null si invalide
+ * @returns Promise du payload décodé ou null si invalide
  */
-export function verifyToken(token: string): JWTPayload | null {
+export async function verifyToken(token: string): Promise<JWTPayload | null> {
     try {
-        const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
-        return decoded;
+        const { payload } = await jwtVerify(token, getSecretKey(), {
+            algorithms: ["HS256"],
+        });
+
+        return payload as JWTPayload;
     } catch (error) {
+        console.error("Erreur de vérification du token:", error);
         return null;
     }
 }

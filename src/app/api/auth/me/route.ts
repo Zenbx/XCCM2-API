@@ -58,6 +58,7 @@ import {
     notFoundResponse,
     serverErrorResponse,
 } from "@/utils/api-response";
+import {headers} from "next/dist/server/request/headers";
 
 /**
  * Handler GET pour récupérer les informations de l'utilisateur connecté
@@ -69,6 +70,8 @@ export async function GET(request: NextRequest) {
     try {
         // Récupère l'userId depuis le header (ajouté par le middleware)
         const userId = request.headers.get("x-user-id");
+        //const headersList = await headers(); // Dans les versions récentes de Next.js, c'est asynchrone
+        //const userId = headersList.get('x-user-id');
 
         if (!userId) {
             return notFoundResponse("Utilisateur non trouvé");

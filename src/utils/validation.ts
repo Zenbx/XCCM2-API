@@ -64,3 +64,43 @@ export type RegisterInput = z.infer<typeof registerSchema>;
  * Type inféré du schéma de connexion
  */
 export type LoginInput = z.infer<typeof loginSchema>;
+
+/**
+ * Schéma de validation pour la création d'un projet
+ */
+export const createProjectSchema = z.object({
+    pr_name: z
+        .string()
+        .min(3, "Le nom du projet doit contenir au moins 3 caractères")
+        .max(100, "Le nom du projet ne peut pas dépasser 100 caractères")
+        .trim()
+        .regex(
+            /^[a-zA-Z0-9\s\-_àâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ]+$/,
+            "Le nom du projet ne peut contenir que des lettres, chiffres, espaces, tirets et underscores"
+        ),
+});
+
+/**
+ * Schéma de validation pour la modification d'un projet
+ */
+export const updateProjectSchema = z.object({
+    pr_name: z
+        .string()
+        .min(3, "Le nom du projet doit contenir au moins 3 caractères")
+        .max(100, "Le nom du projet ne peut pas dépasser 100 caractères")
+        .trim()
+        .regex(
+            /^[a-zA-Z0-9\s\-_àâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ]+$/,
+            "Le nom du projet ne peut contenir que des lettres, chiffres, espaces, tirets et underscores"
+        ),
+});
+
+/**
+ * Type inféré du schéma de création de projet
+ */
+export type CreateProjectInput = z.infer<typeof createProjectSchema>;
+
+/**
+ * Type inféré du schéma de modification de projet
+ */
+export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
