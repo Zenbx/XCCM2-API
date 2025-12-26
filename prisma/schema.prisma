@@ -1,0 +1,216 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js" // Corrigé
+  // Supprimez 'output' pour l'instant pour rester sur la config standard
+}
+
+datasource db {
+  provider = "mongodb" // Corrigé (indispensable pour @db.ObjectId)
+  url = env("DATABASE_URL")
+}
+
+
+model User {
+  // L'ID technique de MongoDB (indispensable)
+  // On utilise @map("_id") car MongoDB exige un champ _id
+  user_id          String   @id @default(auto()) @map("_id") @db.ObjectId
+
+  // Champs d'identité
+  email       String   @unique
+  lastname    String
+  firstname   String
+  password    String   // Sera stocké sous forme de hachage (bcrypt)
+
+  // Informations professionnelles (optionnelles avec le "?")
+  org         String?
+  occupation  String?
+
+  // Métadonnées recommandées pour le cycle de vie des données
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  // Relation inverse : un utilisateur peut avoir plusieurs projets
+  projects  Project[]
+  receivedInvitations Invitation[] @relation("GuestInvitations")
+  sentInvitations     Invitation[] @relation("HostInvitations")
+  likes               Like[]
+
+  @@map("users") // Nom de la collection dans notre base MongoDB
+}
+
+model Project {
+  pr_id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  pr_name        String
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  // 1. Définition du champ de la clé étrangère (doit être de type ObjectId)
+  owner_id  String   @db.ObjectId
+
+  // 2. Définition de la relation
+    // fields: [owner_id] fait référence au champ ci-dessus
+    // references: [user_id] fait référence à l'ID du modèle User
+    owner     User     @relation(fields: [owner_id], references: [user_id])
+
+   // 3. Contrainte d'unicité composée (name + owner_id)
+    @@unique([pr_name, owner_id])
+
+    //A project has one or mores parts and generates one or more documents
+    documents Document[]
+    parts Part[]
+    invitations         Invitation[]
+
+  @@map("projects")
+}
+
+model Document {
+  doc_id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  doc_name     String   // Le nom sera géré par le code au moment de l'insertion
+  pages        Int      // "Int" avec une majuscule
+  doc_size     Int
+  downloaded   Int      @default(0) // On initialise souvent à 0
+  consult      Int      @default(0)
+  published_at DateTime @default(now()) // "DateTime" avec majuscules
+  url_content  String   // "String" avec majuscule
+
+  // Clé étrangère
+  pr_source    String   @db.ObjectId //
+  project      Project  @relation(fields: [pr_source], references: [pr_id])
+
+  // Contraintes d'unicités
+  @@unique([doc_name, pr_source])
+
+  //A document has zero, one or more likes
+  likes               Like[]
+
+  @@map("documents")
+}
+
+model Part {
+    part_id     String   @id @default(auto()) @map("_id") @db.ObjectId
+    part_title  String
+    part_intro  String?
+    part_number Int
+
+    // Clé étrangère
+    parent_pr  String    @db.ObjectId
+    project         Project   @relation(fields: [parent_pr], references: [pr_id])
+
+    //Contraintes d'unicités
+    @@unique([part_title, parent_pr])
+    @@unique([part_number, parent_pr])
+
+    //A part has one or more chapters
+
+    chapters Chapter[]
+
+    @@map("parts")
+}
+
+model Chapter {
+    chapter_id       String   @id @default(auto()) @map("_id") @db.ObjectId
+    chapter_title    String
+    chapter_number   Int
+
+    //Clé étrangère
+    parent_part        String    @db.ObjectId
+    part               Part      @relation(fields: [parent_part], references: [part_id])
+
+    //Contraintes d'unicités
+    @@unique([parent_part, chapter_title])
+    @@unique([parent_part, chapter_number])
+
+    //A chapter has one or more paragraphs
+     paragraphs Paragraph[]
+
+     @@map("chapters")
+}
+
+model Paragraph {
+    para_id       String   @id @default(auto()) @map("_id") @db.ObjectId
+    para_name     String
+    para_number   String
+
+    //Clé étrangère
+    parent_chapter     String       @db.ObjectId
+    chapter            Chapter      @relation(fields: [parent_chapter], references: [chapter_id])
+
+    //Contraintes d'unicité
+    @@unique([parent_chapter, para_name])
+    @@unique([parent_chapter, para_number])
+
+    //A paragraph has one or more notions
+    notions Notion[]
+
+    @@map("paragraphs")
+}
+
+model Notion {
+    notion_id       String   @id @default(auto()) @map("_id") @db.ObjectId
+    notion_name     String
+    notion_content  String
+
+    //Clé étrangère
+    parent_para     String      @db.ObjectId
+    paragraph       Paragraph   @relation(fields: [parent_para], references: [para_id])
+
+    @@map("notions")
+}
+
+// 1. Définition de l'énumération (Note: MongoDB supporte les enums via Prisma)
+enum InvitationState {
+  Pending
+  Accepted
+  Rejected
+}
+
+model Invitation {
+  // Prisma a besoin d'un ID technique pour MongoDB même pour les tables de liaison
+  id               String          @id @default(auto()) @map("_id") @db.ObjectId
+
+  // Clés étrangères physiques
+  pr_id            String          @db.ObjectId
+  guest_id         String          @db.ObjectId
+  host_id          String          @db.ObjectId
+
+  // Champs de données
+  invitation_state InvitationState @default(Pending)
+  invited_at       DateTime        @default(now())
+  response_at      DateTime?       // Optionnel tant qu'il n'a pas répondu
+
+  // Relations
+  project          Project         @relation(fields: [pr_id], references: [pr_id])
+  guest            User            @relation("GuestInvitations", fields: [guest_id], references: [user_id])
+  host             User            @relation("HostInvitations", fields: [host_id], references: [user_id])
+
+  // CLÉ PRIMAIRE COMPOSITE (Logique)
+  // Empêche d'inviter deux fois le même user au même projet
+  @@unique([pr_id, guest_id])
+
+  @@map("invitations")
+}
+
+model Like {
+  id               String          @id @default(auto()) @map("_id") @db.ObjectId
+
+  // Clés étrangères physiques
+  liker_id         String          @db.ObjectId
+  doc_id           String          @db.ObjectId
+
+  like_at          DateTime        @default(now())
+
+  // Relations
+  liker            User            @relation(fields: [liker_id], references: [user_id])
+  document         Document        @relation(fields: [doc_id], references: [doc_id])
+
+  // CLÉ PRIMAIRE COMPOSITE (Logique)
+  // Garantit qu'un utilisateur ne peut liker un document qu'une seule fois
+  @@unique([liker_id, doc_id])
+
+  @@map("likes")
+}

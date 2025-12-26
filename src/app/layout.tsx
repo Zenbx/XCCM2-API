@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+/*import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -31,4 +31,44 @@ export default function RootLayout({
       </body>
     </html>
   );
+}
+*/
+/**
+ * @fileoverview Layout principal de l'application Next.js
+ * Définit la structure HTML de base et les métadonnées
+ */
+
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+
+const inter = Inter({ subsets: ["latin"] });
+
+export const metadata: Metadata = {
+    title: "XCCM - Cross-Cultural Content Management",
+    description: "Plateforme de gestion de contenu collaboratif avec authentification sécurisée",
+    keywords: ["XCCM", "content management", "collaboration", "documents", "API REST"],
+    authors: [{ name: "XCCM Team" }],
+    icons: {
+        icon: "/favicon.ico",
+    },
+};
+
+/**
+ * Layout racine de l'application
+ * @param children - Composants enfants à afficher
+ * @returns Structure HTML de base
+ */
+export default function RootLayout({
+                                       children,
+                                   }: Readonly<{
+    children: React.ReactNode;
+}>) {
+    return (
+        <html lang="fr">
+        <body className={inter.className}>
+        {children}
+        </body>
+        </html>
+    );
 }
