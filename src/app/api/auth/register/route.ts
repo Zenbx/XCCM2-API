@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
     try {
         // Parse le body de la requête
         const body = await request.json();
-
+        console.log(body);
         //Comparaison des mots de passe
         if (body.password !== body.password_confirmation) {
             //return { error: "Passwords do not match" };

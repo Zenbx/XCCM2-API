@@ -134,7 +134,7 @@ model Chapter {
 model Paragraph {
     para_id       String   @id @default(auto()) @map("_id") @db.ObjectId
     para_name     String
-    para_number   String
+    para_number   Int
 
     //Clé étrangère
     parent_chapter     String       @db.ObjectId
@@ -153,11 +153,16 @@ model Paragraph {
 model Notion {
     notion_id       String   @id @default(auto()) @map("_id") @db.ObjectId
     notion_name     String
+    notion_number   Int
     notion_content  String
 
     //Clé étrangère
     parent_para     String      @db.ObjectId
     paragraph       Paragraph   @relation(fields: [parent_para], references: [para_id])
+
+    //Contraintes d'unicité
+    @@unique([parent_para, notion_name])
+    @@unique([parent_para, notion_number])
 
     @@map("notions")
 }

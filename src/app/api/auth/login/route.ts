@@ -96,10 +96,10 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
 
         //Comparaison des mots de passe
-        if (body.password !== body.password_confirmation) {
+        //if (body.password !== body.password_confirmation) {
             //return { error: "Passwords do not match" };
-            return errorResponse("Les mots de passe ne correspondent pas", undefined, 400);
-        }
+          //  return errorResponse("Les mots de passe ne correspondent pas", undefined, 400);
+        //}
 
         // Validation avec Zod
         const validatedData = loginSchema.parse(body);

@@ -349,16 +349,32 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
                 },
             });
 
-            if (duplicateNumber) {
-                // Renumérotation nécessaire
-                await renumberChaptersAfterUpdate(
-                    part.part_id,
-                    existingChapter.chapter_number,
-                    validatedData.chapter_number,
-                    existingChapter.chapter_id
+            if (!duplicateNumber) {
+                // Réponse 409
+                return errorResponse(
+                    "Le nouveau numéro est illogique car votre partie a moins de "
+                    +validatedData.chapter_number + " chapitres",
+                    undefined,
+                    409
                 );
             }
         }
+
+        // Mise à zéro du numéro du chapitre afin d'éviter tout conflit
+        const chapterNumberToZero = await prisma.chapter.update({
+            where: {
+                chapter_id: existingChapter.chapter_id,
+            },
+            data: {
+                ...(validatedData.chapter_number && {
+                    chapter_number: 0,
+                }),
+            },
+        });
+
+        await renumberChaptersAfterUpdate(existingChapter.parent_part, existingChapter.chapter_number,
+            validatedData.chapter_number? validatedData.chapter_number: existingChapter.chapter_number,
+            existingChapter.chapter_id);
 
         // Mise à jour du chapitre
         const updatedChapter = await prisma.chapter.update({

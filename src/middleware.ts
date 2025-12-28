@@ -1,11 +1,35 @@
 /**
- * @fileoverview Middleware Next.js pour la protection des routes
- * Vérifie le JWT sur les routes protégées et redirige si nécessaire
+ * @fileoverview Middleware Next.js global
+ *
+ * - Gère le CORS (preflight OPTIONS + headers)
+ * - Protège les routes API avec JWT
+ * - Laisse passer les routes publiques
+ * - Injecte l'userId dans les headers (x-user-id)
+ *
+ * ⚠️ IMPORTANT :
+ * Le CORS DOIT être géré AVANT toute vérification d'authentification,
+ * sinon le navigateur bloque la requête avant qu'elle n'arrive à la route.
  */
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { verifyToken, extractTokenFromHeader } from "@/lib/auth";
+
+/**
+ * Origine autorisée (frontend)
+ * À adapter en production
+ */
+const ALLOWED_ORIGIN = "http://localhost:3000";
+
+/**
+ * Headers CORS communs
+ */
+const CORS_HEADERS = {
+    "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Credentials": "true",
+};
 
 /**
  * Routes publiques accessibles sans authentification
@@ -20,19 +44,27 @@ const PUBLIC_ROUTES = [
 
 /**
  * Middleware Next.js exécuté avant chaque requête
- * Vérifie l'authentification pour les routes protégées
  * @param request - Requête Next.js
- * @returns NextResponse (continue ou redirige)
+ * @returns NextResponse
  */
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
-    // Laisse passer les routes publiques
-    if (PUBLIC_ROUTES.some((route) => pathname.startsWith(route))) {
-        return NextResponse.next();
+    /**
+     * 1️⃣ Gestion des requêtes OPTIONS (CORS preflight)
+     * Le navigateur envoie automatiquement cette requête avant
+     * toute requête "non simple" (Authorization, JSON, etc.)
+     */
+    if (request.method === "OPTIONS") {
+        return new NextResponse(null, {
+            status: 200,
+            headers: CORS_HEADERS,
+        });
     }
 
-    // Laisse passer les fichiers statiques et Next.js internes
+    /**
+     * 2️⃣ Laisse passer les fichiers statiques et routes internes Next.js
+     */
     if (
         pathname.startsWith("/_next") ||
         pathname.startsWith("/static") ||
@@ -41,7 +73,26 @@ export async function middleware(request: NextRequest) {
         return NextResponse.next();
     }
 
-    // Vérifie le token JWT pour les routes API protégées
+    /**
+     * 3️⃣ Prépare la réponse avec les headers CORS
+     * Ces headers doivent être présents sur TOUTES les réponses API
+     */
+    const response = NextResponse.next();
+
+    Object.entries(CORS_HEADERS).forEach(([key, value]) => {
+        response.headers.set(key, value);
+    });
+
+    /**
+     * 4️⃣ Laisse passer les routes publiques sans authentification
+     */
+    if (PUBLIC_ROUTES.some((route) => pathname.startsWith(route))) {
+        return response;
+    }
+
+    /**
+     * 5️⃣ Protection des routes API avec JWT
+     */
     if (pathname.startsWith("/api/")) {
         const authHeader = request.headers.get("Authorization");
         const token = extractTokenFromHeader(authHeader);
@@ -52,11 +103,11 @@ export async function middleware(request: NextRequest) {
                     success: false,
                     message: "Token manquant. Authentification requise.",
                 },
-                { status: 401 }
+                { status: 401, headers: CORS_HEADERS }
             );
         }
 
-        // Vérification asynchrone du token avec jose
+        // Vérifie le token JWT
         const payload = await verifyToken(token);
 
         if (!payload) {
@@ -65,11 +116,14 @@ export async function middleware(request: NextRequest) {
                     success: false,
                     message: "Token invalide ou expiré.",
                 },
-                { status: 401 }
+                { status: 401, headers: CORS_HEADERS }
             );
         }
 
-        // Ajoute l'userId aux headers pour les routes suivantes
+        /**
+         * 6️⃣ Ajoute l'userId dans les headers
+         * Accessible dans les routes via request.headers.get('x-user-id')
+         */
         const requestHeaders = new Headers(request.headers);
         requestHeaders.set("x-user-id", payload.userId);
 
@@ -80,22 +134,18 @@ export async function middleware(request: NextRequest) {
         });
     }
 
-    // Laisse passer les autres routes (pages web)
-    return NextResponse.next();
+    /**
+     * 7️⃣ Laisse passer les autres routes (pages web)
+     */
+    return response;
 }
 
 /**
- * Configuration du matcher pour le middleware
- * Applique le middleware uniquement sur les routes API et pages
+ * Configuration du matcher
+ * Applique le middleware à toutes les routes sauf les assets Next.js
  */
 export const config = {
     matcher: [
-        /*
-         * Match toutes les routes sauf:
-         * - _next/static (fichiers statiques)
-         * - _next/image (optimisation d'images)
-         * - favicon.ico (icône)
-         */
         "/((?!_next/static|_next/image|favicon.ico).*)",
     ],
 };

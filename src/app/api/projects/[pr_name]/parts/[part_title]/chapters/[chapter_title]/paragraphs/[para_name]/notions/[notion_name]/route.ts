@@ -1,14 +1,14 @@
 /**
- * @fileoverview Routes API pour un paragraphe spécifique
- * Gère la récupération, modification et suppression d'un paragraphe par son nom
+ * @fileoverview Routes API pour une notion spécifique
+ * Gère la récupération, modification et suppression d'une notion par son nom
  *
  * @swagger
- * /api/projects/{pr_name}/parts/{part_title}/chapters/{chapter_title}/paragraphs/{para_name}:
+ * /api/projects/{pr_name}/parts/{part_title}/chapters/{chapter_title}/paragraphs/{para_name}/notions/{notion_name}:
  *   get:
  *     tags:
- *       - Paragraphs
- *     summary: Récupérer un paragraphe spécifique
- *     description: Récupère un paragraphe par son nom
+ *       - Notions
+ *     summary: Récupérer une notion spécifique
+ *     description: Récupère une notion par son nom
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -36,9 +36,15 @@
  *         schema:
  *           type: string
  *         description: Nom du paragraphe
+ *       - in: path
+ *         name: notion_name
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Nom de la notion
  *     responses:
  *       200:
- *         description: Paragraphe récupéré avec succès
+ *         description: Notion récupérée avec succès
  *         content:
  *           application/json:
  *             schema:
@@ -49,23 +55,23 @@
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: Paragraphe récupéré avec succès
+ *                   example: Notion récupérée avec succès
  *                 data:
  *                   type: object
  *                   properties:
- *                     paragraph:
- *                       $ref: '#/components/schemas/Paragraph'
+ *                     notion:
+ *                       $ref: '#/components/schemas/Notion'
  *       401:
  *         description: Non autorisé
  *       404:
- *         description: Paragraphe non trouvé
+ *         description: Notion non trouvée
  *       500:
  *         description: Erreur serveur
  *   patch:
  *     tags:
- *       - Paragraphs
- *     summary: Modifier un paragraphe
- *     description: Met à jour le nom ou le numéro d'un paragraphe
+ *       - Notions
+ *     summary: Modifier une notion
+ *     description: Met à jour le nom ou le contenu d'une notion
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -92,7 +98,13 @@
  *         required: true
  *         schema:
  *           type: string
- *         description: Nom actuel du paragraphe
+ *         description: Nom du paragraphe
+ *       - in: path
+ *         name: notion_name
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Nom actuel de la notion
  *     requestBody:
  *       required: true
  *       content:
@@ -100,33 +112,36 @@
  *           schema:
  *             type: object
  *             properties:
- *               para_name:
+ *               notion_name:
  *                 type: string
- *                 example: Nouvelles Définitions
- *               para_number:
+ *                 example: Concept avancé
+ *               notion_number:
  *                 type: integer
  *                 minimum: 1
  *                 example: 1
+ *               notion_content:
+ *                 type: string
+ *                 example: Contenu révisé et enrichi de la notion...
  *     responses:
  *       200:
- *         description: Paragraphe modifié avec succès
+ *         description: Notion modifiée avec succès
  *       400:
  *         description: Données invalides
  *       401:
  *         description: Non autorisé
  *       404:
- *         description: Paragraphe non trouvé
+ *         description: Notion non trouvée
  *       409:
- *         description: Conflit (nom ou numéro déjà utilisé)
+ *         description: Conflit (nom déjà utilisé)
  *       422:
  *         description: Erreur de validation
  *       500:
  *         description: Erreur serveur
  *   delete:
  *     tags:
- *       - Paragraphs
- *     summary: Supprimer un paragraphe
- *     description: Supprime un paragraphe définitivement
+ *       - Notions
+ *     summary: Supprimer une notion
+ *     description: Supprime une notion définitivement
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -153,22 +168,27 @@
  *         required: true
  *         schema:
  *           type: string
- *         description: Nom du paragraphe à supprimer
+ *         description: Nom du paragraphe
+ *       - in: path
+ *         name: notion_name
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Nom de la notion à supprimer
  *     responses:
  *       200:
- *         description: Paragraphe supprimé avec succès
+ *         description: Notion supprimée avec succès
  *       401:
  *         description: Non autorisé
  *       404:
- *         description: Paragraphe non trouvé
+ *         description: Notion non trouvée
  *       500:
  *         description: Erreur serveur
  */
 
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { updateParagraphSchema } from "@/utils/validation";
-import { renumberParagraphsAfterDelete, renumberParagraphsAfterUpdate } from "@/utils/granule-helpers";
+import { updateNotionSchema } from "@/utils/validation";
 import {
     successResponse,
     errorResponse,
@@ -177,6 +197,7 @@ import {
     serverErrorResponse,
 } from "@/utils/api-response";
 import { ZodError } from "zod";
+import { renumberNotionsAfterDelete, renumberNotionsAfterUpdate } from "@/utils/granule-helpers";
 
 type RouteParams = {
     params: Promise<{
@@ -184,14 +205,15 @@ type RouteParams = {
         part_title: string;
         chapter_title: string;
         para_name: string;
+        notion_name: string;
     }>;
 };
 
 /**
- * Handler GET pour récupérer un paragraphe spécifique
+ * Handler GET pour récupérer une notion spécifique
  * @param request - Requête Next.js
  * @param context - Contexte avec les paramètres de route
- * @returns Réponse JSON avec le paragraphe
+ * @returns Réponse JSON avec la notion
  */
 export async function GET(request: NextRequest, context: RouteParams) {
     try {
@@ -206,12 +228,14 @@ export async function GET(request: NextRequest, context: RouteParams) {
             part_title: encodedPartTitle,
             chapter_title: encodedChapterTitle,
             para_name: encodedParaName,
+            notion_name: encodedNotionName,
         } = await context.params;
 
         const pr_name = decodeURIComponent(encodedPrName);
         const part_title = decodeURIComponent(encodedPartTitle);
         const chapter_title = decodeURIComponent(encodedChapterTitle);
         const para_name = decodeURIComponent(encodedParaName);
+        const notion_name = decodeURIComponent(encodedNotionName);
 
         // Vérifie que le projet existe
         const project = await prisma.project.findUnique({
@@ -255,7 +279,7 @@ export async function GET(request: NextRequest, context: RouteParams) {
             return notFoundResponse("Chapitre non trouvé");
         }
 
-        // Récupère le paragraphe
+        // Vérifie que le paragraphe existe
         const paragraph = await prisma.paragraph.findUnique({
             where: {
                 parent_chapter_para_name: {
@@ -269,21 +293,35 @@ export async function GET(request: NextRequest, context: RouteParams) {
             return notFoundResponse("Paragraphe non trouvé");
         }
 
-        return successResponse("Paragraphe récupéré avec succès", { paragraph });
+        // Récupère la notion
+        const notion = await prisma.notion.findUnique({
+            where: {
+                parent_para_notion_name: {
+                    notion_name,
+                    parent_para: paragraph.para_id,
+                },
+            },
+        });
+
+        if (!notion) {
+            return notFoundResponse("Notion non trouvée");
+        }
+
+        return successResponse("Notion récupérée avec succès", { notion });
     } catch (error) {
-        console.error("Erreur lors de la récupération du paragraphe:", error);
+        console.error("Erreur lors de la récupération de la notion:", error);
         return serverErrorResponse(
-            "Une erreur est survenue lors de la récupération du paragraphe",
+            "Une erreur est survenue lors de la récupération de la notion",
             error instanceof Error ? error.message : undefined
         );
     }
 }
 
 /**
- * Handler PATCH pour modifier un paragraphe
+ * Handler PATCH pour modifier une notion
  * @param request - Requête Next.js
  * @param context - Contexte avec les paramètres de route
- * @returns Réponse JSON avec le paragraphe modifié
+ * @returns Réponse JSON avec la notion modifiée
  */
 export async function PATCH(request: NextRequest, context: RouteParams) {
     try {
@@ -298,12 +336,14 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
             part_title: encodedPartTitle,
             chapter_title: encodedChapterTitle,
             para_name: encodedParaName,
+            notion_name: encodedNotionName,
         } = await context.params;
 
         const pr_name = decodeURIComponent(encodedPrName);
         const part_title = decodeURIComponent(encodedPartTitle);
         const chapter_title = decodeURIComponent(encodedChapterTitle);
-        const currentName = decodeURIComponent(encodedParaName);
+        const para_name = decodeURIComponent(encodedParaName);
+        const currentName = decodeURIComponent(encodedNotionName);
 
         const project = await prisma.project.findUnique({
             where: {
@@ -344,101 +384,133 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
             return notFoundResponse("Chapitre non trouvé");
         }
 
-        const existingParagraph = await prisma.paragraph.findUnique({
+        const paragraph = await prisma.paragraph.findUnique({
             where: {
                 parent_chapter_para_name: {
-                    para_name: currentName,
+                    para_name,
                     parent_chapter: chapter.chapter_id,
                 },
             },
         });
 
-        if (!existingParagraph) {
+        if (!paragraph) {
             return notFoundResponse("Paragraphe non trouvé");
         }
 
+        const existingNotion = await prisma.notion.findUnique({
+            where: {
+                parent_para_notion_name: {
+                    notion_name: currentName,
+                    parent_para: paragraph.para_id,
+                },
+            },
+        });
+
+        if (!existingNotion) {
+            return notFoundResponse("Notion non trouvée");
+        }
+
         const body = await request.json();
-        const validatedData = updateParagraphSchema.parse(body);
+        const validatedData = updateNotionSchema.parse(body);
 
         // Vérifie si le nouveau nom existe déjà (si changement de nom)
-        if (validatedData.para_name && validatedData.para_name !== currentName) {
-            const duplicateName = await prisma.paragraph.findUnique({
+        if (
+            validatedData.notion_name &&
+            validatedData.notion_name !== currentName
+        ) {
+            const duplicateName = await prisma.notion.findUnique({
                 where: {
-                    parent_chapter_para_name: {
-                        para_name: validatedData.para_name,
-                        parent_chapter: chapter.chapter_id,
+                    parent_para_notion_name: {
+                        notion_name: validatedData.notion_name,
+                        parent_para: paragraph.para_id,
                     },
                 },
             });
 
             if (duplicateName) {
                 return errorResponse(
-                    "Un paragraphe avec ce nom existe déjà",
+                    "Une notion avec ce nom existe déjà",
                     undefined,
                     409
                 );
             }
         }
 
-        // Vérifie si le nouveau numéro existe déjà (si changement de numéro)
+        // Vérifie si le numéro nom existe déjà (si changement de numéro)
         if (
-            validatedData.para_number &&
-            validatedData.para_number !== existingParagraph.para_number
+            validatedData.notion_number &&
+            validatedData.notion_number !== existingNotion.notion_number
         ) {
-            const duplicateNumber = await prisma.paragraph.findUnique({
+            const duplicateNumber = await prisma.notion.findUnique({
                 where: {
-                    parent_chapter_para_number: {
-                        para_number: validatedData.para_number,
-                        parent_chapter: chapter.chapter_id,
+                    parent_para_notion_number: {
+                        notion_number: validatedData.notion_number,
+                        parent_para: paragraph.para_id,
                     },
                 },
             });
 
             if (!duplicateNumber) {
                 return errorResponse(
-                    "Votre chapitre a moins de " + validatedData.para_number
-                    + " paragraphes donc le nouveau numéro est illogique",
+                    "Le numéro est illogique car votre chapitre comporte moins de "
+                    + validatedData.notion_number + " notions",
                     undefined,
                     409
                 );
             }
         }
 
-        //Mise à 0 du numéro du paragraph
-        const paragraphNumberToZero = await prisma.paragraph.update({
+        //Mise à 0 du numéro de la notion
+        const notionNumberToZer = await prisma.notion.update({
             where: {
-                para_id: existingParagraph.para_id,
+                notion_id: existingNotion.notion_id,
             },
             data: {
-                ...(validatedData.para_number && {
-                    para_number: 0,
+                ...(validatedData.notion_number && {
+                    notion_number: 0,
                 }),
             },
         });
 
-        await renumberParagraphsAfterUpdate(existingParagraph.parent_chapter,
-            existingParagraph.para_number,
-            validatedData.para_number?validatedData.para_number:existingParagraph.para_number,
-            existingParagraph.para_id);
+        await renumberNotionsAfterUpdate(existingNotion.parent_para,
+            existingNotion.notion_number,
+            validatedData.notion_number?validatedData.notion_number:existingNotion.notion_number,
+            existingNotion.notion_id);
 
-
-        // Mise à jour du paragraphe
-        const updatedParagraph = await prisma.paragraph.update({
+        // Mise à jour de la notion
+        const updatedNotion = await prisma.notion.update({
             where: {
-                para_id: existingParagraph.para_id,
+                notion_id: existingNotion.notion_id,
             },
             data: {
-                ...(validatedData.para_name && {
-                    para_name: validatedData.para_name,
+                ...(validatedData.notion_name && {
+                    notion_name: validatedData.notion_name,
                 }),
-                ...(validatedData.para_number && {
-                    para_number: validatedData.para_number,
+                ...(validatedData.notion_number && {
+                    notion_number: validatedData.notion_number,
+                }),
+                ...(validatedData.notion_content && {
+                    notion_content: validatedData.notion_content,
                 }),
             },
         });
 
-        return successResponse("Paragraphe modifié avec succès", {
-            paragraph: updatedParagraph,
+        /* Renumérotation si le numéro a changé
+        if (
+            validatedData.notion_number &&
+            validatedData.notion_number !== existingNotion.notion_number
+        ) {
+            await renumberNotionsAfterUpdate(
+                paragraph.para_id,
+                existingNotion.notion_number || 0,
+                validatedData.notion_number,
+                existingNotion.notion_id
+            );
+        }
+         */
+
+        return successResponse("Notion modifiée avec succès", {
+            notion: updatedNotion,
         });
     } catch (error) {
         if (error instanceof ZodError) {
@@ -453,16 +525,16 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
             return validationErrorResponse(errors);
         }
 
-        console.error("Erreur lors de la modification du paragraphe:", error);
+        console.error("Erreur lors de la modification de la notion:", error);
         return serverErrorResponse(
-            "Une erreur est survenue lors de la modification du paragraphe",
+            "Une erreur est survenue lors de la modification de la notion",
             error instanceof Error ? error.message : undefined
         );
     }
 }
 
 /**
- * Handler DELETE pour supprimer un paragraphe
+ * Handler DELETE pour supprimer une notion
  * @param request - Requête Next.js
  * @param context - Contexte avec les paramètres de route
  * @returns Réponse JSON de confirmation
@@ -480,13 +552,16 @@ export async function DELETE(request: NextRequest, context: RouteParams) {
             part_title: encodedPartTitle,
             chapter_title: encodedChapterTitle,
             para_name: encodedParaName,
+            notion_name: encodedNotionName,
         } = await context.params;
 
         const pr_name = decodeURIComponent(encodedPrName);
         const part_title = decodeURIComponent(encodedPartTitle);
         const chapter_title = decodeURIComponent(encodedChapterTitle);
         const para_name = decodeURIComponent(encodedParaName);
+        const notion_name = decodeURIComponent(encodedNotionName);
 
+        // Vérifie que le projet existe
         const project = await prisma.project.findUnique({
             where: {
                 pr_name_owner_id: {
@@ -500,6 +575,7 @@ export async function DELETE(request: NextRequest, context: RouteParams) {
             return notFoundResponse("Projet non trouvé");
         }
 
+        // Vérifie que la partie existe
         const part = await prisma.part.findUnique({
             where: {
                 part_title_parent_pr: {
@@ -513,6 +589,7 @@ export async function DELETE(request: NextRequest, context: RouteParams) {
             return notFoundResponse("Partie non trouvée");
         }
 
+        // Vérifie que le chapitre existe
         const chapter = await prisma.chapter.findUnique({
             where: {
                 parent_part_chapter_title: {
@@ -526,7 +603,8 @@ export async function DELETE(request: NextRequest, context: RouteParams) {
             return notFoundResponse("Chapitre non trouvé");
         }
 
-        const existingParagraph = await prisma.paragraph.findUnique({
+        // Vérifie que le paragraphe existe
+        const paragraph = await prisma.paragraph.findUnique({
             where: {
                 parent_chapter_para_name: {
                     para_name,
@@ -535,28 +613,48 @@ export async function DELETE(request: NextRequest, context: RouteParams) {
             },
         });
 
-        if (!existingParagraph) {
+        if (!paragraph) {
             return notFoundResponse("Paragraphe non trouvé");
         }
 
-        // Suppression du paragraphe
-        await prisma.paragraph.delete({
+        // Vérifie que la notion existe
+        const existingNotion = await prisma.notion.findUnique({
             where: {
-                para_id: existingParagraph.para_id,
+                parent_para_notion_name: {
+                    notion_name,
+                    parent_para: paragraph.para_id,
+                },
             },
         });
 
-        // Renumérotation des chapitres restants
-        await renumberParagraphsAfterDelete(chapter.chapter_id, existingParagraph.para_number);
+        if (!existingNotion) {
+            return notFoundResponse("Notion non trouvée");
+        }
 
-        return successResponse("Paragraphe supprimé avec succès");
+        // Suppression de la notion
+        await prisma.notion.delete({
+            where: {
+                notion_id: existingNotion.notion_id,
+            },
+        });
 
+        // Renumérotation si nécessaire
+        if (existingNotion.notion_number !== null) {
+            await renumberNotionsAfterDelete(
+                paragraph.para_id,
+                existingNotion.notion_number
+            );
+        }
+
+        return successResponse("Notion supprimée avec succès");
 
     } catch (error) {
-        console.error("Erreur lors de la suppression du paragraphe:", error);
+        console.error("Erreur lors de la suppression de la notion :", error);
+
         return serverErrorResponse(
-            "Une erreur est survenue lors de la suppression du paragraphe",
+            "Une erreur est survenue lors de la suppression de la notion",
             error instanceof Error ? error.message : undefined
         );
     }
+
 }

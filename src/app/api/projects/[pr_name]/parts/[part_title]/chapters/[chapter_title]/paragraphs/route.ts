@@ -46,9 +46,9 @@
  *                 maxLength: 200
  *                 example: Définitions
  *               para_number:
- *                 type: string
- *                 example: "1.1"
- *                 description: Numéro du paragraphe au format X.Y ou X.Y.Z
+ *                 type: integer
+ *                 minimum: 1
+ *                 example: 1
  *     responses:
  *       201:
  *         description: Paragraphe créé avec succès
@@ -158,29 +158,7 @@ type RouteParams = {
     }>;
 };
 
-/**
- * Compare deux numéros de paragraphe pour le tri naturel
- * @param a - Premier numéro
- * @param b - Deuxième numéro
- * @returns Résultat de comparaison pour sort()
- */
-function compareParaNumbers(a: string, b: string): number {
-    const aParts = a.split(".").map(Number);
-    const bParts = b.split(".").map(Number);
 
-    const maxLength = Math.max(aParts.length, bParts.length);
-
-    for (let i = 0; i < maxLength; i++) {
-        const aVal = aParts[i] || 0;
-        const bVal = bParts[i] || 0;
-
-        if (aVal !== bVal) {
-            return aVal - bVal;
-        }
-    }
-
-    return 0;
-}
 
 /**
  * Handler POST pour créer un nouveau paragraphe
@@ -384,22 +362,25 @@ export async function GET(request: NextRequest, context: RouteParams) {
             return notFoundResponse("Chapitre non trouvé");
         }
 
-        // Récupère tous les paragraphes du chapitre
+
+        // Récupère tous les paragraphes du chapitre, triés par numéro
         const paragraphs = await prisma.paragraph.findMany({
             where: {
                 parent_chapter: chapter.chapter_id,
             },
+            orderBy: {
+                para_number: "asc",
+            },
+        });
+        return successResponse("Paragraphes récupérés avec succès", {
+            paragraphs,
+            count: paragraphs.length,
         });
 
-        // Trie les paragraphes par numéro (tri naturel)
-        const sortedParagraphs = paragraphs.sort((a, b) =>
-            compareParaNumbers(a.para_number, b.para_number)
-        );
-
-        return successResponse("Paragraphes récupérés avec succès", {
+        /*return successResponse("Paragraphes récupérés avec succès", {
             paragraphs: sortedParagraphs,
             count: sortedParagraphs.length,
-        });
+        });*/
     } catch (error) {
         console.error("Erreur lors de la récupération des paragraphes:", error);
         return serverErrorResponse(

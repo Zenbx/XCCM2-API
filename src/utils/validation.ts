@@ -120,8 +120,7 @@ export const createPartSchema = z.object({
         .trim(),
 
     part_intro: z
-        .string()
-        .max(1000, "L'introduction ne peut pas dépasser 1000 caractères")
+        .string()//.max(1000, "L'introduction ne peut pas dépasser 1000 caractères")
         .trim()
         .optional(),
 
@@ -143,8 +142,7 @@ export const updatePartSchema = z.object({
         .optional(),
 
     part_intro: z
-        .string()
-        .max(1000, "L'introduction ne peut pas dépasser 1000 caractères")
+        .string()//.max(1000, "L'introduction ne peut pas dépasser 1000 caractères")
         .trim()
         .optional(),
 
@@ -210,10 +208,9 @@ export const createParagraphSchema = z.object({
         .trim(),
 
     para_number: z
-        .string()
-        .min(1, "Le numéro du paragraphe est requis")
-        .trim()
-        .regex(/^[0-9.]+$/, "Le numéro doit être au format numérique (ex: 1.1, 2.3.4)"),
+        .number()
+        .int("Le numéro doit être un entier")
+        .positive("Le numéro doit être positif"),
 });
 
 /**
@@ -228,9 +225,9 @@ export const updateParagraphSchema = z.object({
         .optional(),
 
     para_number: z
-        .string()
-        .trim()
-        .regex(/^[0-9.]+$/, "Le numéro doit être au format numérique (ex: 1.1, 2.3.4)")
+        .number()
+        .int("Le numéro doit être un entier")
+        .positive("Le numéro doit être positif")
         .optional(),
 }).refine(
     (data) => data.para_name || data.para_number,
@@ -249,6 +246,11 @@ export const createNotionSchema = z.object({
         .max(200, "Le nom ne peut pas dépasser 200 caractères")
         .trim(),
 
+    notion_number: z
+        .number()
+        .int("Le numéro doit être un entier")
+        .positive("Le numéro doit être positif"),
+
     notion_content: z
         .string()
         .min(1, "Le contenu ne peut pas être vide")
@@ -266,13 +268,19 @@ export const updateNotionSchema = z.object({
         .trim()
         .optional(),
 
+    notion_number: z
+        .number()
+        .int("Le numéro doit être un entier")
+        .positive("Le numéro doit être positif")
+        .optional(),
+
     notion_content: z
         .string()
         .min(1, "Le contenu ne peut pas être vide")
         .trim()
         .optional(),
 }).refine(
-    (data) => data.notion_name || data.notion_content,
+    (data) => data.notion_name || data.notion_number || data.notion_content,
     {
         message: "Au moins un champ doit être fourni pour la modification",
     }

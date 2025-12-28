@@ -257,9 +257,9 @@ const swaggerOptions: swaggerJSDoc.Options = {
                                 example: "Définitions",
                             },
                             para_number: {
-                                type: "string",
+                                type: "integer",
                                 description: "Numéro du paragraphe",
-                                example: "1.1",
+                                example: 1,
                             },
                             parent_chapter: {
                                 type: "string",

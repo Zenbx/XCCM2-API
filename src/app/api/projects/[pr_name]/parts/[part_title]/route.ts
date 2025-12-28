@@ -293,16 +293,33 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
                 },
             });
 
-            if (duplicateNumber) {
-                // Renumérotation nécessaire
-                await renumberPartsAfterUpdate(
-                    project.pr_id,
-                    existingPart.part_number,
-                    validatedData.part_number,
-                    existingPart.part_id
+            if (!duplicateNumber) {
+                // réponse 409
+                return errorResponse(
+                    "Votre projet a moins de " + validatedData.part_number +
+                    " parties! Votre nouveau numéro est illogique",
+                    undefined,
+                    409
                 );
             }
         }
+
+        //Mise à zéro du numéro de la partie pour éviter tout conflit
+        const partNumberToZero = await prisma.part.update({
+            where: {
+                part_id: existingPart.part_id,
+            },
+            data: {
+                ...(validatedData.part_number && {
+                    part_number: 0,
+                }),
+            },
+        });
+
+        //Décalage de numéros des autres parties
+        await renumberPartsAfterUpdate(existingPart.parent_pr, existingPart.part_number,
+            validatedData.part_number? validatedData.part_number: existingPart.part_number,
+            existingPart.part_id);
 
         // Mise à jour de la partie
         const updatedPart = await prisma.part.update({

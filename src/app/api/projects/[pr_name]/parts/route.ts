@@ -35,7 +35,6 @@
  *                 example: Introduction
  *               part_intro:
  *                 type: string
- *                 maxLength: 1000
  *                 example: Cette partie présente les concepts de base
  *               part_number:
  *                 type: integer
@@ -121,7 +120,7 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { createPartSchema } from "@/utils/validation";
-import { renumberPartsAfterInsert } from "@/utils/granule-helpers";
+//import { renumberPartsAfterInsert } from "@/utils/granule-helpers";
 import {
     successResponse,
     errorResponse,
@@ -197,9 +196,13 @@ export async function POST(request: NextRequest, context: RouteParams) {
             },
         });
 
-        // Si le numéro existe, on décale tous les numéros >= à celui-ci
+        // Si le numéro existe, on retourne une réponse 409
         if (existingNumber) {
-            await renumberPartsAfterInsert(project.pr_id, validatedData.part_number);
+            return errorResponse(
+                "Une partie avec ce numéro existe déjà dans ce projet",
+                undefined,
+                409
+            );
         }
 
         // Création de la partie
