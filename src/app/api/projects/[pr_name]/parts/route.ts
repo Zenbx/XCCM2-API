@@ -196,6 +196,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
             },
         });
 
+
         // Si le numéro existe, on retourne une réponse 409
         if (existingNumber) {
             return errorResponse(
@@ -204,6 +205,26 @@ export async function POST(request: NextRequest, context: RouteParams) {
                 409
             );
         }
+
+        //Vérifier si le numéro est logique
+
+        //On récupère le nombre de parties
+        const countParts = await prisma.part.count({
+            where: {
+                parent_pr: project.pr_id // L'ID doit être un string (ObjectId)
+            }
+        });
+
+        //Le numéro de la nouvelle partie doit etre le successeur de countParts
+        if(validatedData.part_number !== countParts + 1) {
+            return errorResponse(
+                "Votre projet ne compte que " + countParts
+                + " parties du cou votre numéro de partie est illogique",
+                undefined,
+                409
+            );
+        }
+
 
         // Création de la partie
         const part = await prisma.part.create({

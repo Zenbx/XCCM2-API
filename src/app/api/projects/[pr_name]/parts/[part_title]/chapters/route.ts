@@ -230,6 +230,23 @@ export async function POST(request: NextRequest, context: RouteParams) {
             );
         }
 
+        //Vérifier si le numéro est logique. Il doit etre le succeseur du nombre de chapter
+
+        const countChapters = await prisma.chapter.count({
+            where: {
+                parent_part: part.part_id
+            }
+        });
+
+        if(validatedData.chapter_number !== countChapters +1 ){
+            return errorResponse(
+                "Votre partie ne compte que " + countChapters
+                + " chapitres du cou votre numéro de chapitres est illogique",
+                undefined,
+                409
+            );
+        }
+
         // Création du chapitre
         const chapter = await prisma.chapter.create({
             data: {

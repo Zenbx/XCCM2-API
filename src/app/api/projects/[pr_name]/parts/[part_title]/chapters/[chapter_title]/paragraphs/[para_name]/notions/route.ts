@@ -295,6 +295,24 @@ export async function POST(request: NextRequest, context: RouteParams) {
                 409
             );
         }
+
+        //Vérifier si le numéro est logique
+
+        const countNotions = await prisma.notion.count({
+            where: {
+                parent_para: paragraph.para_id,
+            }
+        });
+
+        if(validatedData.notion_number !== countNotions +1 ){
+            return errorResponse(
+                "Votre paragraphes ne compte que " + countNotions
+                + " notions du cou votre numéro de notion est illogique",
+                undefined,
+                409
+            );
+        }
+
         // Création de la notion
         const notion = await prisma.notion.create({
             data: {

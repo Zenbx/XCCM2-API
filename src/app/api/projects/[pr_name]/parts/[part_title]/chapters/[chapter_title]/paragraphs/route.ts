@@ -265,6 +265,23 @@ export async function POST(request: NextRequest, context: RouteParams) {
             );
         }
 
+        // Vérifier si le numéro est logique
+
+        const countParagraphs = await prisma.paragraph.count({
+            where: {
+                parent_chapter: chapter.chapter_id,
+            }
+        });
+
+        if(validatedData.para_number !== countParagraphs +1 ){
+            return errorResponse(
+                "Votre chapitre ne compte que " + countParagraphs
+                + " paragraphes du cou votre numéro de paragraph est illogique",
+                undefined,
+                409
+            );
+        }
+
         // Création du paragraphe
         const paragraph = await prisma.paragraph.create({
             data: {

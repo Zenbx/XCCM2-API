@@ -1,4 +1,4 @@
-import { PrismaClient, InvitationState } from '@prisma/client';
+/*import { PrismaClient, InvitationState } from '@prisma/client';
 import { faker } from '@faker-js/faker';
 
 const prisma = new PrismaClient();
@@ -140,3 +140,5 @@ main()
         await prisma.$disconnect();
         process.exit(1);
     });
+
+ */
