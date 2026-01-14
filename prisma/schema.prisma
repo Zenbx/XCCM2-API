@@ -80,7 +80,7 @@ model Document {
 
   // Clé étrangère
   pr_source    String   @db.ObjectId //
-  project      Project  @relation(fields: [pr_source], references: [pr_id])
+  project      Project  @relation(fields: [pr_source], references: [pr_id], onDelete: Cascade)
 
   // Contraintes d'unicités
   @@unique([doc_name, pr_source])
@@ -99,7 +99,7 @@ model Part {
 
     // Clé étrangère
     parent_pr  String    @db.ObjectId
-    project         Project   @relation(fields: [parent_pr], references: [pr_id])
+    project         Project   @relation(fields: [parent_pr], references: [pr_id], onDelete: Cascade)
 
     //Contraintes d'unicités
     @@unique([part_title, parent_pr])
@@ -119,7 +119,7 @@ model Chapter {
 
     //Clé étrangère
     parent_part        String    @db.ObjectId
-    part               Part      @relation(fields: [parent_part], references: [part_id])
+    part               Part      @relation(fields: [parent_part], references: [part_id], onDelete: Cascade)
 
     //Contraintes d'unicités
     @@unique([parent_part, chapter_title])
@@ -138,7 +138,7 @@ model Paragraph {
 
     //Clé étrangère
     parent_chapter     String       @db.ObjectId
-    chapter            Chapter      @relation(fields: [parent_chapter], references: [chapter_id])
+    chapter            Chapter      @relation(fields: [parent_chapter], references: [chapter_id], onDelete: Cascade)
 
     //Contraintes d'unicité
     @@unique([parent_chapter, para_name])
@@ -158,7 +158,7 @@ model Notion {
 
     //Clé étrangère
     parent_para     String      @db.ObjectId
-    paragraph       Paragraph   @relation(fields: [parent_para], references: [para_id])
+    paragraph       Paragraph   @relation(fields: [parent_para], references: [para_id], onDelete: Cascade)
 
     //Contraintes d'unicité
     @@unique([parent_para, notion_name])
