@@ -6,16 +6,21 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "gen:certs": "node scripts/generate-certs.js",
+    "dev:https": "npm run gen:certs && HTTPS=true SSL_CRT_FILE=certs/localhost.crt SSL_KEY_FILE=certs/localhost.key next dev -p 443"
   },
   "dependencies": {
     "@prisma/client": "^6.19.1",
+    "@types/nodemailer": "^7.0.5",
     "bcryptjs": "^3.0.3",
     "cookies-next": "^6.1.1",
     "dotenv": "^17.2.3",
+    "https": "^1.0.0",
     "jose": "^6.1.3",
     "next": "16.1.1",
-    "prisma": "^6.19.1",
+    "nodemailer": "^7.0.12",
+    "prisma": "6.19.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "swagger-jsdoc": "^6.2.8",
@@ -34,7 +39,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "5.9.3"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
