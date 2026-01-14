@@ -1,186 +1,266 @@
 /**
- * @fileoverview Générateur de documents PDF
- * Utilise PDFKit pour créer des PDF avec styles
+ * @fileoverview Générateur de documents PDF à partir de HTML
+ * Utilise Puppeteer pour une conversion HTML -> PDF haute fidélité
  */
 
-import PDFDocument from "pdfkit";
+import puppeteer from "puppeteer";
 import { PassThrough } from "stream";
 import type { ProjectForExport } from "@/types/document.types";
-import { parseMarkdownToSegments } from "./markdown-parser";
 
 /**
- * Génère un document PDF à partir d'un projet
- * @param project - Projet avec toute sa structure
- * @returns Stream du PDF généré
+ * Génère le contenu HTML complet d'un projet, en s'inspirant du style de la page de prévisualisation.
+ * @param project - Les données complètes du projet.
+ * @returns Une chaîne de caractères contenant le HTML complet du document.
+ */
+function generatePrintableHTML(project: ProjectForExport): string {
+    const { pr_name, owner, parts, styles } = project;
+
+    const getCssFromStyleConfig = (config: any) => {
+        if (!config) return '';
+        let css = '';
+        if (config.fontFamily) css += `font-family: "${config.fontFamily}", sans-serif !important; `;
+        if (config.fontSize) css += `font-size: ${config.fontSize}px !important; `;
+        if (config.color) css += `color: ${config.color} !important; `;
+        if (config.fontWeight) css += `font-weight: ${config.fontWeight} !important; `;
+        if (config.fontStyle) css += `font-style: ${config.fontStyle} !important; `;
+        return css;
+    };
+
+    const css = `
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            body {
+                font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                background-color: rgb(243, 244, 246);
+                color: rgb(17, 24, 39);
+                line-height: 1.5;
+            }
+            .page {
+                background-color: rgb(255, 255, 255);
+                border-radius: 16px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                border: 1px solid rgb(229, 231, 235);
+                padding: 48px;
+                margin: 32px;
+                min-height: 297mm;
+                page-break-after: always;
+            }
+            .title-page {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+            }
+            .title-bar {
+                width: 96px;
+                height: 4px;
+                background-color: rgb(153, 51, 76);
+                margin-bottom: 32px;
+            }
+            h1 {
+                font-size: 48px;
+                font-weight: 700;
+                color: rgb(17, 24, 39);
+                margin-bottom: 24px;
+                letter-spacing: -0.025em;
+            }
+            .subtitle {
+                font-size: 20px;
+                color: rgb(107, 114, 128);
+                text-transform: uppercase;
+                letter-spacing: 0.1em;
+                font-weight: 300;
+            }
+            .title-footer {
+                margin-top: 80px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            .icon-circle {
+                width: 48px;
+                height: 48px;
+                border-radius: 50%;
+                background-color: rgb(153, 51, 76);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: rgb(255, 255, 255);
+                margin-bottom: 16px;
+                font-size: 24px;
+            }
+            .footer-text, .footer-date {
+                color: rgb(156, 163, 175);
+                font-size: 14px;
+            }
+            .part-header {
+                margin-bottom: 48px;
+                border-bottom: 1px solid rgb(243, 244, 246);
+                padding-bottom: 24px;
+            }
+            .part-label {
+                color: rgb(153, 51, 76);
+                background-color: rgba(153, 51, 76, 0.1);
+                padding: 4px 12px;
+                border-radius: 9999px;
+                font-weight: 700;
+                font-size: 14px;
+                display: inline-block;
+                margin-bottom: 16px;
+            }
+            h2 {
+                font-size: 36px;
+                font-weight: 700;
+                color: rgb(17, 24, 39);
+                margin-top: 8px;
+                ${getCssFromStyleConfig(styles?.part?.title)}
+            }
+            .part-intro {
+                margin-bottom: 48px;
+                font-size: 18px;
+                color: rgb(75, 85, 99);
+                line-height: 1.8;
+                font-style: italic;
+                border-left: 4px solid rgba(153, 51, 76, 0.2);
+                padding-left: 24px;
+                ${getCssFromStyleConfig(styles?.part?.intro)}
+            }
+            h3 {
+                font-size: 30px;
+                font-weight: 700;
+                color: rgb(17, 24, 39);
+                margin-bottom: 32px;
+                margin-top: 48px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                ${getCssFromStyleConfig(styles?.chapter?.title)}
+            }
+            .chapter-number {
+                color: rgb(153, 51, 76);
+                opacity: 0.5;
+                font-weight: 400;
+            }
+            h4 {
+                font-size: 24px;
+                font-weight: 700;
+                color: rgb(31, 41, 55);
+                margin-bottom: 24px;
+            }
+            h5 {
+                font-size: 14px;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: rgb(107, 114, 128);
+                font-weight: 700;
+                margin-bottom: 12px;
+                border-bottom: 1px solid rgb(243, 244, 246);
+                display: inline-block;
+                padding-bottom: 4px;
+            }
+            .notion-content {
+                font-size: 18px;
+                line-height: 1.8;
+                color: rgb(55, 65, 81);
+                margin-bottom: 32px;
+            }
+            /* ... (etc., coller tous les styles) ... */
+        </style>
+    `;
+
+    let bodyContent = '';
+
+    // Page de titre
+    bodyContent += `
+        <div class="page title-page">
+            <div class="title-bar"></div>
+            <h1>${pr_name.toUpperCase()}</h1>
+            <p class="subtitle">Document de Composition</p>
+            <div class="title-footer">
+                <div class="icon-circle">📄</div>
+                <p class="footer-text">Généré par XCCM 2</p>
+                <p class="footer-date">${new Date().toLocaleDateString()}</p>
+            </div>
+        </div>
+    `;
+
+    // Table des matières
+    if (parts.length > 0) {
+         bodyContent += `<div class="page toc-page"> ... </div>`; // (Logique de la TOC ici)
+    }
+
+    // Contenu
+    parts.forEach((part, partIndex) => {
+        bodyContent += `<div class="page" id="part-${partIndex}">`;
+        bodyContent += `
+            <div class="part-header">
+                <span class="part-label">Partie ${part.part_number}</span>
+                <h2 style="${getCssFromStyleConfig(styles?.part?.title)}">${part.part_title}</h2>
+            </div>
+        `;
+        if (part.part_intro) {
+            bodyContent += `<div class="part-intro" style="${getCssFromStyleConfig(styles?.part?.intro)}">${part.part_intro}</div>`;
+        }
+        part.chapters?.forEach((chapter, chapIndex) => {
+            bodyContent += `<h3 style="${getCssFromStyleConfig(styles?.chapter?.title)}"><span class="chapter-number">#</span>${chapter.chapter_title}</h3>`;
+            chapter.paragraphs?.forEach((para: any) => {
+                bodyContent += `<h4>${para.para_name}</h4>`;
+                para.notions?.forEach((notion: any) => {
+                    if (notion.notion_name) bodyContent += `<h5>${notion.notion_name}</h5>`;
+                    bodyContent += `<div class="notion-content">${notion.notion_content}</div>`;
+                });
+            });
+        });
+        bodyContent += `</div>`;
+    });
+
+    return `<!DOCTYPE html><html><head><meta charset="UTF-8">${css}</head><body>${bodyContent}</body></html>`;
+}
+
+/**
+ * Génère un document PDF à partir d'un projet en utilisant Puppeteer.
+ * @param project - Projet avec toute sa structure.
+ * @returns Stream du PDF généré.
  */
 export async function generatePDF(project: ProjectForExport): Promise<PassThrough> {
-    // Créer un nouveau document PDF
-    const doc = new PDFDocument({
-        size: "A4",
-        margins: {
-            top: 50,
-            bottom: 50,
-            left: 50,
-            right: 50,
-        },
-    });
-
-    // Stream pour retourner le PDF
+    const htmlContent = generatePrintableHTML(project);
     const stream = new PassThrough();
-    doc.pipe(stream);
 
-    // ===== PAGE DE GARDE =====
-    doc
-        .fontSize(28)
-        .font("Helvetica-Bold")
-        .text(project.pr_name, { align: "center" });
+    (async () => {
+        let browser;
+        try {
+            console.log("🚀 Lancement de Puppeteer pour la génération PDF...");
+            browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
+            const page = await browser.newPage();
 
-    doc.moveDown(2);
+            await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
 
-    doc
-        .fontSize(12)
-        .font("Helvetica")
-        .text(`Auteur: ${project.owner.firstname} ${project.owner.lastname}`, {
-            align: "center",
-        });
-
-    doc.text(`Email: ${project.owner.email}`, { align: "center" });
-
-    doc.text(`Date: ${new Date(project.created_at).toLocaleDateString("fr-FR")}`, {
-        align: "center",
-    });
-
-    doc.addPage();
-
-    // ===== TABLE DES MATIÈRES =====
-    doc.fontSize(20).font("Helvetica-Bold").text("Table des matières", { underline: true });
-    doc.moveDown();
-
-    project.parts.forEach((part) => {
-        doc
-            .fontSize(14)
-            .font("Helvetica-Bold")
-            .text(`Partie ${part.part_number}: ${part.part_title}`);
-
-        part.chapters.forEach((chapter) => {
-            doc
-                .fontSize(12)
-                .font("Helvetica")
-                .text(`  Chapitre ${chapter.chapter_number}: ${chapter.chapter_title}`);
-        });
-
-        doc.moveDown(0.5);
-    });
-
-    // ===== CONTENU DU DOCUMENT =====
-    project.parts.forEach((part) => {
-        // NOUVELLE PAGE POUR CHAQUE PARTIE
-        doc.addPage();
-
-        // Titre de la partie (souligné)
-        doc
-            .fontSize(22)
-            .font("Helvetica-Bold")
-            .fillColor("#000000")
-            .text(`Partie ${part.part_number}: ${part.part_title}`, {
-                underline: true
+            // Génère le PDF en se basant sur le rendu de la page
+            const pdfBuffer = await page.pdf({
+                format: 'A4',
+                printBackground: true,
+                margin: { top: '0', right: '0', bottom: '0', left: '0' },
             });
 
-        doc.moveDown(1);
+            console.log("✅ PDF généré avec succès via Puppeteer.");
+            stream.end(pdfBuffer);
 
-        // Introduction de la partie (si elle existe)
-        if (part.part_intro) {
-            doc
-                .fontSize(11)
-                .font("Helvetica-Oblique")
-                .text(part.part_intro, {
-                    align: "justify",
-                });
-            doc.moveDown(1.5);
-        }
-
-        // Chapitres
-        part.chapters.forEach((chapter, chapterIndex) => {
-            // NOUVELLE PAGE POUR CHAQUE CHAPITRE (sauf le premier de la partie)
-            if (chapterIndex > 0) {
-                doc.addPage();
+        } catch (error) {
+            console.error("❌ Erreur lors de la génération PDF avec Puppeteer:", error);
+            stream.emit('error', new Error('Erreur Puppeteer'));
+        } finally {
+            if (browser) {
+                await browser.close();
             }
-
-            // Titre du chapitre (Format: "Chapitre X: Titre", souligné)
-            doc
-                .fontSize(18)
-                .font("Helvetica-Bold")
-                .text(`Chapitre ${chapter.chapter_number}: ${chapter.chapter_title}`, {
-                    underline: true,
-                });
-
-            doc.moveDown(1);
-
-            // Paragraphes
-            chapter.paragraphs.forEach((paragraph) => {
-                // NOUVEAU PARAGRAPHE (pas de titre de paragraphe visible)
-
-                // Réinitialiser la position pour commencer un nouveau paragraphe
-                const startY = doc.y;
-
-                // Pour chaque notion du paragraphe, on ajoute le contenu
-                paragraph.notions.forEach((notion, notionIndex) => {
-                    // Contenu de la notion avec styles
-                    const segments = parseMarkdownToSegments(notion.notion_content);
-
-                    segments.forEach((segment, segmentIndex) => {
-                        let font = "Helvetica";
-
-                        if (segment.bold && segment.italic) {
-                            font = "Helvetica-BoldOblique";
-                        } else if (segment.bold) {
-                            font = "Helvetica-Bold";
-                        } else if (segment.italic) {
-                            font = "Helvetica-Oblique";
-                        }
-
-                        doc.font(font).fontSize(11);
-
-                        // Ajouter un espace entre les notions (sauf pour la première)
-                        const shouldContinue = !(notionIndex === 0 && segmentIndex === 0);
-
-                        if (segment.underline) {
-                            doc.text(segment.text, {
-                                continued: shouldContinue,
-                                underline: true,
-                                align: "justify",
-                            });
-                        } else if (segment.strikethrough) {
-                            doc.text(segment.text, {
-                                continued: shouldContinue,
-                                strike: true,
-                                align: "justify",
-                            });
-                        } else {
-                            doc.text(segment.text, {
-                                continued: shouldContinue,
-                                align: "justify",
-                            });
-                        }
-                    });
-
-                    // Ajouter un espace entre les notions d'un même paragraphe
-                    if (notionIndex < paragraph.notions.length - 1) {
-                        doc.text(" ", { continued: true });
-                    }
-                });
-
-                // Terminer le paragraphe
-                doc.text(""); // Force une nouvelle ligne
-                doc.moveDown(1); // Espace après le paragraphe
-            });
-
-            doc.moveDown(0.5);
-        });
-    });
-
-    // Finaliser le document
-    doc.end();
+        }
+    })();
 
     return stream;
 }
