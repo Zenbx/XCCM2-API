@@ -187,6 +187,7 @@ model Invitation {
   invitation_state InvitationState @default(Pending)
   invited_at       DateTime        @default(now())
   response_at      DateTime?       // Optionnel tant qu'il n'a pas répondu
+  access_token     String        @unique  // Token sécurisé pour le lien d'invitation
 
   // Relations
   project          Project         @relation(fields: [pr_id], references: [pr_id])
