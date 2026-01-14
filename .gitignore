@@ -49,6 +49,12 @@
 .pnp.js
 .yarn/install-state.gz
 
+# SSL/TLS certificates (never commit)
+/certs/
+*.pem
+*.key
+*.crt
+
 # testing
 /coverage
 

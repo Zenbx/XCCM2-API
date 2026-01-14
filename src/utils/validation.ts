@@ -297,3 +297,54 @@ export type CreateParagraphInput = z.infer<typeof createParagraphSchema>;
 export type UpdateParagraphInput = z.infer<typeof updateParagraphSchema>;
 export type CreateNotionInput = z.infer<typeof createNotionSchema>;
 export type UpdateNotionInput = z.infer<typeof updateNotionSchema>;
+
+// ==========================================
+// SCHÉMAS DE VALIDATION POUR NEWSLETTER & CONTACT
+// ==========================================
+
+/**
+ * Schéma de validation pour l'abonnement à la newsletter
+ */
+export const newsletterSubscribeSchema = z.object({
+    email: z
+        .string()
+        .min(1, "L'email est requis")
+        .email("Format d'email invalide")
+        .toLowerCase()
+        .trim(),
+});
+
+/**
+ * Schéma de validation pour le formulaire de contact
+ */
+export const contactSchema = z.object({
+    email: z
+        .string()
+        .min(1, "L'email est requis")
+        .email("Format d'email invalide")
+        .toLowerCase()
+        .trim(),
+
+    name: z
+        .string()
+        .min(2, "Le nom doit contenir au moins 2 caractères")
+        .trim(),
+
+    subject: z
+        .string()
+        .min(5, "Le sujet doit contenir au moins 5 caractères")
+        .max(200, "Le sujet ne peut pas dépasser 200 caractères")
+        .trim(),
+
+    message: z
+        .string()
+        .min(10, "Le message doit contenir au moins 10 caractères")
+        .max(5000, "Le message ne peut pas dépasser 5000 caractères")
+        .trim(),
+});
+
+/**
+ * Types inférés pour newsletter et contact
+ */
+export type NewsletterSubscribeInput = z.infer<typeof newsletterSubscribeSchema>;
+export type ContactInput = z.infer<typeof contactSchema>;
