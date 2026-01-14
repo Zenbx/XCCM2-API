@@ -11,7 +11,7 @@ import { z } from "zod";
 export const registerSchema = z.object({
     email: z
         .string()
-        .min(1,"L'email est requis")
+        .min(1, "L'email est requis")
         .email("Format d'email invalide")
         .toLowerCase()
         .trim(),
@@ -45,7 +45,7 @@ export const registerSchema = z.object({
 export const loginSchema = z.object({
     email: z
         .string()
-        .min(1,"L'email est requis")
+        .min(1, "L'email est requis")
         .email("Format d'email invalide")
         .toLowerCase()
         .trim(),
@@ -92,7 +92,29 @@ export const updateProjectSchema = z.object({
         .regex(
             /^[a-zA-Z0-9\s\-_àâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ]+$/,
             "Le nom du projet ne peut contenir que des lettres, chiffres, espaces, tirets et underscores"
-        ),
+        )
+        .optional(),
+
+    description: z.string().trim().optional(),
+    category: z.string().trim().optional(),
+    level: z.string().trim().optional(),
+    tags: z.string().trim().optional(),
+    author: z.string().trim().optional(),
+    language: z.string().trim().optional(),
+    is_published: z.boolean().optional(),
+    styles: z.any().optional(),
+}).refine(
+    (data) => Object.keys(data).length > 0,
+    {
+        message: "Au moins un champ doit être fourni pour la modification",
+    }
+);
+
+/**
+ * Schéma de validation pour la création d'un commentaire
+ */
+export const createCommentSchema = z.object({
+    content: z.string().min(1, "Le commentaire ne peut pas être vide").trim(),
 });
 
 /**

@@ -45,6 +45,7 @@ model User {
   chapters   Chapter[]
   paragraphs Paragraph[]
   notions    Notion[]
+  comments   Comment[]
 
   @@map("users") // Nom de la collection dans notre base MongoDB
 }
@@ -70,8 +71,36 @@ model Project {
     documents Document[]
     parts Part[]
     invitations         Invitation[]
+    comments            Comment[]
+
+    // Course Metadata
+    description  String?
+    category     String?
+    level        String?
+    tags         String?
+    author       String?
+    language     String?   @default("Français")
+    is_published Boolean   @default(false)
+
+    // Course Styles (stored as JSON)
+    styles       Json?
 
   @@map("projects")
+}
+
+model Comment {
+  comment_id    String   @id @default(auto()) @map("_id") @db.ObjectId
+  content       String
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  author_id     String   @db.ObjectId
+  author        User     @relation(fields: [author_id], references: [user_id])
+
+  pr_id         String   @db.ObjectId
+  project       Project  @relation(fields: [pr_id], references: [pr_id], onDelete: Cascade)
+
+  @@map("comments")
 }
 
 model Document {
