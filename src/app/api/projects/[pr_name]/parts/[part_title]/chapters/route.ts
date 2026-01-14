@@ -238,7 +238,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
             }
         });
 
-        if(validatedData.chapter_number !== countChapters +1 ){
+        if (validatedData.chapter_number !== countChapters + 1) {
             return errorResponse(
                 "Votre partie ne compte que " + countChapters
                 + " chapitres du cou votre numéro de chapitres est illogique",
@@ -253,6 +253,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
                 chapter_title: validatedData.chapter_title,
                 chapter_number: validatedData.chapter_number,
                 parent_part: part.part_id,
+                owner_id: userId,
             },
         });
 

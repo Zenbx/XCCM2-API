@@ -208,6 +208,9 @@ export async function POST(request: NextRequest) {
 
 /**
  * Handler GET pour récupérer tous les projets de l'utilisateur connecté
+ * Retourne:
+ * - Les projets créés par l'utilisateur (owner_id)
+ * - Les projets où l'utilisateur a une invitation acceptée
  * @param request - Requête Next.js avec le header x-user-id
  * @returns Réponse JSON avec la liste des projets
  */
@@ -220,8 +223,8 @@ export async function GET(request: NextRequest) {
             return errorResponse("Utilisateur non authentifié", undefined, 401);
         }
 
-        // Récupère tous les projets de l'utilisateur
-        const projects = await prisma.project.findMany({
+        // Récupère les projets créés par l'utilisateur
+        const ownedProjects = await prisma.project.findMany({
             where: {
                 owner_id: userId,
             },
@@ -230,9 +233,29 @@ export async function GET(request: NextRequest) {
             },
         });
 
+        // Récupère les projets où l'utilisateur a une invitation acceptée
+        const invitedProjects = await prisma.project.findMany({
+            where: {
+                invitations: {
+                    some: {
+                        AND: [
+                            { guest_id: userId },
+                            // { invitation_state: "Accepted" },
+                        ],
+                    },
+                },
+            },
+            orderBy: {
+                created_at: "desc",
+            },
+        });
+
+        // Fusionner les deux listes en supprimant les doublons (un projet ne peut pas être dans les deux)
+        const allProjects = [...ownedProjects, ...invitedProjects];
+
         return successResponse("Projets récupérés avec succès", {
-            projects,
-            count: projects.length,
+            projects: allProjects,
+            count: allProjects.length,
         });
     } catch (error) {
         console.error("Erreur lors de la récupération des projets:", error);

@@ -320,7 +320,7 @@ export async function PATCH(
         }
 
         // Si le nouveau nom est différent, vérifie qu'il n'existe pas déjà
-        if (validatedData.pr_name !== currentName) {
+        if (validatedData.pr_name && validatedData.pr_name !== currentName) {
             const duplicateProject = await prisma.project.findUnique({
                 where: {
                     pr_name_owner_id: {
@@ -349,6 +349,14 @@ export async function PATCH(
             },
             data: {
                 pr_name: validatedData.pr_name,
+                description: validatedData.description,
+                category: validatedData.category,
+                level: validatedData.level,
+                tags: validatedData.tags,
+                author: validatedData.author,
+                language: validatedData.language,
+                is_published: validatedData.is_published,
+                styles: validatedData.styles,
             },
         });
 

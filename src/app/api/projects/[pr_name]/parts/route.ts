@@ -233,6 +233,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
                 part_intro: validatedData.part_intro || null,
                 part_number: validatedData.part_number,
                 parent_pr: project.pr_id,
+                owner_id: userId,
             },
         });
 

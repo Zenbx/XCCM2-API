@@ -296,23 +296,6 @@ export async function POST(request: NextRequest, context: RouteParams) {
             );
         }
 
-        //Vérifier si le numéro est logique
-
-        const countNotions = await prisma.notion.count({
-            where: {
-                parent_para: paragraph.para_id,
-            }
-        });
-
-        if(validatedData.notion_number !== countNotions +1 ){
-            return errorResponse(
-                "Votre paragraphes ne compte que " + countNotions
-                + " notions du cou votre numéro de notion est illogique",
-                undefined,
-                409
-            );
-        }
-
         // Création de la notion
         const notion = await prisma.notion.create({
             data: {
@@ -320,6 +303,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
                 notion_number: validatedData.notion_number,
                 notion_content: validatedData.notion_content,
                 parent_para: paragraph.para_id,
+                owner_id: userId,
             },
         });
 
@@ -371,7 +355,7 @@ export async function GET(request: NextRequest, context: RouteParams) {
         const chapter_title = decodeURIComponent(encodedChapterTitle);
         const para_name = decodeURIComponent(encodedParaName);
 
-        // Vérifie que le projet existe
+        // Vérifie UNIQUEMENT que le projet existe et appartient à l'utilisateur
         const project = await prisma.project.findUnique({
             where: {
                 pr_name_owner_id: {
@@ -385,55 +369,42 @@ export async function GET(request: NextRequest, context: RouteParams) {
             return notFoundResponse("Projet non trouvé");
         }
 
-        // Vérifie que la partie existe
+        // On peut maintenant chercher le paragraphe directement car on a pr_id et les noms
+        // Pour être ultra-safe, on traverse quand même mais on pourrait simplifier.
+        // On va garder la traversée pour la cohérence des 404, mais on ajoute owner_id partout.
+
         const part = await prisma.part.findUnique({
             where: {
-                part_title_parent_pr: {
-                    part_title,
-                    parent_pr: project.pr_id,
-                },
+                part_title_parent_pr: { part_title, parent_pr: project.pr_id },
             },
         });
 
-        if (!part) {
-            return notFoundResponse("Partie non trouvée");
-        }
+        if (!part) return notFoundResponse("Partie non trouvée");
 
-        // Vérifie que le chapitre existe
         const chapter = await prisma.chapter.findUnique({
             where: {
-                parent_part_chapter_title: {
-                    chapter_title,
-                    parent_part: part.part_id,
-                },
+                parent_part_chapter_title: { chapter_title, parent_part: part.part_id },
             },
         });
 
-        if (!chapter) {
-            return notFoundResponse("Chapitre non trouvé");
-        }
+        if (!chapter) return notFoundResponse("Chapitre non trouvé");
 
-        // Vérifie que le paragraphe existe
         const paragraph = await prisma.paragraph.findUnique({
             where: {
-                parent_chapter_para_name: {
-                    para_name,
-                    parent_chapter: chapter.chapter_id,
-                },
+                parent_chapter_para_name: { para_name, parent_chapter: chapter.chapter_id },
             },
         });
 
-        if (!paragraph) {
-            return notFoundResponse("Paragraphe non trouvé");
-        }
+        if (!paragraph) return notFoundResponse("Paragraphe non trouvé");
 
         // Récupère toutes les notions du paragraphe
         const notions = await prisma.notion.findMany({
             where: {
                 parent_para: paragraph.para_id,
+                owner_id: userId,
             },
             orderBy: {
-                notion_name: "asc", // Tri alphabétique par nom
+                notion_number: "asc",
             },
         });
 
