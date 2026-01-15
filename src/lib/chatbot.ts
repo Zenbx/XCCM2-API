@@ -48,15 +48,12 @@ function getHfClient(): InferenceClient {
     }
 
     if (!hfClient) {
-        // ✅ Configuration du nouvel endpoint (router.huggingface.co)
-        // L'ancien endpoint api-inference.huggingface.co est obsolète depuis 2025
-        hfClient = new InferenceClient(process.env.HF_API_TOKEN, {
-            // Utilisation du nouvel endpoint recommandé par Hugging Face
-            // Format: https://router.huggingface.co/v1/
-            endpointUrl: "https://router.huggingface.co/v1"
-        });
+        // ✅ Utilisation de l'endpoint par défaut de la bibliothèque
+        // La bibliothèque @huggingface/inference gère automatiquement
+        // le routage vers le bon endpoint selon la tâche
+        hfClient = new InferenceClient(process.env.HF_API_TOKEN);
 
-        console.log("[chatbot] Client Hugging Face initialisé avec le nouvel endpoint router.huggingface.co/v1");
+        console.log("[chatbot] Client Hugging Face initialisé");
     }
 
     return hfClient;

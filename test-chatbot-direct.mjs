@@ -15,12 +15,10 @@ async function testChatbot() {
 
         console.log('✅ Token HF trouvé');
 
-        // Créer le client avec le nouvel endpoint
-        const client = new InferenceClient(process.env.HF_API_TOKEN, {
-            endpointUrl: "https://router.huggingface.co/v1"
-        });
+        // Créer le client (utilise l'endpoint par défaut)
+        const client = new InferenceClient(process.env.HF_API_TOKEN);
 
-        console.log('✅ Client initialisé avec router.huggingface.co/v1\n');
+        console.log('✅ Client initialisé\n');
 
         // Texte de test
         const testContent = "La photosynthèse est le processus par lequel les plantes convertissent la lumière solaire en énergie chimique.";
