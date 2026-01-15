@@ -195,168 +195,76 @@ function generateInvitationEmailHTML(data: InvitationEmailData): string {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        :root {
-            /* Palette de couleurs dynamique */
-            --primary-color: #99334c; /* Couleur principale Material */
-            --on-primary: #ffffff;
-            --surface-variant: rgba(153, 51, 76, 0.3);
-            --on-surface-variant: #49454f;
-            --surface: #ffffff;
-            --text-main: #1c1b1f;
-            --text-secondary: #49454f;
-            --outline: #79747e;
-            --bg-body: #f7f7f9;
-        }
-
-        body {
-            font-family: 'Poppins', 'Roboto', 'Segoe UI', Tahoma, sans-serif;
-            background-color: var(--bg-body);
-            color: var(--text-main);
-            margin: 0;
-            padding: 0;
-            line-height: 1.5;
-        }
-
-        .email-wrapper {
-            width: 100%;
-            padding: 40px 0;
-        }
-
-        .container {
-            max-width: 560px;
-            margin: 0 auto;
-            background-color: var(--surface);
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            border: 1px solid rgba(0,0,0,0.05);
-        }
-
-        .header {
-            padding: 32px 24px;
-            text-align: center;
-            background-color: var(--surface);
-        }
-
-        .header h1 {
-            font-size: 22px;
-            font-weight: 500;
-            margin: 0;
-            color: var(--text-main);
-            letter-spacing: 0.1px;
-        }
-
-        .content {
-            padding: 0 32px 32px 32px;
-        }
-
-        .content p {
-            font-size: 16px;
-            margin-bottom: 24px;
-            color: var(--text-secondary);
-        }
-
-        /* Card de détails du projet - Style Material Surface Variant */
-        .project-card {
-            background-color: var(--surface-variant);
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 32px;
-        }
-
-        .project-card-title {
-            display: block;
-            font-size: 14px;
-            color: var(--on-surface-variant);
-            margin-bottom: 4px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 700;
-        }
-
-        .project-card-value {
-            font-size: 18px;
-            font-weight: 500;
-            color: var(--text-main);
-        }
-
-        /* Bouton Material Design (Filled Button) */
-        .actions {
-            text-align: center;
-            margin: 32px 0;
-        }
-
-        .btn-primary {
-            display: inline-block;
-            background-color: var(--primary-color);
-            color: var(--on-primary) !important;
-            padding: 12px 24px;
-            border-radius: 100px; /* Style Pill Material M3 */
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 14px;
-            letter-spacing: 0.1px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-            transition: box-shadow 0.2s;
-        }
-
-        /* Footer */
-        .footer {
-            padding: 24px;
-            text-align: center;
-            font-size: 12px;
-            color: var(--outline);
-            border-top: 1px solid rgba(0,0,0,0.05);
-        }
-
-        .raw-link {
-            word-break: break-all;
-            color: var(--primary-color);
-            font-size: 11px;
-            margin-top: 16px;
-            display: block;
-        }
-    </style>
+    <title>Invitation de projet</title>
 </head>
-<body>
-    <div class="email-wrapper">
-        <div class="container">
-            <div class="header">
-                <h1>Invitation au projet</h1>
-            </div>
+<body style="margin: 0; padding: 0; background-color: #f7f7f9; font-family: 'Roboto', Helvetica, Arial, sans-serif;">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f7f7f9; padding: 40px 10px;">
+        <tr>
+            <td align="center">
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 560px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #eeeeee;">
+                    
+                    <tr>
+                        <td align="center" style="padding: 40px 30px 20px 30px;">
+                            <div style="background-color: #99334c; width: 48px; height: 48px; border-radius: 12px; margin-bottom: 20px; display: inline-block;">
+                                <span style="color: #ffffff; line-height: 48px; font-size: 24px;">📨</span>
+                            </div>
+                            <h1 style="margin: 0; color: #1c1b1f; font-size: 24px; font-weight: 500; letter-spacing: 0.2px;">
+                                Nouvelle invitation
+                            </h1>
+                        </td>
+                    </tr>
 
-            <div class="content">
-                <p>Bonjour <strong>${data.guestFirstname}</strong>,</p>
+                    <tr>
+                        <td style="padding: 0 40px 30px 40px; color: #49454f; font-size: 16px; line-height: 1.6;">
+                            <p style="margin: 0 0 20px 0;">Bonjour <strong>${data.guestFirstname}</strong>,</p>
+                            <p style="margin: 0 0 24px 0;">
+                                <strong>${data.hostFirstname}</strong> vous propose de rejoindre son équipe sur la plateforme XCCM.
+                            </p>
 
-                <p>
-                    <strong>${data.hostFirstname}</strong> vous invite à collaborer sur un nouveau projet. 
-                    Rejoignez l'équipe pour commencer à travailler ensemble.
-                </p>
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #E1C2C9; border-radius: 12px;">
+                                <tr>
+                                    <td style="padding: 24px;">
+                                        <span style="display: block; font-size: 11px; font-weight: 700; color: #49454f; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px;">Projet en attente</span>
+                                        <span style="display: block; font-size: 20px; font-weight: 600; color: #1c1b1f;">${data.projectName}</span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
 
-                <div class="project-card">
-                    <span class="project-card-title">Nom du projet</span>
-                    <span class="project-card-value">${data.projectName}</span>
-                </div>
+                    <tr>
+                        <td align="center" style="padding: 10px 40px 40px 40px;">
+                            <table border="0" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td align="center" bgcolor="#99334c" style="border-radius: 100px;">
+                                        <a href="${data.invitationLink}" target="_blank" style="display: inline-block; padding: 16px 40px; font-size: 14px; font-weight: 600; color: #ffffff; text-decoration: none; text-transform: uppercase; letter-spacing: 1px;">
+                                            Voir l'invitation
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="margin-top: 24px; font-size: 12px; color: #79747e; max-width: 300px; line-height: 1.4;">
+                                En rejoignant ce projet, vous pourrez collaborer et modifier les contenus partagés.
+                            </p>
+                        </td>
+                    </tr>
 
-                <div class="actions">
-                    <a href="${data.invitationLink}" class="btn-primary">
-                        VOIR L'INVITATION
-                    </a>
-                </div>
-
-                <p style="font-size: 13px; text-align: center;">
-                    Vous pourrez accepter ou décliner l'invitation depuis votre tableau de bord.
-                </p>
-            </div>
-
-            <div class="footer">
-                <p>© 2026 XCCM — Plateforme de gestion de contenu interculturel</p>
-                <p>Envoyé à ${data.guestEmail}</p>
-                <span class="raw-link">Lien direct : ${data.invitationLink}</span>
-            </div>
-        </div>
-    </div>
+                    <tr>
+                        <td style="padding: 30px; background-color: #fafafb; border-top: 1px solid #eeeeee; text-align: center; color: #79747e; font-size: 12px;">
+                            <p style="margin: 0 0 8px 0; font-weight: 600;">XCCM — Plateforme Interculturelle</p>
+                            <p style="margin: 0;">Cet e-mail est destiné à ${data.guestEmail}</p>
+                            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eeeeee;">
+                                <p style="font-size: 10px; color: #79747e; opacity: 0.7;">
+                                    Si le bouton ne fonctionne pas, copiez ce lien :<br>
+                                    <span style="color: #99334c;">${data.invitationLink}</span>
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>
     `;

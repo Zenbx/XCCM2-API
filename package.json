@@ -11,6 +11,7 @@
     "dev:https": "npm run gen:certs && HTTPS=true SSL_CRT_FILE=certs/localhost.crt SSL_KEY_FILE=certs/localhost.key next dev -p 443"
   },
   "dependencies": {
+    "@babel/runtime-corejs3": "^7.28.6",
     "@prisma/client": "^6.19.1",
     "@supabase/supabase-js": "^2.90.1",
     "@types/nodemailer": "^7.0.5",
