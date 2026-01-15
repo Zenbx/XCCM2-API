@@ -156,6 +156,7 @@ export async function sendContactToTeam(
 
         await transporter.sendMail({
             from: FROM_EMAIL,
+            to: email,
             replyTo: email,
             subject: `[CONTACT] ${subject} - De: ${name} (${email})`,
             html: `
