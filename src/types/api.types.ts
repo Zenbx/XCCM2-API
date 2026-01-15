@@ -54,3 +54,25 @@ export interface PaginatedResponse<T> {
     data: T[];
     meta: PaginationMeta;
 }
+
+/**
+ * Activité récente de l'utilisateur
+ */
+export interface RecentActivity {
+    type: "project" | "document" | "comment" | "like" | "invitation";
+    title: string;
+    description?: string;
+    timestamp: Date;
+}
+
+/**
+ * Statistiques utilisateur
+ */
+export interface UserStats {
+    totalCoursesCreated: number;
+    totalViewsOnPublishedCourses: number;
+    totalDownloadsOnPublishedCourses: number;
+    totalLikesOnPublishedCourses: number;
+    isActive: boolean;
+    recentActivities: RecentActivity[];
+}
