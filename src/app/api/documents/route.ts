@@ -38,39 +38,53 @@ import {
 } from "@/utils/api-response";
 
 /**
- * Handler GET pour récupérer tous les projets publiés
+ * Handler GET pour récupérer tous les documents publiés (vrais documents générés)
  * @param request - Requête Next.js
- * @returns Réponse JSON avec la liste des projets publiés
+ * @returns Réponse JSON avec la liste des documents publiés
  */
 export async function GET(request: NextRequest) {
     try {
-        console.log("📚 Récupération des projets publiés pour la bibliothèque");
+        console.log("📚 Récupération des documents publiés pour la bibliothèque");
 
-        const publishedProjects = await prisma.project.findMany({
-            where: {
-                is_published: true, // On ne sélectionne que les projets publiés
-            },
+        // Récupère les vrais documents de la table Document avec les infos du projet source
+        const publishedDocuments = await prisma.document.findMany({
             orderBy: {
-                updated_at: "desc", // Les plus récents d'abord
+                published_at: "desc", // Les plus récents d'abord
             },
-             // On inclut les données de l'auteur pour l'affichage
             include: {
-                owner: {
-                    select: {
-                        firstname: true,
-                        lastname: true,
-                    }
-                }
-            }
+                project: {
+                    include: {
+                        owner: {
+                            select: {
+                                firstname: true,
+                                lastname: true,
+                            },
+                        },
+                    },
+                },
+            },
         });
-        
-        // On transforme les données pour correspondre au format attendu par le front
-        const documents = publishedProjects.map(p => ({
-            ...p,
-            // Créer un champ auteur complet si ce n'est pas déjà fait
-            author: p.author || `${p.owner.firstname} ${p.owner.lastname}`.trim(), 
-        }));
 
+        // Transforme les données pour correspondre au format attendu par le front
+        const documents = publishedDocuments.map((doc) => ({
+            doc_id: doc.doc_id,
+            doc_name: doc.doc_name,
+            url_content: doc.url_content,
+            pages: doc.pages,
+            doc_size: doc.doc_size,
+            published_at: doc.published_at,
+            downloaded: doc.downloaded,
+            consult: doc.consult,
+            // Infos du projet source
+            pr_id: doc.project.pr_id,
+            pr_name: doc.project.pr_name,
+            description: doc.project.description,
+            category: doc.project.category,
+            level: doc.project.level,
+            tags: doc.project.tags,
+            author: doc.project.author ||
+                `${doc.project.owner.firstname} ${doc.project.owner.lastname}`.trim(),
+        }));
 
         return successResponse("Documents publiés récupérés avec succès", {
             documents,

@@ -219,6 +219,12 @@ export async function POST(request: NextRequest, context: RouteParams) {
             },
         });
 
+        // Marquer le projet comme publié
+        await prisma.project.update({
+            where: { pr_id: project.pr_id },
+            data: { is_published: true },
+        });
+
         console.log(`✅ Document publié avec succès: ${document.doc_id}`);
 
         return successResponse(
