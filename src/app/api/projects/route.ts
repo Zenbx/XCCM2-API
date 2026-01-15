@@ -124,6 +124,7 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { createProjectSchema } from "@/utils/validation";
+import { cacheService } from "@/services/cache-service";
 import {
     successResponse,
     errorResponse,
@@ -131,6 +132,9 @@ import {
     serverErrorResponse,
 } from "@/utils/api-response";
 import { ZodError } from "zod";
+
+const PROJECTS_CACHE_KEY_PREFIX = "projects:user:";
+const CACHE_TTL = 3600; // 1 heure
 
 /**
  * Handler POST pour créer un nouveau projet
@@ -186,6 +190,9 @@ export async function POST(request: NextRequest) {
             },
         });
 
+        // Invalider le cache des projets de l'utilisateur
+        await cacheService.del(`${PROJECTS_CACHE_KEY_PREFIX}${userId}`);
+
         return successResponse(
             "Projet créé avec succès",
             { project },
@@ -224,14 +231,25 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
     try {
-        // Récupère l'userId depuis le header (ajouté par le middleware)
+        // Récupère l'userId depuis le header
         const userId = request.headers.get("x-user-id");
 
         if (!userId) {
             return errorResponse("Utilisateur non authentifié", undefined, 401);
         }
 
-        // Récupère les projets créés par l'utilisateur
+        const cacheKey = `${PROJECTS_CACHE_KEY_PREFIX}${userId}`;
+
+        // 1. Essayer de récupérer depuis le cache
+        const cachedData = await cacheService.get<{ projects: any[], count: number }>(cacheKey);
+        if (cachedData) {
+            console.log(`⚡ Cache hit for user projects: ${userId}`);
+            return successResponse("Projets récupérés avec succès (cache)", cachedData);
+        }
+
+        console.log(`🐢 Cache miss for user projects: ${userId}`);
+
+        // 2. Récupère les projets créés par l'utilisateur
         const ownedProjects = await prisma.project.findMany({
             where: {
                 owner_id: userId,
@@ -270,10 +288,15 @@ export async function GET(request: NextRequest) {
         // Fusionner les listes
         const allProjects = [...ownedProjectsWithMeta, ...invitedProjectsWithMeta];
 
-        return successResponse("Projets récupérés avec succès", {
+        const result = {
             projects: allProjects,
             count: allProjects.length,
-        });
+        };
+
+        // 3. Mettre en cache
+        await cacheService.set(cacheKey, result, CACHE_TTL);
+
+        return successResponse("Projets récupérés avec succès", result);
     } catch (error) {
         console.error("Erreur lors de la récupération des projets:", error);
         return serverErrorResponse(

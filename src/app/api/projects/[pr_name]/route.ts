@@ -200,6 +200,7 @@ import {
     validationErrorResponse,
     serverErrorResponse,
 } from "@/utils/api-response";
+import { cacheService } from "@/services/cache-service";
 import { ZodError } from "zod";
 
 /**
@@ -396,6 +397,13 @@ export async function PATCH(
         });
 
         console.log("✅ Projet modifié avec succès");
+
+        // Invalider les caches
+        await cacheService.del(`projects:user:${userId}`);
+        if (updatedProject.is_published) {
+            await cacheService.del("library:all_documents");
+        }
+
         return successResponse("Projet modifié avec succès", {
             project: updatedProject,
         });
@@ -474,6 +482,13 @@ export async function DELETE(
         });
 
         console.log("✅ Projet supprimé avec succès");
+
+        // Invalider les caches
+        await cacheService.del(`projects:user:${userId}`);
+        if (existingProject.is_published) {
+            await cacheService.del("library:all_documents");
+        }
+
         return successResponse("Projet supprimé avec succès");
     } catch (error) {
         console.error("Erreur lors de la suppression du projet:", error);

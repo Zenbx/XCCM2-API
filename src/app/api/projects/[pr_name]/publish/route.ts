@@ -78,6 +78,7 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { getProjectForExport, publishDocument } from "@/lib/document-service";
+import { cacheService } from "@/services/cache-service";
 import {
     successResponse,
     errorResponse,
@@ -226,6 +227,9 @@ export async function POST(request: NextRequest, context: RouteParams) {
         });
 
         console.log(`✅ Document publié avec succès: ${document.doc_id}`);
+
+        // 5. Invalider le cache de la bibliothèque
+        await cacheService.del("library:all_documents");
 
         return successResponse(
             "Document publié avec succès",

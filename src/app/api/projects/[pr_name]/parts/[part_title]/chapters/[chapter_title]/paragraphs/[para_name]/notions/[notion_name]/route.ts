@@ -189,6 +189,8 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { updateNotionSchema } from "@/utils/validation";
+import { realtimeService } from "@/services/realtime-service";
+import { cacheService } from "@/services/cache-service";
 import {
     successResponse,
     errorResponse,
@@ -525,6 +527,22 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
             );
         }
          */
+
+        // 📡 Broadcast temps réel
+        await realtimeService.broadcastStructureChange(
+            pr_name,
+            'NOTION_UPDATED',
+            {
+                notionId: updatedNotion.notion_id,
+                notionName: updatedNotion.notion_name,
+                partTitle: part_title,
+                chapterTitle: chapter_title,
+                paraName: para_name
+            }
+        );
+
+        // 🗑️ Invalider le cache de la structure
+        await cacheService.delByPattern(`project:structure:${pr_name}:*`);
 
         return successResponse("Notion modifiée avec succès", {
             notion: updatedNotion,
