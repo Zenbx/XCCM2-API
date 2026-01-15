@@ -140,7 +140,7 @@ function buildPedagogicalPrompt(content: string, style: RephraseStyle): {
  * Tu peux le rendre configurable via une variable d'environnement
  * (par ex. HF_MODEL_ID) si besoin.
  */
-const DEFAULT_HF_MODEL = "mistralai/Mixtral-8x7B-Instruct-v0.1";
+const DEFAULT_HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.2";
 
 /**
  * Reformule le contenu d'une Notion via un modèle LLM hébergé sur Hugging Face.
@@ -165,32 +165,33 @@ export async function rephraseNotion(
 
     try {
         console.log("[chatbot] RephraseNotion called with style:", options.style);
-
+    
         const model = process.env.HF_MODEL_ID || DEFAULT_HF_MODEL;
-
-        // Utilise l'endpoint de chat si disponible (modèles de type instruct/chat)
-        const response = await hf.chatCompletion({
+        
+        // 🔧 Construction du prompt complet pour textGeneration
+        const fullPrompt = `<s>[INST] ${system}
+    
+    ${user} [/INST]`;
+    
+        console.log("🔑 HF_API_TOKEN exists:", !!process.env.HF_API_TOKEN);
+        console.log("🤖 Model:", model);
+        console.log("📨 Calling HuggingFace API...");
+    
+        // ✅ Utilise textGeneration au lieu de chatCompletion
+        const response = await hf.textGeneration({
             model,
-            messages: [
-                {
-                    role: "system",
-                    content: system,
-                },
-                {
-                    role: "user",
-                    content: user,
-                },
-            ],
-            max_tokens: 512,
-            temperature: 0.4,
+            inputs: fullPrompt,
+            parameters: {
+                max_new_tokens: 512,
+                temperature: 0.4,
+                return_full_text: false, // Important : ne retourne que la génération
+            },
         });
-
-        const choice = response.choices?.[0];
-        const text =
-            choice && typeof choice.message?.content === "string"
-                ? choice.message.content.trim()
-                : "";
-
+    
+        console.log("✅ HuggingFace response received");
+    
+        const text = response.generated_text?.trim() || "";
+    
         if (!text) {
             console.error(
                 "[chatbot] Réponse vide ou invalide du modèle Hugging Face",
@@ -198,19 +199,21 @@ export async function rephraseNotion(
             );
             throw new Error("Empty response from Hugging Face model");
         }
-
+    
         return text;
-    } catch (error) {
+        
+    } catch (error: any) {
         console.error("[chatbot] Erreur lors de la reformulation de la Notion :", error);
-
+        console.error("Status:", error.status || error.statusCode);
+        console.error("Message:", error.message);
+        
         // On re-lance l'erreur pour que la route API décide du message à renvoyer
         if (error instanceof Error) {
             throw new Error(
                 `Failed to rephrase notion content: ${error.message}`
             );
         }
-
+    
         throw new Error("Failed to rephrase notion content: unknown error");
     }
 }
-

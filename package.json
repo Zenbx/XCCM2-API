@@ -11,7 +11,7 @@
     "dev:https": "npm run gen:certs && HTTPS=true SSL_CRT_FILE=certs/localhost.crt SSL_KEY_FILE=certs/localhost.key next dev -p 443"
   },
   "dependencies": {
-    "@huggingface/inference": "^4.13.7",
+    "@huggingface/inference": "^4.13.8",
     "@prisma/client": "^6.19.1",
     "@supabase/supabase-js": "^2.90.1",
     "@types/nodemailer": "^7.0.5",
