@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
         // Validation avec Zod
         const validatedData = createProjectSchema.parse(body);
 
-        // Vérifie si un projet avec ce nom existe déjà pour cet utilisateur
+        // Vérifie si un projet avec ce nom existe déjà pour cet utilisateur (Sensible à la casse)
         const existingProject = await prisma.project.findUnique({
             where: {
                 pr_name_owner_id: {
@@ -163,11 +163,19 @@ export async function POST(request: NextRequest) {
         });
 
         if (existingProject) {
-            return errorResponse(
-                "Un projet avec ce nom existe déjà",
-                undefined,
-                409
-            );
+            // Si l'utilisateur a demandé d'écraser, on supprime l'ancien projet
+            if (validatedData.overwrite) {
+                console.log("♻️ Écrasement du projet existant:", existingProject.pr_id);
+                await prisma.project.delete({
+                    where: { pr_id: existingProject.pr_id }
+                });
+            } else {
+                return errorResponse(
+                    "Un projet avec ce nom existe déjà",
+                    undefined,
+                    409
+                );
+            }
         }
 
         // Création du projet

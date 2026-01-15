@@ -194,13 +194,21 @@ export async function GET(request: NextRequest, context: RouteParams) {
         const part_title = decodeURIComponent(encodedPartTitle);
         const chapter_title = decodeURIComponent(encodedChapterTitle);
 
-        // Vérifie que le projet existe
-        const project = await prisma.project.findUnique({
+        // Vérifie que le projet existe et que l'utilisateur y a accès
+        const project = await prisma.project.findFirst({
             where: {
-                pr_name_owner_id: {
-                    pr_name,
-                    owner_id: userId,
-                },
+                pr_name: pr_name,
+                OR: [
+                    { owner_id: userId },
+                    {
+                        invitations: {
+                            some: {
+                                guest_id: userId,
+                                invitation_state: "Accepted"
+                            }
+                        }
+                    }
+                ]
             },
         });
 
@@ -270,12 +278,21 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
         const part_title = decodeURIComponent(encodedPartTitle);
         const currentTitle = decodeURIComponent(encodedChapterTitle);
 
-        const project = await prisma.project.findUnique({
+        // Vérifie que le projet existe et que l'utilisateur y a accès
+        const project = await prisma.project.findFirst({
             where: {
-                pr_name_owner_id: {
-                    pr_name,
-                    owner_id: userId,
-                },
+                pr_name: pr_name,
+                OR: [
+                    { owner_id: userId },
+                    {
+                        invitations: {
+                            some: {
+                                guest_id: userId,
+                                invitation_state: "Accepted"
+                            }
+                        }
+                    }
+                ]
             },
         });
 
@@ -353,7 +370,7 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
                 // Réponse 409
                 return errorResponse(
                     "Le nouveau numéro est illogique car votre partie a moins de "
-                    +validatedData.chapter_number + " chapitres",
+                    + validatedData.chapter_number + " chapitres",
                     undefined,
                     409
                 );
@@ -373,7 +390,7 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
         });
 
         await renumberChaptersAfterUpdate(existingChapter.parent_part, existingChapter.chapter_number,
-            validatedData.chapter_number? validatedData.chapter_number: existingChapter.chapter_number,
+            validatedData.chapter_number ? validatedData.chapter_number : existingChapter.chapter_number,
             existingChapter.chapter_id);
 
         // Mise à jour du chapitre
@@ -439,12 +456,21 @@ export async function DELETE(request: NextRequest, context: RouteParams) {
         const part_title = decodeURIComponent(encodedPartTitle);
         const chapter_title = decodeURIComponent(encodedChapterTitle);
 
-        const project = await prisma.project.findUnique({
+        // Vérifie que le projet existe et que l'utilisateur y a accès
+        const project = await prisma.project.findFirst({
             where: {
-                pr_name_owner_id: {
-                    pr_name,
-                    owner_id: userId,
-                },
+                pr_name: pr_name,
+                OR: [
+                    { owner_id: userId },
+                    {
+                        invitations: {
+                            some: {
+                                guest_id: userId,
+                                invitation_state: "Accepted"
+                            }
+                        }
+                    }
+                ]
             },
         });
 

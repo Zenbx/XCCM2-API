@@ -28,28 +28,33 @@ function generatePrintableHTML(project: ProjectForExport): string {
 
     const css = `
         <style>
+            @media print {
+                @page {
+                    margin: 0;
+                    size: A4;
+                }
+                body {
+                    margin: 0;
+                    -webkit-print-color-adjust: exact;
+                }
+            }
             * {
                 margin: 0;
                 padding: 0;
                 box-sizing: border-box;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
             }
             body {
                 font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-                background-color: rgb(243, 244, 246);
+                background-color: #ffffff;
                 color: rgb(17, 24, 39);
                 line-height: 1.5;
             }
             .page {
-                background-color: rgb(255, 255, 255);
-                border-radius: 16px;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-                border: 1px solid rgb(229, 231, 235);
-                padding: 48px;
-                margin: 32px;
+                padding: 2.5cm;
                 min-height: 297mm;
+                position: relative;
                 page-break-after: always;
+                background: white;
             }
             .title-page {
                 display: flex;
@@ -171,7 +176,15 @@ function generatePrintableHTML(project: ProjectForExport): string {
                 color: rgb(55, 65, 81);
                 margin-bottom: 32px;
             }
-            /* ... (etc., coller tous les styles) ... */
+            .notion-content p { margin-bottom: 16px; }
+            .notion-content ul, .notion-content ol { margin-left: 24px; margin-bottom: 16px; }
+            .notion-content li { margin-bottom: 8px; }
+            .notion-content blockquote { border-left: 4px solid #eee; padding-left: 16px; font-style: italic; color: #666; }
+            
+            .toc-page { padding: 2.5cm; }
+            .toc-title { font-size: 28px; font-weight: 700; color: rgb(153, 51, 76); margin-bottom: 32px; border-bottom: 2px solid rgba(153, 51, 76, 0.1); padding-bottom: 16px; }
+            .toc-item-part { font-size: 18px; font-weight: 700; margin-top: 24px; color: rgb(17, 24, 39); }
+            .toc-item-chapter { font-size: 16px; margin-left: 24px; margin-top: 8px; color: rgb(75, 85, 99); }
         </style>
     `;
 
@@ -186,30 +199,46 @@ function generatePrintableHTML(project: ProjectForExport): string {
             <div class="title-footer">
                 <div class="icon-circle">📄</div>
                 <p class="footer-text">Généré par XCCM 2</p>
-                <p class="footer-date">${new Date().toLocaleDateString()}</p>
+                <p class="footer-date">${new Date().toLocaleDateString('fr-FR')}</p>
             </div>
         </div>
     `;
 
     // Table des matières
     if (parts.length > 0) {
-         bodyContent += `<div class="page toc-page"> ... </div>`; // (Logique de la TOC ici)
+        bodyContent += `
+            <div class="page toc-page text-gray-900">
+                <h2 class="toc-title">Table des Matières</h2>
+                <div>
+                    ${parts.map((part, pIdx) => `
+                        <div class="toc-item-part">
+                            Partie ${pIdx + 1}: ${part.part_title}
+                        </div>
+                        ${part.chapters?.map((chap) => `
+                            <div class="toc-item-chapter">
+                                ${chap.chapter_title}
+                            </div>
+                        `).join('') || ''}
+                    `).join('')}
+                </div>
+            </div>
+        `;
     }
 
     // Contenu
     parts.forEach((part, partIndex) => {
-        bodyContent += `<div class="page" id="part-${partIndex}">`;
+        bodyContent += `<div class="page">`;
         bodyContent += `
             <div class="part-header">
                 <span class="part-label">Partie ${part.part_number}</span>
-                <h2 style="${getCssFromStyleConfig(styles?.part?.title)}">${part.part_title}</h2>
+                <h2>${part.part_title}</h2>
             </div>
         `;
         if (part.part_intro) {
-            bodyContent += `<div class="part-intro" style="${getCssFromStyleConfig(styles?.part?.intro)}">${part.part_intro}</div>`;
+            bodyContent += `<div class="part-intro">${part.part_intro}</div>`;
         }
-        part.chapters?.forEach((chapter, chapIndex) => {
-            bodyContent += `<h3 style="${getCssFromStyleConfig(styles?.chapter?.title)}"><span class="chapter-number">#</span>${chapter.chapter_title}</h3>`;
+        part.chapters?.forEach((chapter) => {
+            bodyContent += `<h3><span class="chapter-number">#</span>${chapter.chapter_title}</h3>`;
             chapter.paragraphs?.forEach((para: any) => {
                 bodyContent += `<h4>${para.para_name}</h4>`;
                 para.notions?.forEach((notion: any) => {

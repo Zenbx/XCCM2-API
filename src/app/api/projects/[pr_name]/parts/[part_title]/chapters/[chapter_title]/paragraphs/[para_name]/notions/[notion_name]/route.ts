@@ -237,13 +237,21 @@ export async function GET(request: NextRequest, context: RouteParams) {
         const para_name = decodeURIComponent(encodedParaName);
         const notion_name = decodeURIComponent(encodedNotionName);
 
-        // Vérifie que le projet existe
-        const project = await prisma.project.findUnique({
+        // Vérifie que le projet existe et que l'utilisateur y a accès
+        const project = await prisma.project.findFirst({
             where: {
-                pr_name_owner_id: {
-                    pr_name,
-                    owner_id: userId,
-                },
+                pr_name: pr_name,
+                OR: [
+                    { owner_id: userId },
+                    {
+                        invitations: {
+                            some: {
+                                guest_id: userId,
+                                invitation_state: "Accepted"
+                            }
+                        }
+                    }
+                ]
             },
         });
 
@@ -345,12 +353,21 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
         const para_name = decodeURIComponent(encodedParaName);
         const currentName = decodeURIComponent(encodedNotionName);
 
-        const project = await prisma.project.findUnique({
+        // Vérifie que le projet existe et que l'utilisateur y a accès
+        const project = await prisma.project.findFirst({
             where: {
-                pr_name_owner_id: {
-                    pr_name,
-                    owner_id: userId,
-                },
+                pr_name: pr_name,
+                OR: [
+                    { owner_id: userId },
+                    {
+                        invitations: {
+                            some: {
+                                guest_id: userId,
+                                invitation_state: "Accepted"
+                            }
+                        }
+                    }
+                ]
             },
         });
 
@@ -474,7 +491,7 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
 
         await renumberNotionsAfterUpdate(existingNotion.parent_para,
             existingNotion.notion_number,
-            validatedData.notion_number?validatedData.notion_number:existingNotion.notion_number,
+            validatedData.notion_number ? validatedData.notion_number : existingNotion.notion_number,
             existingNotion.notion_id);
 
         // Mise à jour de la notion
@@ -561,13 +578,21 @@ export async function DELETE(request: NextRequest, context: RouteParams) {
         const para_name = decodeURIComponent(encodedParaName);
         const notion_name = decodeURIComponent(encodedNotionName);
 
-        // Vérifie que le projet existe
-        const project = await prisma.project.findUnique({
+        // Vérifie que le projet existe et que l'utilisateur y a accès
+        const project = await prisma.project.findFirst({
             where: {
-                pr_name_owner_id: {
-                    pr_name,
-                    owner_id: userId,
-                },
+                pr_name: pr_name,
+                OR: [
+                    { owner_id: userId },
+                    {
+                        invitations: {
+                            some: {
+                                guest_id: userId,
+                                invitation_state: "Accepted"
+                            }
+                        }
+                    }
+                ]
             },
         });
 

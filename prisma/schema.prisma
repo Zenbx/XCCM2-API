@@ -217,6 +217,11 @@ enum InvitationState {
   Rejected
 }
 
+enum InvitationRole {
+  EDITOR
+  VIEWER
+}
+
 model Invitation {
   // Prisma a besoin d'un ID technique pour MongoDB même pour les tables de liaison
   id String @id @default(auto()) @map("_id") @db.ObjectId
@@ -228,6 +233,7 @@ model Invitation {
 
   // Champs de données
   invitation_state InvitationState @default(Pending)
+  role             InvitationRole  @default(EDITOR)
   invitation_token String          @unique
 
   invited_at  DateTime  @default(now())
