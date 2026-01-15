@@ -75,8 +75,8 @@ export const createProjectSchema = z.object({
         .max(100, "Le nom du projet ne peut pas dépasser 100 caractères")
         .trim()
         .regex(
-            /^[a-zA-Z0-9\s\-_àâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ]+$/,
-            "Le nom du projet ne peut contenir que des lettres, chiffres, espaces, tirets et underscores"
+            /^[a-zA-Z0-9\s\.\-_àâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ]+$/,
+            "Le nom du projet ne peut contenir que des lettres, chiffres, espaces, points, tirets et underscores"
         ),
 });
 
@@ -90,8 +90,8 @@ export const updateProjectSchema = z.object({
         .max(100, "Le nom du projet ne peut pas dépasser 100 caractères")
         .trim()
         .regex(
-            /^[a-zA-Z0-9\s\-_àâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ]+$/,
-            "Le nom du projet ne peut contenir que des lettres, chiffres, espaces, tirets et underscores"
+            /^[a-zA-Z0-9\s\.\-_àâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ]+$/,
+            "Le nom du projet ne peut contenir que des lettres, chiffres, espaces, points, tirets et underscores"
         )
         .optional(),
 
@@ -374,13 +374,13 @@ export type ContactInput = z.infer<typeof contactSchema>;
 // ==========================================
 // SCHÉMAS DE VALIDATION POUR INVITATIONS
 // ==========================================
- export const sendInvitationSchema = z.object({
-     guestEmail: z
-         .string()
-         .min(1, "L'email est requis")
-         .email("Format d'email invalide")
-         .toLowerCase()
-         .trim(),
- });
+export const sendInvitationSchema = z.object({
+    guestEmail: z
+        .string()
+        .min(1, "L'email est requis")
+        .email("Format d'email invalide")
+        .toLowerCase()
+        .trim(),
+});
 
- export type SendInvitationInput = z.infer<typeof sendInvitationSchema>;
+export type SendInvitationInput = z.infer<typeof sendInvitationSchema>;
