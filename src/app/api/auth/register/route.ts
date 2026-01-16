@@ -121,19 +121,28 @@ import { ZodError } from "zod";
  */
 export async function POST(request: NextRequest) {
     try {
-        // Parse le body de la requête
-        const body = await request.json();
-        console.log(body);
-        //Comparaison des mots de passe
+        const formData = await request.formData();
+
+        // Extract fields
+        const body = {
+            email: formData.get("email"),
+            password: formData.get("password"),
+            password_confirmation: formData.get("password_confirmation"),
+            lastname: formData.get("lastname"),
+            firstname: formData.get("firstname"),
+            org: formData.get("org") || null,
+            occupation: formData.get("occupation") || null,
+        };
+
+        const profilePictureFile = formData.get("profile_picture") as File | null;
+
+        // Validation
         if (body.password !== body.password_confirmation) {
-            //return { error: "Passwords do not match" };
             return errorResponse("Les mots de passe ne correspondent pas", undefined, 400);
         }
 
-        // Validation avec Zod
         const validatedData = registerSchema.parse(body);
 
-        // Vérifie si l'email existe déjà
         const existingUser = await prisma.user.findUnique({
             where: { email: validatedData.email },
         });
@@ -142,10 +151,25 @@ export async function POST(request: NextRequest) {
             return errorResponse("Cet email est déjà utilisé", undefined, 409);
         }
 
-        // Hash du mot de passe
+        // Handle File Upload
+        let profilePicturePath = null;
+        if (profilePictureFile && profilePictureFile.size > 0) {
+            // Validate file type
+            if (!profilePictureFile.type.startsWith("image/")) {
+                return errorResponse("Le fichier doit être une image", undefined, 400);
+            }
+            // Validate size (e.g., 5MB)
+            if (profilePictureFile.size > 5 * 1024 * 1024) {
+                return errorResponse("L'image ne doit pas dépasser 5 Mo", undefined, 400);
+            }
+
+            // Save file
+            const { saveProfilePicture } = await import("@/lib/storage");
+            profilePicturePath = await saveProfilePicture(profilePictureFile);
+        }
+
         const hashedPassword = await hashPassword(validatedData.password);
 
-        // Création de l'utilisateur
         const user = await prisma.user.create({
             data: {
                 email: validatedData.email,
@@ -154,26 +178,19 @@ export async function POST(request: NextRequest) {
                 firstname: validatedData.firstname,
                 org: validatedData.org || null,
                 occupation: validatedData.occupation || null,
+                profile_picture: profilePicturePath,
             },
         });
 
-        // Convertit en utilisateur public (sans le mot de passe)
         const publicUser = toPublicUser(user);
-
-        // Génère le token JWT
         const token = await generateToken(publicUser);
 
-        // Retourne la réponse de succès
         return successResponse(
             "Utilisateur créé avec succès",
-            {
-                user: publicUser,
-                token,
-            },
+            { user: publicUser, token },
             201
         );
     } catch (error) {
-        // Gestion des erreurs de validation Zod
         if (error instanceof ZodError) {
             const errors: Record<string, string[]> = {};
             error.issues.forEach((err) => {
@@ -185,8 +202,6 @@ export async function POST(request: NextRequest) {
             });
             return validationErrorResponse(errors);
         }
-
-        // Erreur serveur générique
         console.error("Erreur lors de l'inscription:", error);
         return serverErrorResponse(
             "Une erreur est survenue lors de l'inscription",

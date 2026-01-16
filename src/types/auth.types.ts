@@ -30,6 +30,7 @@ export interface PublicUser {
     firstname: string;
     org?: string | null;
     occupation?: string | null;
+    profile_picture?: string | null;
 }
 
 /**

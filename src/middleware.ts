@@ -35,6 +35,9 @@ const PUBLIC_ROUTES: string[] = [
     "/docs",
     "/api/documents",           // Bibliothèque publique (GET liste + GET par ID)
     "/api/invitations/",        // Consultation invitation par token (GET)
+    "/api/users/",              // Profils publics
+    "/api/creators/top",        // Top créateurs
+    "/api/community/feed",      // Flux communautaire
 ];
 
 /**

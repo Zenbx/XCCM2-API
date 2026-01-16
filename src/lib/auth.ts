@@ -139,6 +139,7 @@ export function toPublicUser(user: {
     firstname: string;
     org: string | null;
     occupation: string | null;
+    profile_picture: string | null;
     created_at: Date;
     updated_at: Date;
 }): PublicUser {
@@ -149,5 +150,6 @@ export function toPublicUser(user: {
         firstname: user.firstname,
         org: user.org,
         occupation: user.occupation,
+        profile_picture: user.profile_picture,
     };
 }

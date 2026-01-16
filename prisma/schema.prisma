@@ -26,8 +26,10 @@ model User {
   password  String // Sera stocké sous forme de hachage (bcrypt)
 
   // Informations professionnelles (optionnelles avec le "?")
-  org        String?
-  occupation String?
+  org             String?
+  occupation      String?
+  profile_picture String?
+  role            String   @default("user")
 
   // Métadonnées recommandées pour le cycle de vie des données
   created_at DateTime @default(now())
@@ -38,6 +40,7 @@ model User {
   receivedInvitations Invitation[] @relation("GuestInvitations")
   sentInvitations     Invitation[] @relation("HostInvitations")
   likes               Like[]
+  views               View[]
 
   // Nouvelles relations pour les granules
   parts      Part[]
@@ -120,6 +123,7 @@ model Document {
 
   //A document has zero, one or more likes
   likes Like[]
+  views View[]
 
   // Contraintes d'unicités
   @@unique([doc_name, pr_source])
@@ -267,6 +271,20 @@ model Like {
   // Garantit qu'un utilisateur ne peut liker un document qu'une seule fois
   @@unique([liker_id, doc_id])
   @@map("likes")
+}
+
+model View {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  viewer_id String   @db.ObjectId
+  doc_id    String   @db.ObjectId
+  viewed_at DateTime @default(now())
+
+  viewer    User     @relation(fields: [viewer_id], references: [user_id])
+  document  Document @relation(fields: [doc_id], references: [doc_id], onDelete: Cascade)
+
+  // Unique constraint ensures one view per user per document
+  @@unique([viewer_id, doc_id])
+  @@map("views")
 }
 
 model Template {

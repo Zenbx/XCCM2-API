@@ -153,21 +153,16 @@ export async function POST(request: NextRequest, context: RouteParams) {
 
         // Parse et valide le body
         const body = await request.json();
-        const validationResult = publishSchema.safeParse(body);
+        const validationResult = z.object({
+            format: z.enum(["pdf", "docx"] as const),
+            doc_name: z.string().optional(),
+        }).safeParse(body);
 
         if (!validationResult.success) {
-            const errors: Record<string, string[]> = {};
-            validationResult.error.issues.forEach((issue) => {
-                const field = issue.path.join(".");
-                if (!errors[field]) {
-                    errors[field] = [];
-                }
-                errors[field].push(issue.message);
-            });
-            return validationErrorResponse(errors);
+            return errorResponse("Données invalides", JSON.stringify(validationResult.error.format()), 400);
         }
 
-        const { format } = validationResult.data;
+        const { format, doc_name } = validationResult.data;
 
         // Vérifie que le projet existe et appartient à l'utilisateur
         const project = await prisma.project.findUnique({
@@ -199,7 +194,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
             );
         }
 
-        console.log(`📤 Publication du document ${format.toUpperCase()} pour le projet: ${pr_name}`);
+        console.log(`📤 Publication du document ${format.toUpperCase()} pour le projet: ${pr_name} (Nom: ${doc_name || pr_name})`);
 
         // Publie le document sur Supabase
         const publishResult = await publishDocument(projectData, format);
@@ -210,7 +205,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
         // Crée l'entrée dans la table Document
         const document = await prisma.document.create({
             data: {
-                doc_name: pr_name, // Utilise le nom du projet au lieu du nom de fichier généré
+                doc_name: doc_name || pr_name, // Utilise le nom fourni ou le nom du projet
                 pages: estimatedPages,
                 doc_size: publishResult.size,
                 url_content: publishResult.url,
