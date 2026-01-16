@@ -31,8 +31,21 @@ export async function GET(
         const { pr_name: encodedName } = await context.params;
         const pr_name = decodeURIComponent(encodedName);
 
-        const project = await prisma.project.findUnique({
-            where: { pr_name_owner_id: { pr_name, owner_id: userId } },
+        const project = await prisma.project.findFirst({
+            where: {
+                pr_name,
+                OR: [
+                    { owner_id: userId },
+                    {
+                        invitations: {
+                            some: {
+                                guest_id: userId,
+                                invitation_state: "Accepted"
+                            }
+                        }
+                    }
+                ]
+            }
         });
 
         if (!project) return notFoundResponse("Projet non trouvé");
@@ -72,8 +85,21 @@ export async function POST(
         const { pr_name: encodedName } = await context.params;
         const pr_name = decodeURIComponent(encodedName);
 
-        const project = await prisma.project.findUnique({
-            where: { pr_name_owner_id: { pr_name, owner_id: userId } },
+        const project = await prisma.project.findFirst({
+            where: {
+                pr_name,
+                OR: [
+                    { owner_id: userId },
+                    {
+                        invitations: {
+                            some: {
+                                guest_id: userId,
+                                invitation_state: "Accepted"
+                            }
+                        }
+                    }
+                ]
+            }
         });
 
         if (!project) return notFoundResponse("Projet non trouvé");

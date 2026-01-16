@@ -83,8 +83,12 @@ export async function middleware(request: NextRequest) {
 
     /**
      * 4️⃣ Laisse passer les routes publiques sans authentification
+     * Sauf les actions spécifiques sur les invitations qui nécessitent un userId (accept, decline, revoke)
      */
-    if (PUBLIC_ROUTES.some((route: string) => pathname.startsWith(route))) {
+    const isPublicRoute = PUBLIC_ROUTES.some((route: string) => pathname.startsWith(route));
+    const isInvitationAction = pathname.includes("/accept") || pathname.includes("/decline") || pathname.includes("/revoke");
+
+    if (isPublicRoute && !isInvitationAction) {
         return response;
     }
 

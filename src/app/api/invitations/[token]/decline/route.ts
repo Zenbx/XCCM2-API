@@ -9,14 +9,29 @@ import {
     errorResponse,
     serverErrorResponse,
 } from "@/utils/api-response";
-import { declineInvitation } from "@/utils/invitation-helpers";
+import { declineInvitation, getInvitationByToken } from "@/utils/invitation-helpers";
 
 export async function PATCH(
     request: NextRequest,
     { params }: { params: Promise<{ token: string }> }
 ) {
     try {
+        const userId = request.headers.get("x-user-id");
+        if (!userId) {
+            return errorResponse("Non authentifié", undefined, 401);
+        }
+
         const { token } = await params;
+
+        // Vérifier que l'invitation appartient bien à cet utilisateur
+        const invitationCheck = await getInvitationByToken(token);
+        if (!invitationCheck) {
+            return errorResponse("Invitation non trouvée", undefined, 404);
+        }
+
+        if (invitationCheck.guest_id !== userId) {
+            return errorResponse("Cette invitation ne vous est pas destinée", undefined, 403);
+        }
 
         // Refuser l'invitation
         const invitation = await declineInvitation(token);
