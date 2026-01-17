@@ -19,6 +19,7 @@ export interface ProjectForExport {
         email: string;
     };
     created_at: Date;
+    styles?: any;
     parts: PartForExport[];
 }
 
@@ -87,6 +88,7 @@ export type PrismaProjectWithRelations = {
     owner_id: string;
     created_at: Date;
     updated_at: Date;
+    styles: any;
     owner: {
         firstname: string;
         lastname: string;

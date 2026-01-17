@@ -123,23 +123,43 @@ export async function generateDOCX(project: ProjectForExport): Promise<Buffer> {
 
             // Paragraphes
             chapter.paragraphs.forEach((paragraph) => {
-                // PAS DE TITRE DE PARAGRAPHE - On crée directement le contenu
-
-                // Collecter toutes les notions d'un même paragraphe dans un seul paragraphe Word
-                const paragraphTextRuns: TextRun[] = [];
-
-                paragraph.notions.forEach((notion, notionIndex) => {
-                    // Ajouter un espace entre les notions (sauf pour la première)
-                    if (notionIndex > 0) {
-                        paragraphTextRuns.push(
+                // Titre du paragraphe
+                content.push(
+                    new Paragraph({
+                        children: [
                             new TextRun({
-                                text: " ",
+                                text: paragraph.para_name,
+                                bold: true,
+                                size: 28, // 14pt
+                            }),
+                        ],
+                        spacing: { before: 200, after: 100 },
+                    })
+                );
+
+                // Notions
+                paragraph.notions.forEach((notion) => {
+                    // Nom de la notion (si présent)
+                    if (notion.notion_name) {
+                        content.push(
+                            new Paragraph({
+                                children: [
+                                    new TextRun({
+                                        text: notion.notion_name,
+                                        bold: true,
+                                        italics: true,
+                                        color: "666666",
+                                        size: 24, // 12pt
+                                    }),
+                                ],
+                                spacing: { before: 100, after: 50 },
                             })
                         );
                     }
 
-                    // Contenu de la notion avec styles
+                    // Contenu de la notion
                     const segments = parseMarkdownToSegments(notion.notion_content);
+                    const paragraphTextRuns: TextRun[] = [];
 
                     segments.forEach((segment) => {
                         paragraphTextRuns.push(
@@ -152,16 +172,15 @@ export async function generateDOCX(project: ProjectForExport): Promise<Buffer> {
                             })
                         );
                     });
-                });
 
-                // Créer UN SEUL paragraphe Word avec tout le contenu du paragraphe logique
-                content.push(
-                    new Paragraph({
-                        children: paragraphTextRuns,
-                        spacing: { after: 200, before: 100 },
-                        alignment: AlignmentType.JUSTIFIED,
-                    })
-                );
+                    content.push(
+                        new Paragraph({
+                            children: paragraphTextRuns,
+                            spacing: { after: 200 },
+                            alignment: AlignmentType.JUSTIFIED,
+                        })
+                    );
+                });
             });
         });
     });

@@ -151,13 +151,21 @@ export async function POST(request: NextRequest, context: RouteParams) {
         const { pr_name: encodedName } = await context.params;
         const pr_name = decodeURIComponent(encodedName);
 
-        // Vérifie que le projet existe et appartient à l'utilisateur
-        const project = await prisma.project.findUnique({
+        // Vérifie que le projet existe et que l'utilisateur y a accès
+        const project = await prisma.project.findFirst({
             where: {
-                pr_name_owner_id: {
-                    pr_name,
-                    owner_id: userId,
-                },
+                pr_name: pr_name,
+                OR: [
+                    { owner_id: userId },
+                    {
+                        invitations: {
+                            some: {
+                                guest_id: userId,
+                                invitation_state: "Accepted"
+                            }
+                        }
+                    }
+                ]
             },
         });
 
@@ -216,7 +224,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
         });
 
         //Le numéro de la nouvelle partie doit etre le successeur de countParts
-        if(validatedData.part_number !== countParts + 1) {
+        if (validatedData.part_number !== countParts + 1) {
             return errorResponse(
                 "Votre projet ne compte que " + countParts
                 + " parties du cou votre numéro de partie est illogique",
@@ -276,13 +284,21 @@ export async function GET(request: NextRequest, context: RouteParams) {
         const { pr_name: encodedName } = await context.params;
         const pr_name = decodeURIComponent(encodedName);
 
-        // Vérifie que le projet existe et appartient à l'utilisateur
-        const project = await prisma.project.findUnique({
+        // Vérifie que le projet existe et que l'utilisateur y a accès
+        const project = await prisma.project.findFirst({
             where: {
-                pr_name_owner_id: {
-                    pr_name,
-                    owner_id: userId,
-                },
+                pr_name: pr_name,
+                OR: [
+                    { owner_id: userId },
+                    {
+                        invitations: {
+                            some: {
+                                guest_id: userId,
+                                invitation_state: "Accepted"
+                            }
+                        }
+                    }
+                ]
             },
         });
 

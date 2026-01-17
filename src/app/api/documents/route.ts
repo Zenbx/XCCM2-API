@@ -17,10 +17,14 @@
 
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
+import { cacheService } from "@/services/cache-service";
 import {
     successResponse,
     serverErrorResponse,
 } from "@/utils/api-response";
+
+const DOCUMENTS_CACHE_KEY = "library:all_documents";
+const CACHE_TTL = 1800; // 30 minutes
 
 /**
  * Handler GET pour lister tous les documents publiés
@@ -31,7 +35,16 @@ export async function GET(_request: NextRequest) {
     try {
         console.log("📚 Récupération de tous les documents publiés");
 
-        // Récupérer tous les documents avec les infos du projet
+        // 1. Essayer de récupérer le résultat depuis le cache Redis
+        const cachedData = await cacheService.get<{ documents: any[], count: number }>(DOCUMENTS_CACHE_KEY);
+        if (cachedData) {
+            console.log("⚡ Cache hit for library documents");
+            return successResponse("Documents récupérés avec succès (cache)", cachedData);
+        }
+
+        console.log("🐢 Cache miss, querying MongoDB...");
+
+        // 2. Récupérer tous les documents avec les infos du projet
         const documents = await prisma.document.findMany({
             orderBy: { published_at: "desc" },
             include: {
@@ -48,7 +61,7 @@ export async function GET(_request: NextRequest) {
             },
         });
 
-        // Formater les documents pour le frontend
+        // 3. Formater les documents pour le frontend
         const formattedDocuments = documents.map((doc) => ({
             doc_id: doc.doc_id,
             doc_name: doc.doc_name,
@@ -67,10 +80,15 @@ export async function GET(_request: NextRequest) {
             tags: doc.project.tags,
         }));
 
-        return successResponse("Documents récupérés avec succès", {
+        const result = {
             documents: formattedDocuments,
             count: formattedDocuments.length,
-        });
+        };
+
+        // 4. Mettre en cache pour les prochaines requêtes
+        await cacheService.set(DOCUMENTS_CACHE_KEY, result, CACHE_TTL);
+
+        return successResponse("Documents récupérés avec succès", result);
 
     } catch (error) {
         console.error("Erreur lors de la récupération des documents:", error);

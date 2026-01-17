@@ -36,10 +36,21 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
         const { pr_name: encodedName } = await context.params;
         const pr_name = decodeURIComponent(encodedName);
 
-        // Verifier que le projet appartient a l'utilisateur
-        const project = await prisma.project.findUnique({
+        // Verifier que le projet appartient a l'utilisateur ou qu'il y est invite
+        const project = await prisma.project.findFirst({
             where: {
-                pr_name_owner_id: { pr_name, owner_id: userId },
+                pr_name: pr_name,
+                OR: [
+                    { owner_id: userId },
+                    {
+                        invitations: {
+                            some: {
+                                guest_id: userId,
+                                invitation_state: "Accepted"
+                            }
+                        }
+                    }
+                ]
             },
         });
 

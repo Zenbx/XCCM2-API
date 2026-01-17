@@ -43,8 +43,24 @@ export async function GET(
             return errorResponse("Projet non trouvé ou vous n'êtes pas autorisé à y accéder", undefined, 404);
         }
 
-        // Récupérer les invitations en attente
-        const invitations = await getPendingInvitationsByProject(project.pr_id);
+        // Récupérer TOUTES les invitations liées au projet
+        const invitations = await prisma.invitation.findMany({
+            where: {
+                pr_id: project.pr_id,
+            },
+            include: {
+                guest: {
+                    select: {
+                        email: true,
+                        firstname: true,
+                        lastname: true,
+                    },
+                },
+            },
+            orderBy: {
+                invited_at: "desc",
+            },
+        });
 
         return successResponse(
             "Invitations récupérées avec succès",
@@ -52,8 +68,9 @@ export async function GET(
                 invitations: invitations.map((inv: any) => ({
                     id: inv.id,
                     guest_email: inv.guest.email,
-                    guest_name: `${inv.guest.firstname} ${inv.guest.lastname}`,
+                    guest_name: `${inv.guest.firstname || ''} ${inv.guest.lastname || ''}`.trim() || inv.guest.email,
                     status: inv.invitation_state,
+                    role: inv.role,
                     invited_at: inv.invited_at,
                     response_at: inv.response_at,
                 })),

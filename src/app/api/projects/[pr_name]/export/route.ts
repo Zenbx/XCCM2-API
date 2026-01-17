@@ -100,13 +100,21 @@ export async function GET(request: NextRequest, context: RouteParams) {
             return errorResponse("Format invalide. Utilisez 'pdf' ou 'docx'", undefined, 400);
         }
 
-        // Vérifie que le projet existe et appartient à l'utilisateur
-        const project = await prisma.project.findUnique({
+        // Vérifie que le projet existe et appartient à l'utilisateur ou qu'il y est invité
+        const project = await prisma.project.findFirst({
             where: {
-                pr_name_owner_id: {
-                    pr_name,
-                    owner_id: userId,
-                },
+                pr_name,
+                OR: [
+                    { owner_id: userId },
+                    {
+                        invitations: {
+                            some: {
+                                guest_id: userId,
+                                status: "Accepted",
+                            },
+                        },
+                    },
+                ],
             },
         });
 

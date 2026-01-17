@@ -200,6 +200,7 @@ import {
     validationErrorResponse,
     serverErrorResponse,
 } from "@/utils/api-response";
+import { cacheService } from "@/services/cache-service";
 import { ZodError } from "zod";
 
 /**
@@ -235,13 +236,22 @@ export async function GET(
 
         console.log("🔍 Recherche du projet:", { pr_name, userId });
 
-        // Recherche le projet
-        const project = await prisma.project.findUnique({
+        // Recherche le projet par son nom ET soit il appartient à l'utilisateur,
+        // soit l'utilisateur y est invité (Accepté).
+        const project = await prisma.project.findFirst({
             where: {
-                pr_name_owner_id: {
-                    pr_name,
-                    owner_id: userId,
-                },
+                pr_name: pr_name,
+                OR: [
+                    { owner_id: userId },
+                    {
+                        invitations: {
+                            some: {
+                                guest_id: userId,
+                                invitation_state: "Accepted"
+                            }
+                        }
+                    }
+                ]
             },
             include: {
                 owner: {
@@ -260,8 +270,34 @@ export async function GET(
             return notFoundResponse("Projet non trouvé");
         }
 
-        console.log("✅ Projet trouvé:", project.pr_id);
-        return successResponse("Projet récupéré avec succès", { project });
+        // Vérifier les droits d'accès
+        const isOwner = project.owner_id === userId;
+
+        // Si pas propriétaire, vérifier l'invitation
+        let isInvited = false;
+        if (!isOwner) {
+            const invitation = await prisma.invitation.findFirst({
+                where: {
+                    pr_id: project.pr_id,
+                    guest_id: userId,
+                    invitation_state: "Accepted"
+                }
+            });
+            isInvited = !!invitation;
+        }
+
+        if (!isOwner && !isInvited) {
+            console.log("❌ Accès refusé pour cet utilisateur");
+            return errorResponse("Accès refusé au projet", undefined, 403);
+        }
+
+        console.log("✅ Accès accordé:", project.pr_id);
+        return successResponse("Projet récupéré avec succès", {
+            project: {
+                ...project,
+                user_role: isOwner ? 'OWNER' : 'GUEST' // Optionnel: pour aider le front
+            }
+        });
     } catch (error) {
         console.error("Erreur lors de la récupération du projet:", error);
         return serverErrorResponse(
@@ -361,6 +397,13 @@ export async function PATCH(
         });
 
         console.log("✅ Projet modifié avec succès");
+
+        // Invalider les caches
+        await cacheService.del(`projects:user:${userId}`);
+        if (updatedProject.is_published) {
+            await cacheService.del("library:all_documents");
+        }
+
         return successResponse("Projet modifié avec succès", {
             project: updatedProject,
         });
@@ -439,6 +482,13 @@ export async function DELETE(
         });
 
         console.log("✅ Projet supprimé avec succès");
+
+        // Invalider les caches
+        await cacheService.del(`projects:user:${userId}`);
+        if (existingProject.is_published) {
+            await cacheService.del("library:all_documents");
+        }
+
         return successResponse("Projet supprimé avec succès");
     } catch (error) {
         console.error("Erreur lors de la suppression du projet:", error);

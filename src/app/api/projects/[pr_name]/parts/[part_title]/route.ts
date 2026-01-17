@@ -170,13 +170,21 @@ export async function GET(request: NextRequest, context: RouteParams) {
         const pr_name = decodeURIComponent(encodedPrName);
         const part_title = decodeURIComponent(encodedPartTitle);
 
-        // Vérifie que le projet existe
-        const project = await prisma.project.findUnique({
+        // Vérifie que le projet existe et que l'utilisateur y a accès
+        const project = await prisma.project.findFirst({
             where: {
-                pr_name_owner_id: {
-                    pr_name,
-                    owner_id: userId,
-                },
+                pr_name: pr_name,
+                OR: [
+                    { owner_id: userId },
+                    {
+                        invitations: {
+                            some: {
+                                guest_id: userId,
+                                invitation_state: "Accepted"
+                            }
+                        }
+                    }
+                ]
             },
         });
 
@@ -227,12 +235,21 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
         const pr_name = decodeURIComponent(encodedPrName);
         const currentTitle = decodeURIComponent(encodedPartTitle);
 
-        const project = await prisma.project.findUnique({
+        // Vérifie que le projet existe et que l'utilisateur y a accès
+        const project = await prisma.project.findFirst({
             where: {
-                pr_name_owner_id: {
-                    pr_name,
-                    owner_id: userId,
-                },
+                pr_name: pr_name,
+                OR: [
+                    { owner_id: userId },
+                    {
+                        invitations: {
+                            some: {
+                                guest_id: userId,
+                                invitation_state: "Accepted"
+                            }
+                        }
+                    }
+                ]
             },
         });
 
@@ -318,7 +335,7 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
 
         //Décalage de numéros des autres parties
         await renumberPartsAfterUpdate(existingPart.parent_pr, existingPart.part_number,
-            validatedData.part_number? validatedData.part_number: existingPart.part_number,
+            validatedData.part_number ? validatedData.part_number : existingPart.part_number,
             existingPart.part_id);
 
         // Mise à jour de la partie
@@ -382,12 +399,21 @@ export async function DELETE(request: NextRequest, context: RouteParams) {
         const pr_name = decodeURIComponent(encodedPrName);
         const part_title = decodeURIComponent(encodedPartTitle);
 
-        const project = await prisma.project.findUnique({
+        // Vérifie que le projet existe et que l'utilisateur y a accès
+        const project = await prisma.project.findFirst({
             where: {
-                pr_name_owner_id: {
-                    pr_name,
-                    owner_id: userId,
-                },
+                pr_name: pr_name,
+                OR: [
+                    { owner_id: userId },
+                    {
+                        invitations: {
+                            some: {
+                                guest_id: userId,
+                                invitation_state: "Accepted"
+                            }
+                        }
+                    }
+                ]
             },
         });
 

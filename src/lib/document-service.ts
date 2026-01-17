@@ -11,6 +11,7 @@ import type {
     ProjectForExport,
     DocumentFormat,
     PublishResult,
+    PrismaProjectWithRelations,
 } from "@/types/document.types";
 import { PassThrough } from "stream";
 
@@ -24,10 +25,20 @@ export async function getProjectForExport(
     projectId: string,
     userId: string
 ): Promise<ProjectForExport | null> {
-    const project = await prisma.project.findFirst({
+    const project = (await prisma.project.findFirst({
         where: {
             pr_id: projectId,
-            owner_id: userId,
+            OR: [
+                { owner_id: userId },
+                {
+                    invitations: {
+                        some: {
+                            guest_id: userId,
+                            status: "Accepted",
+                        },
+                    },
+                },
+            ],
         },
         include: {
             owner: {
@@ -64,7 +75,7 @@ export async function getProjectForExport(
                 },
             },
         },
-    });
+    })) as PrismaProjectWithRelations | null;
 
     if (!project) return null;
 
@@ -73,6 +84,7 @@ export async function getProjectForExport(
         pr_name: project.pr_name,
         owner: project.owner,
         created_at: project.created_at,
+        styles: project.styles,
         parts: project.parts.map((part) => ({
             part_number: part.part_number,
             part_title: part.part_title,
