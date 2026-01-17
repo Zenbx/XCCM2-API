@@ -1,12 +1,14 @@
 /**
  * @fileoverview Middleware Next.js global
  * - Gère le CORS (preflight OPTIONS + headers)
+ * - Protège les routes API avec JWT
  * - Laisse passer les routes publiques
- * - NextAuth gère l'authentification automatiquement
+ * - Injecte l'userId dans les headers (x-user-id)
  */
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { verifyToken, extractTokenFromHeader } from "@/lib/auth";
 
 /**
  * Récupère les headers CORS dynamiquement pour autoriser l'origine de la requête
@@ -29,19 +31,22 @@ const PUBLIC_ROUTES: string[] = [
     "/api/auth",                 // NextAuth routes (signin, signout, callback, etc)
     "/api/auth/login",
     "/api/auth/register",
+    "/api/auth/oauth/google",      // OAuth Google initiation
+    "/api/auth/oauth/microsoft",   // OAuth Microsoft initiation
+    "/api/auth/callback/google",   // OAuth Google callback
+    "/api/auth/callback/microsoft", // OAuth Microsoft callback
+    "/api/auth/oauth/providers",   // List providers
     "/api/health",
     "/api/docs",
     "/docs",
-<<<<<<< HEAD
-    "/api/documents",            // Bibliothèque publique (GET liste + GET par ID)
-    "/api/invitations/",         // Consultation invitation par token (GET)
-=======
     "/api/documents",           // Bibliothèque publique (GET liste + GET par ID)
     "/api/invitations/",        // Consultation invitation par token (GET)
     "/api/users/",              // Profils publics
     "/api/creators/top",        // Top créateurs
     "/api/community/feed",      // Flux communautaire
->>>>>>> ffdfb7c2060214897b2b5f20f577692f57a5aed6
+    "/api/contact",
+    "/api/newsletter/subscribe",
+
 ];
 
 /**
@@ -86,23 +91,69 @@ export async function middleware(request: NextRequest) {
     });
 
     /**
-<<<<<<< HEAD
-     * 4️⃣ Laisse passer les routes publiques et NextAuth sans authentification
-=======
      * 4️⃣ Laisse passer les routes publiques sans authentification
      * Sauf les actions spécifiques sur les invitations qui nécessitent un userId (accept, decline, revoke)
->>>>>>> ffdfb7c2060214897b2b5f20f577692f57a5aed6
      */
-    const isPublicRoute = PUBLIC_ROUTES.some((route: string) => pathname.startsWith(route));
-    const isInvitationAction = pathname.includes("/accept") || pathname.includes("/decline") || pathname.includes("/revoke");
-
-    if (isPublicRoute && !isInvitationAction) {
+    if (PUBLIC_ROUTES.some((route: string) => pathname.startsWith(route))) {
         return response;
     }
 
     /**
-     * 5️⃣ Les autres routes API sont protégées par NextAuth automatiquement
-     * NextAuth gère la session via le cookie de session
+     * 5️⃣ Protection des routes API avec JWT
+     */
+    if (pathname.startsWith("/api/")) {
+        const authHeader = request.headers.get("Authorization");
+        const token = extractTokenFromHeader(authHeader);
+
+        if (!token) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    message: "Token manquant. Authentification requise.",
+                },
+                { status: 401, headers: corsHeaders }
+            );
+        }
+
+        // Vérifie le token JWT
+        const payload = await verifyToken(token);
+
+        if (!payload) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    message: "Token invalide ou expiré.",
+                },
+                { status: 401, headers: corsHeaders }
+            );
+        }
+
+        /**
+         * 6️⃣ Ajoute l'userId dans les headers
+         * Accessible dans les routes via request.headers.get('x-user-id')
+         */
+        const requestHeaders = new Headers(request.headers);
+
+        // Type assertion pour s'assurer que payload a une propriété userId
+        const userId = (payload as any).userId;
+        requestHeaders.set("x-user-id", String(userId));
+
+        const responseWithHeaders = NextResponse.next({
+            request: {
+                headers: requestHeaders,
+            },
+        });
+
+        // Appliquer CORS à cette nouvelle réponse
+        Object.entries(corsHeaders).forEach(([key, value]) => {
+            responseWithHeaders.headers.set(key, value);
+        });
+
+        return responseWithHeaders;
+    }
+
+    /**
+     * 7️⃣ Laisse passer les autres routes (pages web)
      */
     return response;
 }

@@ -1,6 +1,14 @@
-import type { NextAuthOptions } from "next-auth";
+import type { NextAuthOptions, DefaultSession } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import AzureADProvider from "next-auth/providers/azure-ad";
+
+declare module "next-auth" {
+  interface Session {
+    user: DefaultSession["user"] & {
+      id?: string;
+    };
+  }
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -40,7 +48,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user, account, profile }) {
       if (user) {
-        token.sub = user.id || user.email;
+        token.sub = user.id || user.email || undefined;
       }
       
       if (profile?.name) {
