@@ -10,12 +10,31 @@ declare module "next-auth" {
   }
 }
 
+// Validation des secrets requis
+if (!process.env.NEXTAUTH_SECRET) {
+  throw new Error(
+    "NEXTAUTH_SECRET n'est pas défini. Configurez votre fichier .env."
+  );
+}
+
+if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+  console.warn(
+    "⚠️ OAuth Google non configuré. Les variables GOOGLE_CLIENT_ID et GOOGLE_CLIENT_SECRET sont manquantes."
+  );
+}
+
+if (!process.env.MICROSOFT_CLIENT_ID || !process.env.MICROSOFT_CLIENT_SECRET) {
+  console.warn(
+    "⚠️ OAuth Microsoft non configuré. Les variables MICROSOFT_CLIENT_ID et MICROSOFT_CLIENT_SECRET sont manquantes."
+  );
+}
+
 export const authOptions: NextAuthOptions = {
-  secret: process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET,
+  secret: process.env.NEXTAUTH_SECRET,
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
           scope: "openid email profile",
@@ -23,10 +42,11 @@ export const authOptions: NextAuthOptions = {
       },
     }),
     AzureADProvider({
-      clientId: process.env.MICROSOFT_CLIENT_ID || "",
-      clientSecret: process.env.MICROSOFT_CLIENT_SECRET || "",
+      clientId: process.env.MICROSOFT_CLIENT_ID!,
+      clientSecret: process.env.MICROSOFT_CLIENT_SECRET!,
       tenantId: "common",
-      allowDangerousEmailAccountLinking: true,
+      // SÉCURITÉ: allowDangerousEmailAccountLinking retiré
+      // Cette option permettait l'account takeover et a été supprimée
       authorization: {
         params: {
           prompt: "select_account", // Force le sélecteur de compte Microsoft
@@ -34,7 +54,11 @@ export const authOptions: NextAuthOptions = {
         },
       },
     }),
-  ],
+  ].filter(provider => {
+    // Filtrer les providers dont les credentials ne sont pas configurés
+    const config = provider.options as { clientId?: string };
+    return config.clientId !== undefined;
+  }),
   pages: {
     signIn: "/auth/signin",
     error: "/auth/error",

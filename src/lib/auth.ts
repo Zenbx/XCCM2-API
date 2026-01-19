@@ -14,8 +14,16 @@ const SALT_ROUNDS = 10;
 
 /**
  * Secret JWT depuis les variables d'environnement
+ * IMPORTANT: JWT_SECRET doit être défini dans .env
  */
-const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_change_me";
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+    throw new Error(
+        "JWT_SECRET n'est pas défini dans les variables d'environnement. " +
+        "Veuillez configurer votre fichier .env avec un secret sécurisé."
+    );
+}
 
 /**
  * Durée de validité du JWT (par défaut 7 jours)
@@ -77,6 +85,7 @@ export async function verifyPassword(
 
 /**
  * Génère un token JWT pour un utilisateur avec jose
+ * Inclut userId, email, role et profile_picture pour éviter les requêtes DB
  * @param user - Utilisateur pour lequel générer le token
  * @returns Promise du token JWT signé
  */
@@ -84,6 +93,8 @@ export async function generateToken(user: PublicUser): Promise<string> {
     const payload: JWTPayload = {
         userId: user.user_id,
         email: user.email,
+        role: user.role || 'user', // Défaut: 'user' si non spécifié
+        profile_picture: user.profile_picture || null,
     };
 
     const expiresInSeconds = parseDuration(JWT_EXPIRES_IN);
@@ -140,6 +151,7 @@ export function toPublicUser(user: {
     org: string | null;
     occupation: string | null;
     profile_picture: string | null;
+    role?: string;
     created_at: Date;
     updated_at: Date;
 }): PublicUser {
@@ -151,5 +163,6 @@ export function toPublicUser(user: {
         org: user.org,
         occupation: user.occupation,
         profile_picture: user.profile_picture,
+        role: user.role || 'user',
     };
 }

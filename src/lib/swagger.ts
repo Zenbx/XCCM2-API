@@ -81,6 +81,10 @@ const swaggerOptions: swaggerJSDoc.Options = {
                 name: "Documents",
                 description: "Gestion des documents PDF (téléchargement, génération)",
             },
+            {
+                name: "Invitations",
+                description: "Gestion des invitations de collaboration",
+            },
         ],
         // CONFIGURATION D'AUTHENTIFICATION GLOBALE
         security: [
@@ -367,41 +371,6 @@ const swaggerOptions: swaggerJSDoc.Options = {
                 },
             },
         },
-        // Remplacer la section tags pour y ajouter Projects :
-        tags: [
-            {
-                name: "Authentication",
-                description: "Endpoints d'authentification et gestion de session",
-            },
-            {
-                name: "Projects",
-                description: "Gestion des projets collaboratifs",
-            },
-            {
-                name: "Health",
-                description: "Endpoints de santé de l'API",
-            },
-            {
-                name: "Parts",
-                description: "Gestion des parties (granules de niveau 1)",
-            },
-            {
-                name: "Chapters",
-                description: "Gestion des chapitres (granules de niveau 2)",
-            },
-            {
-                name: "Paragraphs",
-                description: "Gestion des paragraphes (granules de niveau 3)",
-            },
-            {
-                name: "Notions",
-                description: "Gestion des notions (granules de niveau 4)",
-            },
-            {
-                name: "Invitations",
-                description: "Gestion des invitations de collaboration",
-            },
-        ],
     },
     apis: ["./src/app/api/**/*.ts"], // Chemins vers les fichiers contenant les annotations JSDoc
 };

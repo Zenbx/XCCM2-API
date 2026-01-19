@@ -52,6 +52,7 @@ model User {
   // Templates créés par l'utilisateur
   templates  Template[]
   vaultItems VaultItem[]
+  marketplaceItems MarketplaceItem[]
 
   @@map("users") // Nom de la collection dans notre base MongoDB
 }
@@ -326,4 +327,23 @@ model VaultItem {
   owner    User   @relation(fields: [owner_id], references: [user_id], onDelete: Cascade)
 
   @@map("vault_items")
+}
+
+model MarketplaceItem {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  type            String   // part, chapter, paragraph, notion
+  title           String
+  description     String?
+  price           Float    @default(0) // Prix en euros (0 = gratuit)
+  content         String?  // Contenu ou structure JSON
+  tags            String[] // Tags pour la recherche
+  category        String?
+  downloads       Int      @default(0)
+  rating          Float?   // Note moyenne sur 5
+  published_at    DateTime @default(now())
+
+  seller_id String @db.ObjectId
+  seller    User   @relation(fields: [seller_id], references: [user_id], onDelete: Cascade)
+
+  @@map("marketplace_items")
 }

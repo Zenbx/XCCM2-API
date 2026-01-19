@@ -455,7 +455,7 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
             }
         }
 
-        // Vérifie si le numéro nom existe déjà (si changement de numéro)
+        // Vérifie si le numéro existe déjà (si changement de numéro)
         if (
             validatedData.notion_number &&
             validatedData.notion_number !== existingNotion.notion_number
@@ -469,10 +469,11 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
                 },
             });
 
-            if (!duplicateNumber) {
+            // CORRECTION: Si le numéro existe DÉJÀ, c'est une erreur (logique inversée corrigée)
+            if (duplicateNumber) {
                 return errorResponse(
-                    "Le numéro est illogique car votre chapitre comporte moins de "
-                    + validatedData.notion_number + " notions",
+                    "Le numéro de notion " + validatedData.notion_number +
+                    " est déjà utilisé dans ce paragraphe",
                     undefined,
                     409
                 );

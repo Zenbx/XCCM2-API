@@ -412,10 +412,11 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
                 },
             });
 
-            if (!duplicateNumber) {
+            // CORRECTION: Si le numéro existe DÉJÀ, c'est une erreur (logique inversée corrigée)
+            if (duplicateNumber) {
                 return errorResponse(
-                    "Votre chapitre a moins de " + validatedData.para_number
-                    + " paragraphes donc le nouveau numéro est illogique",
+                    "Le numéro de paragraphe " + validatedData.para_number +
+                    " est déjà utilisé dans ce chapitre",
                     undefined,
                     409
                 );

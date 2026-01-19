@@ -367,11 +367,11 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
                 },
             });
 
-            if (!duplicateNumber) {
-                // Réponse 409
+            // CORRECTION: Si le numéro existe DÉJÀ, c'est une erreur (logique inversée corrigée)
+            if (duplicateNumber) {
                 return errorResponse(
-                    "Le nouveau numéro est illogique car votre partie a moins de "
-                    + validatedData.chapter_number + " chapitres",
+                    "Le numéro de chapitre " + validatedData.chapter_number +
+                    " est déjà utilisé dans cette partie",
                     undefined,
                     409
                 );

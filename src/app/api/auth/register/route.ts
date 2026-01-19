@@ -121,20 +121,31 @@ import { ZodError } from "zod";
  */
 export async function POST(request: NextRequest) {
     try {
-        const formData = await request.formData();
+        // Détection du type de contenu (JSON ou FormData)
+        const contentType = request.headers.get("content-type") || "";
+        const isFormData = contentType.includes("multipart/form-data");
 
-        // Extract fields
-        const body = {
-            email: formData.get("email"),
-            password: formData.get("password"),
-            password_confirmation: formData.get("password_confirmation"),
-            lastname: formData.get("lastname"),
-            firstname: formData.get("firstname"),
-            org: formData.get("org") || null,
-            occupation: formData.get("occupation") || null,
-        };
+        let body: any;
+        let profilePictureFile: File | null = null;
 
-        const profilePictureFile = formData.get("profile_picture") as File | null;
+        if (isFormData) {
+            // Traitement FormData (avec fichier)
+            const formData = await request.formData();
+            body = {
+                email: formData.get("email"),
+                password: formData.get("password"),
+                password_confirmation: formData.get("password_confirmation"),
+                lastname: formData.get("lastname"),
+                firstname: formData.get("firstname"),
+                org: formData.get("org") || null,
+                occupation: formData.get("occupation") || null,
+            };
+            profilePictureFile = formData.get("profile_picture") as File | null;
+        } else {
+            // Traitement JSON (sans fichier)
+            body = await request.json();
+            profilePictureFile = null;
+        }
 
         // Validation
         if (body.password !== body.password_confirmation) {

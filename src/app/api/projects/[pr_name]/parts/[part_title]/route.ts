@@ -311,11 +311,11 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
                 },
             });
 
-            if (!duplicateNumber) {
-                // réponse 409
+            // CORRECTION: Si le numéro existe DÉJÀ, c'est une erreur (logique inversée corrigée)
+            if (duplicateNumber) {
                 return errorResponse(
-                    "Votre projet a moins de " + validatedData.part_number +
-                    " parties! Votre nouveau numéro est illogique",
+                    "Le numéro de partie " + validatedData.part_number +
+                    " est déjà utilisé dans ce projet",
                     undefined,
                     409
                 );

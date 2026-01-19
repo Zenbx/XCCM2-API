@@ -151,6 +151,8 @@ export async function POST(request: NextRequest, context: RouteParams) {
         const { pr_name: encodedName } = await context.params;
         const pr_name = decodeURIComponent(encodedName);
 
+        console.log('🔍 DEBUG Publication:', { pr_name, userId, encodedName });
+
         // Parse et valide le body
         const body = await request.json();
         const validationResult = z.object({
@@ -164,18 +166,36 @@ export async function POST(request: NextRequest, context: RouteParams) {
 
         const { format, doc_name } = validationResult.data;
 
-        // Vérifie que le projet existe et appartient à l'utilisateur
-        const project = await prisma.project.findUnique({
+        // Vérifie que le projet existe et appartient à l'utilisateur (Robust Search)
+        // Tentative 1: Recherche basée sur pr_name (peut échouer si sensibilités différentes)
+        let project = await prisma.project.findFirst({
             where: {
-                pr_name_owner_id: {
-                    pr_name,
-                    owner_id: userId,
-                },
+                pr_name: pr_name,
+                owner_id: userId,
             },
         });
 
+        // Si non trouvé, tentative de récupération intelligente (insensible à la casse/accents)
         if (!project) {
-            return notFoundResponse("Projet non trouvé");
+            console.log(`⚠️ Projet '${pr_name}' non trouvé. Recherche approximative...`);
+
+            const userProjects = await prisma.project.findMany({
+                where: { owner_id: userId },
+                select: { pr_id: true, pr_name: true }
+            });
+
+            // Normalisation NFC + Lowercase
+            const targetName = pr_name.normalize('NFC').toLowerCase();
+            const found = userProjects.find(p => p.pr_name.normalize('NFC').toLowerCase() === targetName);
+
+            if (found) {
+                console.log(`✅ Projet retrouvé via normalisation: '${pr_name}' -> '${found.pr_name}'`);
+                project = await prisma.project.findUnique({ where: { pr_id: found.pr_id } });
+            } else {
+                const availableNames = userProjects.map(p => p.pr_name).join(', ');
+                console.error(`❌ Projet introuvable. Disponibles: [${availableNames}]`);
+                return notFoundResponse(`Projet "${pr_name}" non trouvé. Vos projets disponibles : [${availableNames}]`);
+            }
         }
 
         // Récupère la structure complète du projet
