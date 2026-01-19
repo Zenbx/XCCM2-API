@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { SocraticReviewer } from '../../../../../ai/socraticReviewer';
+import { SocraticReviewer } from '../../../../ai/socraticReviewer';
 
 export async function POST(req: Request) {
     try {
