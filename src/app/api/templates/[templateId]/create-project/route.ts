@@ -5,22 +5,25 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getUserFromToken } from '@/lib/auth';
+import { extractTokenFromHeader, verifyToken } from '@/lib/auth';
 
 export async function POST(
     req: NextRequest,
-    { params }: { params: { templateId: string } }
+    { params }: { params: Promise<{ templateId: string }> }
 ) {
     try {
-        const user = getUserFromToken(req);
-        if (!user) {
+        const authHeader = req.headers.get("Authorization");
+        const token = extractTokenFromHeader(authHeader);
+        const payload = token ? await verifyToken(token) : null;
+
+        if (!payload) {
             return NextResponse.json(
                 { success: false, message: 'Non authentifié' },
                 { status: 401 }
             );
         }
 
-        const { templateId } = params;
+        const { templateId } = await params;
         const body = await req.json();
         const { pr_name } = body;
 
@@ -53,7 +56,7 @@ export async function POST(
         const project = await prisma.project.create({
             data: {
                 pr_name,
-                owner_id: user.user_id,
+                owner_id: payload.userId,
                 description: template.description,
                 category: template.category,
             },
@@ -70,7 +73,7 @@ export async function POST(
                         part_number: partData.part_number,
                         part_intro: partData.part_intro || '',
                         parent_pr: project.pr_id,
-                        owner_id: user.user_id,
+                        owner_id: payload.userId,
                     },
                 });
 
@@ -81,7 +84,7 @@ export async function POST(
                                 chapter_title: chapterData.chapter_title,
                                 chapter_number: chapterData.chapter_number,
                                 parent_part: part.part_id,
-                                owner_id: user.user_id,
+                                owner_id: payload.userId,
                             },
                         });
 
@@ -92,7 +95,7 @@ export async function POST(
                                         para_name: paragraphData.para_name,
                                         para_number: paragraphData.para_number,
                                         parent_chapter: chapter.chapter_id,
-                                        owner_id: user.user_id,
+                                        owner_id: payload.userId,
                                     },
                                 });
 
@@ -104,7 +107,7 @@ export async function POST(
                                                 notion_number: notionData.notion_number,
                                                 notion_content: notionData.notion_content || '',
                                                 parent_para: paragraph.para_id,
-                                                owner_id: user.user_id,
+                                                owner_id: payload.userId,
                                             },
                                         });
                                     }

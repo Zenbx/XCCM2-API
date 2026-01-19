@@ -1,28 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-import { verifyJwtToken } from "@/lib/auth"; // Assuming auth lib exists
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/prisma";
+import { verifyToken } from "@/lib/auth";
 
 export async function POST(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id: docId } = await params;
         const authHeader = req.headers.get("authorization");
         if (!authHeader || !authHeader.startsWith("Bearer ")) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
         const token = authHeader.split(" ")[1];
-        const payload = await verifyJwtToken(token);
+        const payload = await verifyToken(token);
 
         if (!payload) {
             return NextResponse.json({ error: "Invalid token" }, { status: 401 });
         }
 
-        const userId = payload.id; // Adjust based on payload structure
-        const docId = params.id;
+        const userId = payload.userId; // Adjust based on payload structure
 
         if (!docId) {
             return NextResponse.json({ error: "Missing document ID" }, { status: 400 });
@@ -62,7 +60,5 @@ export async function POST(
             { error: "Internal Server Error" },
             { status: 500 }
         );
-    } finally {
-        await prisma.$disconnect();
     }
 }

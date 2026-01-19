@@ -7,7 +7,6 @@
  */
 
 import { NextRequest } from "next/server";
-import { jwtVerify } from "jose";
 import prisma from "@/lib/prisma";
 import {
     successResponse,
@@ -15,29 +14,17 @@ import {
     serverErrorResponse,
 } from "@/utils/api-response";
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret");
-
 export async function DELETE(
     request: NextRequest,
     { params }: { params: Promise<{ token: string }> }
 ) {
     try {
-        // Vérifier l'authentification
-        const authHeader = request.headers.get("authorization");
-        if (!authHeader?.startsWith("Bearer ")) {
+        // Récupérer l'userId depuis le header (injecté par le middleware)
+        const userId = request.headers.get("x-user-id");
+        if (!userId) {
             return errorResponse("Non authentifié", undefined, 401);
         }
 
-        const token = authHeader.substring(7);
-        let decoded;
-        try {
-            const { payload } = await jwtVerify(token, JWT_SECRET);
-            decoded = payload;
-        } catch {
-            return errorResponse("Token invalide", undefined, 401);
-        }
-
-        const userId = decoded.userId as string;
         const { token: invitationToken } = await params;
 
         // Récupérer l'invitation

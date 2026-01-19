@@ -11,6 +11,7 @@ declare module "next-auth" {
 }
 
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET,
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
@@ -50,13 +51,13 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.sub = user.id || user.email || undefined;
       }
-      
+
       if (profile?.name) {
         const nameParts = (profile.name as string).split(" ");
         token.given_name = nameParts[0];
         token.family_name = nameParts.slice(1).join(" ");
       }
-      
+
       // Si c'est une première connexion OAuth, récupérer l'utilisateur depuis la BD
       if (account && account.provider && !user) {
         try {
@@ -71,7 +72,7 @@ export const authOptions: NextAuthOptions = {
           // Silently fail - token will use fallback
         }
       }
-      
+
       return token;
     },
     async session({ session, token }) {
@@ -85,11 +86,11 @@ export const authOptions: NextAuthOptions = {
       if (profile && user?.email) {
         try {
           const prisma = require("./prisma").default;
-          
+
           const nameParts = (profile.name as string)?.split(" ") || ["", ""];
           const firstName = nameParts[0] || (profile as any)?.given_name || "";
           const lastName = nameParts.slice(1).join(" ") || (profile as any)?.family_name || "";
-          
+
           await prisma.user.upsert({
             where: { email: user.email },
             update: {
@@ -102,7 +103,7 @@ export const authOptions: NextAuthOptions = {
               lastname: lastName,
             },
           });
-          
+
           return true;
         } catch (error) {
           // NE JAMAIS BLOQUER OAUTH - juste log l'erreur
@@ -110,7 +111,7 @@ export const authOptions: NextAuthOptions = {
           return true;
         }
       }
-      
+
       return false;
     },
   },

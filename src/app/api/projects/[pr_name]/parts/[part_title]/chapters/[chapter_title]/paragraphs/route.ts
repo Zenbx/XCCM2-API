@@ -141,6 +141,7 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { createParagraphSchema } from "@/utils/validation";
+import { realtimeService } from "@/services/realtime-service";
 import {
     successResponse,
     errorResponse,
@@ -282,6 +283,18 @@ export async function POST(request: NextRequest, context: RouteParams) {
                 owner_id: userId,
             },
         });
+
+        // 📡 Broadcast temps réel
+        await realtimeService.broadcastStructureChange(
+            pr_name,
+            'STRUCTURE_CHANGED',
+            {
+                type: 'paragraph',
+                action: 'created',
+                paraId: paragraph.para_id,
+                chapterTitle: chapter_title
+            }
+        );
 
         return successResponse("Paragraphe créé avec succès", { paragraph }, 201);
     } catch (error) {

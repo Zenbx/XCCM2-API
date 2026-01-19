@@ -51,6 +51,7 @@ model User {
   
   // Templates créés par l'utilisateur
   templates  Template[]
+  vaultItems VaultItem[]
 
   @@map("users") // Nom de la collection dans notre base MongoDB
 }
@@ -308,4 +309,21 @@ model Template {
   usage_count Int @default(0) // Nombre de fois utilisé
 
   @@map("templates")
+}
+
+model VaultItem {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  type            String   // img, video, text, pdf, audio, part, chapter, paragraph, notion
+  title           String
+  content         String?
+  file_url        String?
+  original_id     String   // ID technique de l'objet source
+  source_doc_id   String?  @db.ObjectId
+  source_doc_name String?
+  added_at        DateTime @default(now())
+
+  owner_id String @db.ObjectId
+  owner    User   @relation(fields: [owner_id], references: [user_id], onDelete: Cascade)
+
+  @@map("vault_items")
 }

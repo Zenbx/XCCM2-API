@@ -315,6 +315,18 @@ export async function POST(request: NextRequest, context: RouteParams) {
             },
         });
 
+        // 📡 Broadcast temps réel
+        await realtimeService.broadcastStructureChange(
+            pr_name,
+            'STRUCTURE_CHANGED',
+            {
+                type: 'notion',
+                action: 'created',
+                notionId: notion.notion_id,
+                paraName: para_name
+            }
+        );
+
         return successResponse("Notion créée avec succès", { notion }, 201);
     } catch (error) {
         if (error instanceof ZodError) {

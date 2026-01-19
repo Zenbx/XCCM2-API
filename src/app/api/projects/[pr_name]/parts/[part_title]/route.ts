@@ -134,6 +134,7 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { updatePartSchema } from "@/utils/validation";
+import { realtimeService } from "@/services/realtime-service";
 import {
     renumberPartsAfterDelete,
     renumberPartsAfterUpdate,
@@ -356,6 +357,17 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
             },
         });
 
+        // 📡 Broadcast temps réel
+        await realtimeService.broadcastStructureChange(
+            pr_name,
+            'STRUCTURE_CHANGED',
+            {
+                type: 'part',
+                action: 'updated',
+                partId: updatedPart.part_id
+            }
+        );
+
         return successResponse("Partie modifiée avec succès", {
             part: updatedPart,
         });
@@ -445,6 +457,17 @@ export async function DELETE(request: NextRequest, context: RouteParams) {
 
         // Renumérotation des parties restantes
         await renumberPartsAfterDelete(project.pr_id, deletedNumber);
+
+        // 📡 Broadcast temps réel
+        await realtimeService.broadcastStructureChange(
+            pr_name,
+            'STRUCTURE_CHANGED',
+            {
+                type: 'part',
+                action: 'deleted',
+                partId: existingPart.part_id
+            }
+        );
 
         return successResponse("Partie supprimée avec succès");
     } catch (error) {

@@ -108,25 +108,27 @@ export async function GET(request: NextRequest) {
             return notFoundResponse("Utilisateur non trouvé");
         }
 
-        // 1. Nombre total de cours créés
-        const totalCoursesCreated = await prisma.project.count({
-            where: { owner_id: userId },
+        // 1. Nombre total de documents publiés (snapshots)
+        const totalDocumentsPublished = await prisma.document.count({
+            where: {
+                project: {
+                    owner_id: userId,
+                },
+            },
         });
 
-        // 2. Récupère tous les cours publiés de l'utilisateur
-        const publishedCourses = await prisma.project.findMany({
+        // 2. Récupère tous les documents publiés (snapshots) liés aux projets de l'utilisateur
+        // On ne filtre pas par project.is_published car un projet peut avoir des documents publiés même s'il est en cours d'édition (WIP)
+        const publishedDocuments = await prisma.document.findMany({
             where: {
-                owner_id: userId,
-                is_published: true,
+                project: {
+                    owner_id: userId,
+                },
             },
             select: {
-                pr_id: true,
-                documents: {
-                    select: {
-                        consult: true,
-                        downloaded: true,
-                    },
-                },
+                doc_id: true,
+                consult: true,
+                downloaded: true,
             },
         });
 
@@ -134,22 +136,18 @@ export async function GET(request: NextRequest) {
         let totalViewsOnPublishedCourses = 0;
         let totalDownloadsOnPublishedCourses = 0;
 
-        for (const course of publishedCourses) {
-            for (const doc of course.documents) {
-                totalViewsOnPublishedCourses += doc.consult || 0;
-                totalDownloadsOnPublishedCourses += doc.downloaded || 0;
-            }
+        for (const doc of publishedDocuments) {
+            totalViewsOnPublishedCourses += doc.consult || 0;
+            totalDownloadsOnPublishedCourses += doc.downloaded || 0;
         }
 
         // 3. Nombre de likes sur les cours publiés
-        const coursesIds = publishedCourses.map((c) => c.pr_id);
-
+        // 3. Nombre de likes sur les documents publiés
         const totalLikesOnPublishedCourses = await prisma.like.count({
             where: {
                 document: {
                     project: {
                         owner_id: userId,
-                        is_published: true,
                     },
                 },
             },
@@ -313,7 +311,7 @@ export async function GET(request: NextRequest) {
         ).slice(0, 20); // Limite à 20 activités les plus récentes
 
         const stats: UserStats = {
-            totalCoursesCreated,
+            totalCoursesCreated: totalDocumentsPublished,
             totalViewsOnPublishedCourses,
             totalDownloadsOnPublishedCourses,
             totalLikesOnPublishedCourses,

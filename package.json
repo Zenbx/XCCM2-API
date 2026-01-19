@@ -8,13 +8,19 @@
     "start": "next start",
     "lint": "eslint",
     "gen:certs": "node scripts/generate-certs.js",
-    "dev:https": "npm run gen:certs && HTTPS=true SSL_CRT_FILE=certs/localhost.crt SSL_KEY_FILE=certs/localhost.key next dev -p 443"
+    "dev:https": "npm run gen:certs && HTTPS=true SSL_CRT_FILE=certs/localhost.crt SSL_KEY_FILE=certs/localhost.key next dev -p 443",
+    "synapse": "tsx src/synapse/server.ts",
+    "test-synapse": "node synapse-standalone.cjs"
   },
   "dependencies": {
     "@babel/runtime-corejs3": "^7.28.6",
+    "@hocuspocus/server": "^3.4.3",
+    "@hocuspocus/transformer": "^3.4.3",
     "@huggingface/inference": "^4.13.9",
     "@prisma/client": "^6.19.1",
     "@supabase/supabase-js": "^2.90.1",
+    "@tiptap/core": "^3.15.3",
+    "@tiptap/pm": "^3.15.3",
     "@types/nodemailer": "^7.0.5",
     "@upstash/redis": "^1.36.1",
     "ably": "^2.17.0",
@@ -26,7 +32,7 @@
     "ioredis": "^5.9.2",
     "jose": "^6.1.3",
     "next": "16.1.1",
-    "next-auth": "^4.24.1",
+    "next-auth": "^4.24.13",
     "nodemailer": "^7.0.12",
     "pdfkit": "^0.17.2",
     "prisma": "6.19.1",
@@ -36,6 +42,8 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-react": "^5.31.0",
     "uuid": "^13.0.0",
+    "y-prosemirror": "^1.3.7",
+    "yjs": "^13.6.29",
     "zod": "^4.2.1"
   },
   "devDependencies": {
@@ -52,6 +60,8 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "5.9.3"
   },
   "prisma": {

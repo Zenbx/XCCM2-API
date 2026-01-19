@@ -197,8 +197,7 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
     } catch (error) {
         console.error("❌ Erreur critique lors du deplacement:", error);
         return serverErrorResponse(
-            "Une erreur est survenue lors du deplacement",
-            error instanceof Error ? { message: error.message, stack: error.stack } : error
+            error instanceof Error ? error.message : undefined
         );
     }
 }

@@ -689,6 +689,18 @@ export async function DELETE(request: NextRequest, context: RouteParams) {
             );
         }
 
+        // 📡 Broadcast temps réel
+        await realtimeService.broadcastStructureChange(
+            pr_name,
+            'STRUCTURE_CHANGED',
+            {
+                type: 'notion',
+                action: 'deleted',
+                notionId: existingNotion.notion_id,
+                paraName: para_name
+            }
+        );
+
         return successResponse("Notion supprimée avec succès");
 
     } catch (error) {

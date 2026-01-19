@@ -120,6 +120,7 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { createPartSchema } from "@/utils/validation";
+import { realtimeService } from "@/services/realtime-service";
 //import { renumberPartsAfterInsert } from "@/utils/granule-helpers";
 import {
     successResponse,
@@ -244,6 +245,17 @@ export async function POST(request: NextRequest, context: RouteParams) {
                 owner_id: userId,
             },
         });
+
+        // 📡 Broadcast temps réel
+        await realtimeService.broadcastStructureChange(
+            pr_name,
+            'STRUCTURE_CHANGED',
+            {
+                type: 'part',
+                action: 'created',
+                partId: part.part_id
+            }
+        );
 
         return successResponse("Partie créée avec succès", { part }, 201);
     } catch (error) {

@@ -11,14 +11,14 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getUserFromToken } from '@/lib/auth';
+import { extractTokenFromHeader, verifyToken } from '@/lib/auth';
 
 export async function GET(
     req: NextRequest,
-    { params }: { params: { templateId: string } }
+    { params }: { params: Promise<{ templateId: string }> }
 ) {
     try {
-        const { templateId } = params;
+        const { templateId } = await params;
 
         const template = await prisma.template.findUnique({
             where: { template_id: templateId },
@@ -64,18 +64,21 @@ export async function GET(
 
 export async function PATCH(
     req: NextRequest,
-    { params }: { params: { templateId: string } }
+    { params }: { params: Promise<{ templateId: string }> }
 ) {
     try {
-        const user = getUserFromToken(req);
-        if (!user) {
+        const authHeader = req.headers.get("Authorization");
+        const token = extractTokenFromHeader(authHeader);
+        const payload = token ? await verifyToken(token) : null;
+
+        if (!payload) {
             return NextResponse.json(
                 { success: false, message: 'Non authentifié' },
                 { status: 401 }
             );
         }
 
-        const { templateId } = params;
+        const { templateId } = await params;
         const body = await req.json();
 
         // Vérifier que l'utilisateur est le créateur
@@ -90,7 +93,7 @@ export async function PATCH(
             );
         }
 
-        if (existingTemplate.creator_id !== user.user_id) {
+        if (existingTemplate.creator_id !== payload.userId) {
             return NextResponse.json(
                 { success: false, message: 'Non autorisé' },
                 { status: 403 }
@@ -137,18 +140,21 @@ export async function PATCH(
 
 export async function DELETE(
     req: NextRequest,
-    { params }: { params: { templateId: string } }
+    { params }: { params: Promise<{ templateId: string }> }
 ) {
     try {
-        const user = getUserFromToken(req);
-        if (!user) {
+        const authHeader = req.headers.get("Authorization");
+        const token = extractTokenFromHeader(authHeader);
+        const payload = token ? await verifyToken(token) : null;
+
+        if (!payload) {
             return NextResponse.json(
                 { success: false, message: 'Non authentifié' },
                 { status: 401 }
             );
         }
 
-        const { templateId } = params;
+        const { templateId } = await params;
 
         // Vérifier que l'utilisateur est le créateur
         const existingTemplate = await prisma.template.findUnique({
@@ -162,7 +168,7 @@ export async function DELETE(
             );
         }
 
-        if (existingTemplate.creator_id !== user.user_id) {
+        if (existingTemplate.creator_id !== payload.userId) {
             return NextResponse.json(
                 { success: false, message: 'Non autorisé' },
                 { status: 403 }

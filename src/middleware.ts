@@ -28,7 +28,8 @@ function getCorsHeaders(request: NextRequest) {
  * Routes publiques accessibles sans authentification
  */
 const PUBLIC_ROUTES: string[] = [
-    "/api/auth",                 // NextAuth routes (signin, signout, callback, etc)
+    "/api/auth",                 // NextAuth routes
+    "/auth",                     // Custom auth pages (signin, error)
     "/api/auth/login",
     "/api/auth/register",
     "/api/auth/oauth/google",      // OAuth Google initiation
@@ -94,7 +95,13 @@ export async function middleware(request: NextRequest) {
      * 4️⃣ Laisse passer les routes publiques sans authentification
      * Sauf les actions spécifiques sur les invitations qui nécessitent un userId (accept, decline, revoke)
      */
-    if (PUBLIC_ROUTES.some((route: string) => pathname.startsWith(route))) {
+    const isPublicRoute = PUBLIC_ROUTES.some((route: string) => pathname.startsWith(route));
+    const isInvitationAction = pathname.startsWith("/api/invitations/") &&
+        (pathname.includes("/accept") ||
+            pathname.includes("/decline") ||
+            pathname.includes("/revoke"));
+
+    if (isPublicRoute && !isInvitationAction) {
         return response;
     }
 

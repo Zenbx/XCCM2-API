@@ -281,7 +281,8 @@ export async function GET(request: NextRequest) {
             return {
                 ...invitation.project,
                 user_role: invitation.role, // 'EDITOR' ou 'VIEWER'
-                invitation_status: invitation.invitation_state // 'Pending', 'Accepted', 'Declined'
+                invitation_status: invitation.invitation_state, // 'Pending', 'Accepted', 'Declined'
+                invitation_token: invitation.invitation_token // Ajout du token pour actions rapides
             };
         }).filter(p => p !== null);
 

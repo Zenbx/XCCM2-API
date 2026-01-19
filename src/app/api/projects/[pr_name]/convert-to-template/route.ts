@@ -5,22 +5,26 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getUserFromToken } from '@/lib/auth';
+import { extractTokenFromHeader, verifyToken } from '@/lib/auth';
 
 export async function POST(
     req: NextRequest,
-    { params }: { params: { pr_name: string } }
+    { params }: { params: Promise<{ pr_name: string }> }
 ) {
     try {
-        const user = getUserFromToken(req);
-        if (!user) {
+        const authHeader = req.headers.get("Authorization");
+        const token = extractTokenFromHeader(authHeader);
+        const payload = token ? await verifyToken(token) : null;
+
+        if (!payload) {
             return NextResponse.json(
                 { success: false, message: 'Non authentifié' },
                 { status: 401 }
             );
         }
 
-        const pr_name = decodeURIComponent(params.pr_name);
+        const { pr_name: raw_pr_name } = await params;
+        const pr_name = decodeURIComponent(raw_pr_name);
         const body = await req.json();
         const { template_name, description, category, is_public = true } = body;
 
@@ -35,7 +39,7 @@ export async function POST(
         const project = await prisma.project.findFirst({
             where: {
                 pr_name,
-                owner_id: user.user_id,
+                owner_id: payload.userId,
             },
             include: {
                 parts: {
@@ -97,8 +101,8 @@ export async function POST(
                 description: description || project.description,
                 category: category || project.category,
                 is_public,
-                structure: templateStructure,
-                creator_id: user.user_id,
+                structure: templateStructure as any,
+                creator_id: payload.userId,
                 usage_count: 0,
             },
             include: {
