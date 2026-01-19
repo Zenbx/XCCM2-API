@@ -1,0 +1,52 @@
+# Dockerfile for Synapse WebSocket Server
+# Optimized for Railway deployment
+
+FROM node:20-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+WORKDIR /app
+
+# Install dependencies based on the preferred package manager
+COPY package.json package-lock.json* ./
+RUN npm ci --only=production
+
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Generate Prisma Client
+RUN npx prisma generate
+
+# Production image, copy all the files and run synapse
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Create a non-root user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 synapse
+
+# Copy necessary files
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/package.json ./package.json
+
+# Install tsx for running TypeScript
+RUN npm install -g tsx
+
+USER synapse
+
+# Expose the WebSocket port
+EXPOSE 1234
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:1234', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+
+# Start the Synapse server
+CMD ["tsx", "src/synapse/server.ts"]

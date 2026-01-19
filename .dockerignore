@@ -1,0 +1,57 @@
+# Dépendances
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Next.js
+.next
+out
+build
+
+# Tests
+coverage
+*.test.ts
+*.spec.ts
+__tests__
+
+# Environnement
+.env
+.env.*
+!.env.example
+!.env.example.synapse
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+!README.md
+
+# Certificats
+certs/
+*.pem
+*.key
+*.crt
+
+# Logs
+logs
+*.log
+
+# Temporaires
+tmp/
+temp/
+.cache/
