@@ -10,6 +10,8 @@
     "gen:certs": "node scripts/generate-certs.js",
     "dev:https": "npm run gen:certs && HTTPS=true SSL_CRT_FILE=certs/localhost.crt SSL_KEY_FILE=certs/localhost.key next dev -p 443",
     "synapse": "tsx src/synapse/server.ts",
+    "synapse:check": "node scripts/check-synapse-env.js",
+    "synapse:dev": "npm run synapse:check && npm run synapse",
     "test-synapse": "node synapse-standalone.cjs"
   },
   "dependencies": {
@@ -66,5 +68,9 @@
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
+  },
+  "overrides": {
+    "react": "$react",
+    "react-dom": "$react-dom"
   }
 }

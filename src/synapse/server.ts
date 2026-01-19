@@ -1,6 +1,6 @@
 import { Server } from '@hocuspocus/server';
 import { TiptapTransformer } from '@hocuspocus/transformer';
-import prisma from 'f:/IHM/IHM/XCCM2-API/src/lib/prisma';
+import prisma from '../lib/prisma.js';
 import 'dotenv/config';
 import * as Y from 'yjs';
 import { jwtVerify } from 'jose';
@@ -8,8 +8,10 @@ import { jwtVerify } from 'jose';
 /**
  * Synapse Server - Hocuspocus implementation for real-time collaboration
  */
+const PORT = process.env.PORT || process.env.SYNAPSE_PORT || 1234;
+
 const server = new Server({
-    port: 1234,
+    port: Number(PORT),
     address: '0.0.0.0',
 
     async onAuthenticate(data) {
@@ -136,4 +138,4 @@ const server = new Server({
 });
 
 server.listen();
-console.log('[Synapse] 🛰️ Collaboration server running on ws://localhost:1234');
+console.log(`[Synapse] 🛰️ Collaboration server running on ws://0.0.0.0:${PORT}`);
