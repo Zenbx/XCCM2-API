@@ -68,7 +68,7 @@ export async function sendNewsletterConfirmation(email: string) {
                         actualités et mises à jour directement dans votre boîte mail.
                     </p>
                     <p style="color: #666; line-height: 1.6;">
-                        Si vous avez des questions, n'hésitez pas à nous <a href="${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/contact" style="color: #0066cc; text-decoration: none;">contacter</a>.
+                        Si vous avez des questions, n'hésitez pas à nous <a href="${process.env.FRONTEND_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/contact" style="color: #0066cc; text-decoration: none;">contacter</a>.
                     </p>
                     <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
                     <p style="color: #999; font-size: 12px;">

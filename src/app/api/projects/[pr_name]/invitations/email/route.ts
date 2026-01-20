@@ -116,8 +116,8 @@ export async function POST(
         }
 
         // Préparer les données pour l'email
-        const baseUrl =
-            process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+        // Utiliser une variable d'environnement explicite pour l'URL du frontend
+        const baseUrl = process.env.FRONTEND_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
         const emailData = prepareInvitationEmailData(
             invitationWithRelations,
             baseUrl
