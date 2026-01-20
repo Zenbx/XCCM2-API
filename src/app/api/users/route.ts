@@ -12,9 +12,9 @@ export async function GET(request: NextRequest) {
         const payload = await verifyToken(token);
         if (!payload) return errorResponse("Token invalide", undefined, 401);
 
-        // Check Admin Role (or legacy no-role)
+        // Check Admin Role
         const requestor = await prisma.user.findUnique({ where: { user_id: payload.userId } });
-        const isAdmin = requestor?.role === 'admin' || !requestor?.role; // Default to admin if no role (legacy)
+        const isAdmin = requestor?.user_role === 'ADMIN';
 
         if (!isAdmin) {
             return errorResponse("Accès refusé. Réservé aux administrateurs.", undefined, 403);
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
                 firstname: true,
                 lastname: true,
                 email: true,
-                role: true,
+                user_role: true,
                 created_at: true,
                 _count: {
                     select: {
