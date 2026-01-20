@@ -21,9 +21,8 @@ const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
         "http://localhost:3000",      // Backend dev
         "http://127.0.0.1:3001",
         "http://127.0.0.1:3000",
-        "https://xccm2-frontend.onrender.com",
         "https://xccm-2-api.vercel.app",
-        "https://xccm-2-frontend.vercel.app",
+        "https://xccm-2.vercel.app",
     ];
 
 /**
