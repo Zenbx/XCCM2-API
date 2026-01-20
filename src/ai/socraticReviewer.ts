@@ -1,6 +1,4 @@
-import fetch from 'node-fetch';
-import dotenv from 'dotenv';
-dotenv.config();
+// Imports removed (using global fetch and upstream env config)
 
 const HF_API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2";
 const HF_API_KEY = process.env.HUGGING_FACE_API_KEY;
