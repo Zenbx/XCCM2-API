@@ -1,0 +1,150 @@
+﻿
+> my-prisma-app@0.1.0 build
+> next build
+
+node.exe : ÔÜá 
+`images.domains` is 
+deprecated in favor 
+of `images.remotePatt
+erns`. Please update 
+next.config.ts to 
+protect your 
+application from 
+malicious users.
+Au caractère Ligne:1 
+: 1
++ & "C:\Program Files
+\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (ÔÜá `im   
+ ages.dom...alici    
+ous users.:Strin    
+g) [], RemoteExc    
+eption
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+Ôû▓ Next.js 16.1.1 (Turbopack)
+- Environments: .env
+
+ÔÜá The "middleware" 
+file convention is 
+deprecated. Please 
+use "proxy" instead. 
+Learn more: https://n
+extjs.org/docs/messag
+es/middleware-to-prox
+y
+  Creating an optimized production build ...
+Ô£ô Compiled successfully in 13.8s
+  Running TypeScript ...
+Failed to compile.
+
+.next/types/validator
+.ts:558:31
+Type error: Type 
+'typeof import("F:/IH
+M/IHM/XCCM2-API/src/a
+pp/api/vault/[vaultIt
+emId]/route")' does 
+not satisfy the 
+constraint 'RouteHand
+lerConfig<"/api/vault
+/[vaultItemId]">'.
+  Types of property 
+'DELETE' are 
+incompatible.
+    Type '(request: 
+NextRequest, { 
+params }: { params: 
+{ vaultItemId: 
+string; }; }) => Prom
+ise<NextResponse<ApiE
+rrorResponse> | NextR
+esponse<ApiSuccessRes
+ponse<unknown>>>' is 
+not assignable to 
+type '(request: 
+NextRequest, 
+context: { params: 
+Promise<{ 
+vaultItemId: string; 
+}>; }) => void | 
+Response | 
+Promise<void | 
+Response>'.
+      Types of 
+parameters '__1' and 
+'context' are 
+incompatible.
+        Type '{ 
+params: Promise<{ 
+vaultItemId: string; 
+}>; }' is not 
+assignable to type 
+'{ params: { 
+vaultItemId: string; 
+}; }'.
+          Types of 
+property 'params' 
+are incompatible.
+            Property 
+'vaultItemId' is 
+missing in type 
+'Promise<{ 
+vaultItemId: string; 
+}>' but required in 
+type '{ vaultItemId: 
+string; }'.
+
+[0m [90m 556 
+|[39m   type __IsExp
+ected[33m<[39m[33m
+Specific[39m 
+[36mextends[39m [3
+3mRouteHandlerConfig
+[39m[33m<[39m[32m"
+/api/vault/[vaultItem
+Id]"[39m[33m>>[39m
+ [33m=[39m 
+[33mSpecific[39m
+ [90m 557 |[39m   
+[36mconst[39m 
+handler [33m=[39m 
+{} [36mas[39m 
+[36mtypeof[39m [36
+mimport[39m([32m"..
+/../src/app/api/vault
+/[vaultItemId]/route.
+js"[39m)
+[31m[1m>[22m[39m
+[90m 558 |[39m   
+type __Check 
+[33m=[39m __IsExpec
+ted[33m<[39m[36mty
+peof[39m 
+handler[33m>[39m
+ [90m     |[39m    
+                     
+      
+[31m[1m^[22m[39m
+ [90m 559 |[39m   
+[90m// 
+@ts-ignore[39m
+ [90m 560 |[39m   
+type __Unused 
+[33m=[39m __Check
+ [90m 561 |[39m 
+}[0m
+Next.js build worker 
+exited with code: 1 
+and signal: null

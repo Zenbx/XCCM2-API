@@ -1,4 +1,5 @@
-// Imports removed (using global fetch and upstream env config)
+// Original SocraticReviewer implementation with dotenv and node-fetch imports
+// Removed unnecessary imports; using global fetch and Next.js env handling
 
 const HF_API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2";
 const HF_API_KEY = process.env.HUGGING_FACE_API_KEY;
@@ -42,11 +43,10 @@ Analyse le texte suivant et identifie les problèmes pédagogiques spécifiques 
 3. Phrase trop complexe ou voix passive excessive
 4. Ton trop académique ou manque d'engagement
 
-Texte à analyser :
-"""${text}"""
+Texte à analyser : """${text}"""
 
 Réponds UNIQUEMENT avec un tableau JSON valide contenant la liste des problèmes détectés.
-Si aucun problème, renvoie un tableau vide [].
+Si aucun problème, renvoie un tableau vide []
 
 Format attendu pour chaque objet du tableau :
 {
@@ -75,7 +75,7 @@ Format attendu pour chaque objet du tableau :
         if (!text || text.length < 50) return this.getDefaultBloomScore();
 
         const prompt = `<s>[INST] Évalue le niveau cognitif de ce contenu pédagogique selon la Taxonomie de Bloom.
-    
+
 Texte : """${text}"""
 
 Donne un score sur 100 pour chaque niveau : Remember, Understand, Apply, Analyze, Evaluate, Create.
@@ -161,7 +161,7 @@ Réponds UNIQUEMENT avec ce JSON :
                     comment: item.comment,
                     suggestions: item.suggestions || [],
                 };
-            }).filter(item => item.text && item.sentenceEnd > 0); // Garder seulement si trouvé dans le texte
+            }).filter(item => item.text && item.sentenceEnd > 0);
         } catch (e) {
             console.error("Failed to parse JSON feedback:", e);
             return [];

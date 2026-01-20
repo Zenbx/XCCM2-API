@@ -198,6 +198,10 @@ export async function POST(request: NextRequest, context: RouteParams) {
             }
         }
 
+        if (!project) {
+            return notFoundResponse("Projet introuvable");
+        }
+
         // Récupère la structure complète du projet
         const projectData = await getProjectForExport(project.pr_id, userId);
 

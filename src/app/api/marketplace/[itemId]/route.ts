@@ -13,13 +13,17 @@ import {
 /**
  * Handler DELETE pour supprimer un item de la marketplace
  */
+type RouteParams = {
+    params: Promise<{ itemId: string }>;
+};
+
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { itemId: string } }
+    context: RouteParams
 ) {
     try {
         const userId = request.headers.get("x-user-id");
-        const { itemId } = params;
+        const { itemId } = await context.params;
 
         if (!userId) {
             return errorResponse("Utilisateur non authentifié", undefined, 401);
@@ -56,10 +60,10 @@ export async function DELETE(
  */
 export async function PATCH(
     request: NextRequest,
-    { params }: { params: { itemId: string } }
+    context: RouteParams
 ) {
     try {
-        const { itemId } = params;
+        const { itemId } = await context.params;
 
         const item = await prisma.marketplaceItem.update({
             where: { id: itemId },

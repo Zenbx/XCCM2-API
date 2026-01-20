@@ -1,0 +1,87 @@
+﻿
+> my-prisma-app@0.1.0 build
+> next build
+
+node.exe : ÔÜá 
+`images.domains` is 
+deprecated in favor 
+of `images.remotePatt
+erns`. Please update 
+next.config.ts to 
+protect your 
+application from 
+malicious users.
+Au caractère Ligne:1 
+: 1
++ & "C:\Program Files
+\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (ÔÜá `im   
+ ages.dom...alici    
+ous users.:Strin    
+g) [], RemoteExc    
+eption
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+Ôû▓ Next.js 16.1.1 (Turbopack)
+- Environments: .env
+
+ÔÜá The "middleware" 
+file convention is 
+deprecated. Please 
+use "proxy" instead. 
+Learn more: https://n
+extjs.org/docs/messag
+es/middleware-to-prox
+y
+  Creating an optimized production build ...
+Ô£ô Compiled successfully in 13.5s
+  Running TypeScript ...
+Failed to compile.
+
+./src/app/api/project
+s/[pr_name]/parts/[pa
+rt_title]/chapters/[c
+hapter_title]/paragra
+phs/[para_name]/notio
+ns/route.ts:319:15
+Type error: Cannot 
+find name 
+'realtimeService'.
+
+[0m [90m 317 |[39m
+ [90m 318 |[39m    
+     [90m// ƒôí 
+Broadcast temps 
+r├®el[39m
+[31m[1m>[22m[39m
+[90m 319 |[39m      
+   [36mawait[39m re
+altimeService[33m.[
+39mbroadcastStructure
+Change(
+ [90m     |[39m    
+           
+[31m[1m^[22m[39m
+ [90m 320 |[39m    
+         
+pr_name[33m,[39m
+ [90m 321 |[39m    
+         [32m'STRUCT
+URE_CHANGED'[39m[33
+m,[39m
+ [90m 322 |[39m    
+         {[0m
+Next.js build worker 
+exited with code: 1 
+and signal: null

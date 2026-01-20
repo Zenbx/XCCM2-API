@@ -1,0 +1,95 @@
+﻿
+> my-prisma-app@0.1.0 build
+> next build
+
+node.exe : ÔÜá 
+`images.domains` is 
+deprecated in favor 
+of `images.remotePatt
+erns`. Please update 
+next.config.ts to 
+protect your 
+application from 
+malicious users.
+Au caractère Ligne:1 
+: 1
++ & "C:\Program Files
+\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (ÔÜá `im   
+ ages.dom...alici    
+ous users.:Strin    
+g) [], RemoteExc    
+eption
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+Ôû▓ Next.js 16.1.1 (Turbopack)
+- Environments: .env
+
+ÔÜá The "middleware" 
+file convention is 
+deprecated. Please 
+use "proxy" instead. 
+Learn more: https://n
+extjs.org/docs/messag
+es/middleware-to-prox
+y
+  Creating an optimized production build ...
+Ô£ô Compiled successfully in 12.7s
+  Running TypeScript ...
+Failed to compile.
+
+./src/app/api/project
+s/[pr_name]/publish/r
+oute.ts:202:55
+Type error: 
+'project' is 
+possibly 'null'.
+
+[0m [90m 200 |[39m
+ [90m 201 |[39m    
+     [90m// 
+R├®cup├¿re la 
+structure compl├¿te 
+du projet[39m
+[31m[1m>[22m[39m
+[90m 202 |[39m      
+   [36mconst[39m 
+projectData 
+[33m=[39m 
+[36mawait[39m getPr
+ojectForExport(projec
+t[33m.[39mpr_id[33
+m,[39m 
+userId)[33m;[39m
+ [90m     |[39m    
+                     
+                     
+         
+[31m[1m^[22m[39m
+ [90m 203 |[39m
+ [90m 204 |[39m    
+     [36mif[39m ([
+33m![39mprojectData)
+ {
+ [90m 205 |[39m    
+         
+[36mreturn[39m notF
+oundResponse([32m"Im
+possible de 
+r├®cup├®rer les 
+donn├®es du projet"[
+39m)[33m;[39m[0m
+Next.js build worker 
+exited with code: 1 
+and signal: null

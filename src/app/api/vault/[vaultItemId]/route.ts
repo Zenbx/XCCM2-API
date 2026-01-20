@@ -13,13 +13,17 @@ import {
 /**
  * Handler DELETE pour supprimer un élément du coffre-fort
  */
+type RouteParams = {
+    params: Promise<{ vaultItemId: string }>;
+};
+
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { vaultItemId: string } }
+    context: RouteParams
 ) {
     try {
         const userId = request.headers.get("x-user-id");
-        const { vaultItemId } = params;
+        const { vaultItemId } = await context.params;
 
         if (!userId) {
             return errorResponse("Utilisateur non authentifié", undefined, 401);

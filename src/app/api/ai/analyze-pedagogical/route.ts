@@ -31,6 +31,7 @@ export async function POST(req: Request) {
             }
         });
 
+
     } catch (error: any) {
         console.error('Socratic AI Error:', error);
         return NextResponse.json(

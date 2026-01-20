@@ -1,0 +1,124 @@
+﻿
+> my-prisma-app@0.1.0 build
+> next build
+
+node.exe : ÔÜá 
+`images.domains` is 
+deprecated in favor 
+of `images.remotePatt
+erns`. Please update 
+next.config.ts to 
+protect your 
+application from 
+malicious users.
+Au caractère Ligne:1 
+: 1
++ & "C:\Program Files
+\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (ÔÜá `im   
+ ages.dom...alici    
+ous users.:Strin    
+g) [], RemoteExc    
+eption
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+Ôû▓ Next.js 16.1.1 (Turbopack)
+- Environments: .env
+
+ÔÜá The "middleware" 
+file convention is 
+deprecated. Please 
+use "proxy" instead. 
+Learn more: https://n
+extjs.org/docs/messag
+es/middleware-to-prox
+y
+  Creating an optimized production build ...
+Ô£ô Compiled successfully in 13.5s
+  Running TypeScript ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/29) ...
+  Generating static pages using 7 workers (7/29) 
+  Generating static pages using 7 workers (14/29) 
+  Generating static pages using 7 workers (21/29) 
+Ô£ô Generating static pages using 7 workers (29/29) in 800.3ms
+  Finalizing page optimization ...
+
+Route (app)
+Ôöî Ôùï /
+Ôö£ Ôùï /_not-found
+Ôö£ ãÆ /api/ai/audit
+Ôö£ ãÆ /api/auth/[...nextauth]
+Ôö£ ãÆ /api/auth/login
+Ôö£ ãÆ /api/auth/logout
+Ôö£ ãÆ /api/auth/me
+Ôö£ ãÆ /api/auth/register
+Ôö£ ãÆ /api/auth/session-token
+Ôö£ ãÆ /api/community/feed
+Ôö£ ãÆ /api/contact
+Ôö£ ãÆ /api/creators/top
+Ôö£ ãÆ /api/docs
+Ôö£ ãÆ /api/documents
+Ôö£ ãÆ /api/documents/[id]
+Ôö£ ãÆ /api/documents/[id]/download
+Ôö£ ãÆ /api/documents/[id]/like
+Ôö£ ãÆ /api/documents/[id]/view
+Ôö£ ãÆ /api/health
+Ôö£ ãÆ /api/invitations/[token]
+Ôö£ ãÆ /api/invitations/[token]/accept
+Ôö£ ãÆ /api/invitations/[token]/decline
+Ôö£ ãÆ /api/invitations/[token]/revoke
+Ôö£ ãÆ /api/marketplace
+Ôö£ ãÆ /api/marketplace/[itemId]
+Ôö£ ãÆ /api/newsletter/subscribe
+Ôö£ ãÆ /api/projects
+Ôö£ ãÆ /api/projects/[pr_name]
+Ôö£ ãÆ /api/projects/[pr_name]/comments
+Ôö£ ãÆ /api/projects/[pr_name]/convert-to-template
+Ôö£ ãÆ /api/projects/[pr_name]/export
+Ôö£ ãÆ /api/projects/[pr_name]/invitations
+Ôö£ ãÆ /api/projects/[pr_name]/invitations/email
+Ôö£ ãÆ /api/projects/[pr_name]/move
+Ôö£ ãÆ /api/projects/[pr_name]/parts
+Ôö£ ãÆ /api/projects/[pr_name]/parts/[part_title]
+Ôö£ ãÆ /api/projects/[pr_name]/parts/[part_title]/chapters
+Ôö£ ãÆ /api/projects/[pr_name]/parts/[part_title]/chapters/[chapter_title]
+Ôö£ ãÆ /api/projects/[pr_name]/parts/[part_title]/chapters/[chapter_title]/paragraphs
+Ôö£ ãÆ /api/projects/[pr_name]/parts/[part_title]/chapters/[chapter_title]/paragraphs/[para_name]
+Ôö£ ãÆ /api/projects/[pr_name]/parts/[part_title]/chapters/[chapter_title]/paragraphs/[para_name]/notions
+Ôö£ ãÆ /api/projects/[pr_name]/parts/[part_title]/chapters/[chapter_title]/paragraphs/[para_name]/notions/[notion_name]
+Ôö£ ãÆ /api/projects/[pr_name]/parts/[part_title]/chapters/[chapter_title]/paragraphs/[para_name]/notions/[notion_name]/rephrase
+Ôö£ ãÆ /api/projects/[pr_name]/publish
+Ôö£ ãÆ /api/projects/[pr_name]/structure
+Ôö£ ãÆ /api/realtime/auth
+Ôö£ ãÆ /api/templates
+Ôö£ ãÆ /api/templates/[templateId]
+Ôö£ ãÆ /api/templates/[templateId]/create-project
+Ôö£ ãÆ /api/test/create-oauth-user
+Ôö£ ãÆ /api/user/profile
+Ôö£ ãÆ /api/user/stats
+Ôö£ ãÆ /api/users
+Ôö£ ãÆ /api/users/[userId]
+Ôö£ ãÆ /api/vault
+Ôö£ ãÆ /api/vault/[vaultItemId]
+Ôö£ Ôùï /auth/error
+Ôö£ Ôùï /auth/signin
+Ôöö Ôùï /docs
+
+
+ãÆ Proxy (Middleware)
+
+Ôùï  (Static)   prerendered as static content
+ãÆ  (Dynamic)  server-rendered on demand
+
