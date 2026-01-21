@@ -125,6 +125,21 @@ export async function POST(
             }
         });
 
+        // 📡 Broadcast temps réel
+        try {
+            const { realtimeService } = await import("@/services/realtime-service");
+            await realtimeService.broadcastStructureChange(
+                pr_name,
+                'COMMENT_ADDED',
+                {
+                    comment,
+                    action: 'created'
+                }
+            );
+        } catch (error) {
+            console.error("Erreur broadcast commentaire:", error);
+        }
+
         return successResponse("Commentaire ajouté", { comment }, 201);
     } catch (error) {
         if (error instanceof ZodError) return validationErrorResponse(error.flatten().fieldErrors);

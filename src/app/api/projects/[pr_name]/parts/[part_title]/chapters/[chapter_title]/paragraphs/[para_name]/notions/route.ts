@@ -202,6 +202,8 @@ export async function POST(request: NextRequest, context: RouteParams) {
         const chapter_title = decodeURIComponent(encodedChapterTitle);
         const para_name = decodeURIComponent(encodedParaName);
 
+        console.log(`[POST Notion] pr_name: ${pr_name}, part: ${part_title}, chap: ${chapter_title}, para: ${para_name}`);
+
         // Vérifie que le projet existe et que l'utilisateur y a accès
         const project = await prisma.project.findFirst({
             where: {
@@ -228,42 +230,42 @@ export async function POST(request: NextRequest, context: RouteParams) {
         const part = await prisma.part.findUnique({
             where: {
                 part_title_parent_pr: {
-                    part_title,
+                    part_title: part_title.trim(),
                     parent_pr: project.pr_id,
                 },
             },
         });
 
         if (!part) {
-            return notFoundResponse("Partie non trouvée");
+            return notFoundResponse("Structure cible de la notion introuvable (Partie)");
         }
 
         // Vérifie que le chapitre existe
         const chapter = await prisma.chapter.findUnique({
             where: {
                 parent_part_chapter_title: {
-                    chapter_title,
+                    chapter_title: chapter_title.trim(),
                     parent_part: part.part_id,
                 },
             },
         });
 
         if (!chapter) {
-            return notFoundResponse("Chapitre non trouvé");
+            return notFoundResponse("Structure cible de la notion introuvable (Chapitre)");
         }
 
         // Vérifie que le paragraphe existe
         const paragraph = await prisma.paragraph.findUnique({
             where: {
                 parent_chapter_para_name: {
-                    para_name,
+                    para_name: para_name.trim(),
                     parent_chapter: chapter.chapter_id,
                 },
             },
         });
 
         if (!paragraph) {
-            return notFoundResponse("Paragraphe non trouvé");
+            return notFoundResponse("Structure cible de la notion introuvable (Paragraphe)");
         }
 
         const body = await request.json();
