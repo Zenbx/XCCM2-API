@@ -401,7 +401,7 @@ export async function PATCH(
         // Invalider les caches
         await cacheService.del(`projects:user:${userId}`);
         if (updatedProject.is_published) {
-            await cacheService.del("library:all_documents");
+            await cacheService.delByPattern("library:all_documents*");
         }
 
         return successResponse("Projet modifié avec succès", {
@@ -486,7 +486,7 @@ export async function DELETE(
         // Invalider les caches
         await cacheService.del(`projects:user:${userId}`);
         if (existingProject.is_published) {
-            await cacheService.del("library:all_documents");
+            await cacheService.delByPattern("library:all_documents*");
         }
 
         return successResponse("Projet supprimé avec succès");

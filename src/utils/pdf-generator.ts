@@ -359,8 +359,11 @@ function generatePrintableHTML(project: ProjectForExport): string {
     // 1. Page de garde (Cover Page)
     bodyContent += `
         <div class="cover-page">
-            <div class="cover-logo">
-                <span>📖</span>
+            <div class="cover-logo" style="${project.cover_image ? 'width: 100%; height: auto; max-height: 400px; background: none; margin-top: -2rem; margin-bottom: 2rem;' : ''}">
+                ${project.cover_image
+            ? `<img src="${project.cover_image}" style="max-width: 100%; max-height: 400px; object-fit: contain; border-radius: 16px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);" />`
+            : '<span>📖</span>'
+        }
             </div>
             <h1 class="cover-title">${pr_name.toUpperCase()}</h1>
             <p class="cover-subtitle">Document de Composition de Cours</p>

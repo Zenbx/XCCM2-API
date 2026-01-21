@@ -158,13 +158,14 @@ export async function POST(request: NextRequest, context: RouteParams) {
         const validationResult = z.object({
             format: z.enum(["pdf", "docx"] as const),
             doc_name: z.string().optional(),
+            cover_image: z.string().optional(), // Nouveau champ
         }).safeParse(body);
 
         if (!validationResult.success) {
             return errorResponse("Données invalides", JSON.stringify(validationResult.error.format()), 400);
         }
 
-        const { format, doc_name } = validationResult.data;
+        const { format, doc_name, cover_image } = validationResult.data;
 
         // Vérifie que le projet existe et appartient à l'utilisateur (Robust Search)
         // Tentative 1: Recherche basée sur pr_name (peut échouer si sensibilités différentes)
@@ -211,6 +212,11 @@ export async function POST(request: NextRequest, context: RouteParams) {
             return notFoundResponse("Impossible de récupérer les données du projet");
         }
 
+        // Ajoute l'image de couverture si présente
+        if (cover_image) {
+            projectData.cover_image = cover_image;
+        }
+
         // Vérifie que le projet a du contenu
         if (projectData.parts.length === 0) {
             console.warn(`⚠️ [Publication] Project ${pr_name} is empty.`);
@@ -250,6 +256,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
                 pages: estimatedPages,
                 doc_size: publishResult.size,
                 url_content: publishResult.url,
+                cover_image: cover_image || null, // Sauvegarde l'image
                 pr_source: project.pr_id,
                 downloaded: 0,
                 consult: 0,
@@ -264,8 +271,8 @@ export async function POST(request: NextRequest, context: RouteParams) {
 
         console.log(`✅ Document publié avec succès: ${document.doc_id}`);
 
-        // 5. Invalider le cache de la bibliothèque
-        await cacheService.del("library:all_documents");
+        // 5. Invalider le cache de la bibliothèque (toutes les pages)
+        await cacheService.delByPattern("library:all_documents*");
 
         return successResponse(
             "Document publié avec succès",

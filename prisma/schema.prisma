@@ -118,6 +118,7 @@ model Document {
   consult      Int      @default(0)
   published_at DateTime @default(now()) // "DateTime" avec majuscules
   url_content  String // "String" avec majuscule
+  cover_image  String? // Image de couverture optionnelle
 
   // Clé étrangère
   pr_source String  @db.ObjectId //

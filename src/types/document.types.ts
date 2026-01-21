@@ -20,6 +20,7 @@ export interface ProjectForExport {
     };
     created_at: Date;
     styles?: any;
+    cover_image?: string | null;
     parts: PartForExport[];
 }
 

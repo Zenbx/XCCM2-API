@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
         });
 
         // 4. Formater les documents pour le frontend
-        const formattedDocuments = documents.map((doc) => ({
+        const formattedDocuments = documents.map((doc: any) => ({
             doc_id: doc.doc_id,
             doc_name: doc.doc_name,
             url_content: doc.url_content,
@@ -91,6 +91,7 @@ export async function GET(request: NextRequest) {
             author: doc.project.author ||
                 `${doc.project.owner.firstname} ${doc.project.owner.lastname}`.trim(),
             tags: doc.project.tags,
+            cover_image: doc.cover_image,
         }));
 
         const result = {

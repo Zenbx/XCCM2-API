@@ -12,6 +12,8 @@ import {
     AlignmentType,
     TableOfContents,
     PageBreak,
+    ImageRun,
+    ExternalHyperlink,
 } from "docx";
 import type { ProjectForExport } from "@/types/document.types";
 import { parseMarkdownToSegments, htmlToPlainText } from "./markdown-parser";
@@ -22,8 +24,37 @@ import { parseMarkdownToSegments, htmlToPlainText } from "./markdown-parser";
  * @returns Buffer du document DOCX
  */
 export async function generateDOCX(project: ProjectForExport): Promise<Buffer> {
-    // ===== PAGE DE GARDE =====
-    const coverPage: Paragraph[] = [
+    const coverPage: Paragraph[] = [];
+
+    // Ajout de l'image de couverture si présente
+    if (project.cover_image) {
+        try {
+            const response = await fetch(project.cover_image);
+            if (response.ok) {
+                const imageBuffer = Buffer.from(await response.arrayBuffer());
+
+                coverPage.push(
+                    new Paragraph({
+                        children: [
+                            new ImageRun({
+                                data: imageBuffer,
+                                transformation: {
+                                    width: 400,
+                                    height: 300,
+                                },
+                            } as any),
+                        ],
+                        alignment: AlignmentType.CENTER,
+                        spacing: { before: 400, after: 400 },
+                    })
+                );
+            }
+        } catch (error) {
+            console.error("❌ Erreur lors du téléchargement de l'image de couverture pour DOCX:", error);
+        }
+    }
+
+    coverPage.push(
         new Paragraph({
             text: project.pr_name,
             heading: HeadingLevel.TITLE,
@@ -44,8 +75,8 @@ export async function generateDOCX(project: ProjectForExport): Promise<Buffer> {
             text: `Date: ${new Date(project.created_at).toLocaleDateString("fr-FR")}`,
             alignment: AlignmentType.CENTER,
             spacing: { after: 400 },
-        }),
-    ];
+        })
+    );
 
     // ===== TABLE DES MATIÈRES =====
     const tableOfContents = new TableOfContents("Sommaire", {
