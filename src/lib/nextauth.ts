@@ -67,6 +67,33 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
     maxAge: 7 * 24 * 60 * 60, // 7 days
   },
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'none',
+        path: '/',
+        secure: true
+      }
+    },
+    callbackUrl: {
+      name: `next-auth.callback-url`,
+      options: {
+        sameSite: 'none',
+        path: '/',
+        secure: true
+      }
+    },
+    csrfToken: {
+      name: `next-auth.csrf-token`,
+      options: {
+        sameSite: 'none',
+        path: '/',
+        secure: true
+      }
+    }
+  },
   jwt: {
     secret: process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET || "fallback-secret",
   },

@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run gen-swagger && next build",
+    "gen-swagger": "node scripts/generate-swagger.mjs",
     "start": "next start",
     "lint": "eslint",
     "gen:certs": "node scripts/generate-certs.js",

@@ -1,9 +1,5 @@
-/**
- * @fileoverview Configuration de Swagger pour la documentation API
- * Définit les métadonnées OpenAPI et génère la spécification
- */
-
 import swaggerJSDoc from "swagger-jsdoc";
+import path from "path";
 
 /**
  * Options de configuration Swagger/OpenAPI
@@ -38,8 +34,12 @@ const swaggerOptions: swaggerJSDoc.Options = {
         },
         servers: [
             {
-                url: "http://xccm-2-api.vercel.app",
-                description: "Serveur de développement",
+                url: "http://localhost:3001",
+                description: "Serveur local",
+            },
+            {
+                url: "https://xccm-2-api.vercel.app",
+                description: "Serveur Vercel (Staging)",
             },
             {
                 url: "https://api.xccm.com",
@@ -372,7 +372,10 @@ const swaggerOptions: swaggerJSDoc.Options = {
             },
         },
     },
-    apis: ["./src/app/api/**/*.ts"], // Chemins vers les fichiers contenant les annotations JSDoc
+    apis: [
+        path.join(process.cwd(), "src/app/api/**/*.ts"),
+        path.join(process.cwd(), "src/app/api/**/*.js"), // Pour le cas où certains fichiers sont compilés
+    ], // Chemins vers les fichiers contenant les annotations JSDoc
 };
 
 // Fonction pour générer la spécification dynamiquement

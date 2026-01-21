@@ -14,7 +14,9 @@ export async function GET(request: NextRequest) {
 
         if (!session || !session.user || !session.user.email) {
             console.error("[Bridge] No session found");
-            return NextResponse.redirect(`${frontendUrl}/login?error=SessionMissing`);
+            const mode = request.nextUrl.searchParams.get("mode") || "login";
+            const redirectPath = mode === "register" ? "/register" : "/login";
+            return NextResponse.redirect(`${frontendUrl}${redirectPath}?error=SessionMissing`);
         }
 
         // 2. Get User from DB
@@ -24,7 +26,9 @@ export async function GET(request: NextRequest) {
 
         if (!user) {
             console.error("[Bridge] User not found in DB");
-            return NextResponse.redirect(`${frontendUrl}/login?error=UserNotFound`);
+            const mode = request.nextUrl.searchParams.get("mode") || "login";
+            const redirectPath = mode === "register" ? "/register" : "/login";
+            return NextResponse.redirect(`${frontendUrl}${redirectPath}?error=UserNotFound`);
         }
 
         // 3. Generate Token
@@ -32,8 +36,10 @@ export async function GET(request: NextRequest) {
         const token = await generateToken(publicUser);
 
         // 4. Redirect to Frontend with Token
+        const mode = request.nextUrl.searchParams.get("mode") || "login";
         const redirectUrl = new URL(`${frontendUrl}/auth/callback`);
         redirectUrl.searchParams.set("token", token);
+        if (mode) redirectUrl.searchParams.set("mode", mode);
         // We can also pass the user object encoded, but token is usually enough for the frontend to fetch me
 
         console.log("[Bridge] Redirecting to:", redirectUrl.toString());
@@ -41,6 +47,9 @@ export async function GET(request: NextRequest) {
 
     } catch (error) {
         console.error("[Bridge] Error:", error);
-        return NextResponse.redirect(new URL("/login?error=BridgeError", request.url));
+        const mode = request.nextUrl.searchParams.get("mode") || "login";
+        const frontendUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://xccm-2.vercel.app";
+        const redirectPath = mode === "register" ? "/register" : "/login";
+        return NextResponse.redirect(`${frontendUrl}${redirectPath}?error=BridgeError`);
     }
 }
