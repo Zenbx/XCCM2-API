@@ -112,18 +112,18 @@ function estimatePages(project: ProjectForExport): number {
 
     // Compte le contenu
     project.parts.forEach((part) => {
-        totalContent += part.part_title.length;
-        totalContent += part.part_intro?.length || 0;
+        totalContent += (part.part_title?.length || 0);
+        totalContent += (part.part_intro?.length || 0);
 
         part.chapters.forEach((chapter) => {
-            totalContent += chapter.chapter_title.length;
+            totalContent += (chapter.chapter_title?.length || 0);
 
             chapter.paragraphs.forEach((paragraph) => {
-                totalContent += paragraph.para_name.length;
+                totalContent += (paragraph.para_name?.length || 0);
 
                 paragraph.notions.forEach((notion) => {
-                    totalContent += notion.notion_name.length;
-                    totalContent += notion.notion_content.length;
+                    totalContent += (notion.notion_name?.length || 0);
+                    totalContent += (notion.notion_content?.length || 0);
                 });
             });
         });

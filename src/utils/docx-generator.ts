@@ -158,7 +158,7 @@ export async function generateDOCX(project: ProjectForExport): Promise<Buffer> {
                     }
 
                     // Contenu de la notion
-                    const plainText = htmlToPlainText(notion.notion_content);
+                    const plainText = htmlToPlainText(notion.notion_content || '');
                     const lines = plainText.split('\n');
                     const children = lines.map((line, index) =>
                         new TextRun({

@@ -442,7 +442,7 @@ function generatePrintableHTML(project: ProjectForExport): string {
                     if (notion.notion_name) {
                         bodyContent += `<h5 class="notion-header">${notion.notion_name}</h5>`;
                     }
-                    bodyContent += `<div class="prose-content">${notion.notion_content}</div>`;
+                    bodyContent += `<div class="prose-content">${notion.notion_content || ''}</div>`;
                 });
             });
         });
