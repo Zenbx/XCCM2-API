@@ -57,7 +57,7 @@
  *                 example: 1
  *               notion_content:
  *                 type: string
- *                 example: Le contenu détaillé de la notion expliquant le concept...
+ *                 example: ""
  *     responses:
  *       201:
  *         description: Notion créée avec succès

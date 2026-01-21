@@ -276,7 +276,6 @@ export const createNotionSchema = z.object({
 
     notion_content: z
         .string()
-        .min(1, "Le contenu ne peut pas être vide")
         .trim(),
 });
 
@@ -299,7 +298,6 @@ export const updateNotionSchema = z.object({
 
     notion_content: z
         .string()
-        .min(1, "Le contenu ne peut pas être vide")
         .trim()
         .optional(),
 }).refine(

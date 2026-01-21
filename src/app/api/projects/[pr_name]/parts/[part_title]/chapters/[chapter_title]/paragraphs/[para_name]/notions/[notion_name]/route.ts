@@ -121,7 +121,7 @@
  *                 example: 1
  *               notion_content:
  *                 type: string
- *                 example: Contenu révisé et enrichi de la notion...
+ *                 example: ""
  *     responses:
  *       200:
  *         description: Notion modifiée avec succès
