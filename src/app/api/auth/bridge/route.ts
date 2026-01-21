@@ -10,8 +10,7 @@ export async function GET(request: NextRequest) {
         const session = await getServerSession(authOptions);
 
         // Define Frontend Origin
-        // In production, this should be an env var, but for now we default to Vercel/Localhost
-        const frontendUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://xccm-2.vercel.app";
+        const frontendUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://xccm-2.vercel.app";
 
         if (!session || !session.user || !session.user.email) {
             console.error("[Bridge] No session found");
