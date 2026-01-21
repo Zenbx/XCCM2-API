@@ -23,7 +23,7 @@ model User {
   email     String @unique
   lastname  String
   firstname String
-  password  String // Sera stocké sous forme de hachage (bcrypt)
+  password  String? // Sera stocké sous forme de hachage (bcrypt)
 
   // Informations professionnelles (optionnelles avec le "?")
   org             String?

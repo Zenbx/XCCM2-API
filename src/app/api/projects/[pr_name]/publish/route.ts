@@ -186,13 +186,13 @@ export async function POST(request: NextRequest, context: RouteParams) {
 
             // Normalisation NFC + Lowercase
             const targetName = pr_name.normalize('NFC').toLowerCase();
-            const found = userProjects.find(p => p.pr_name.normalize('NFC').toLowerCase() === targetName);
+            const found = userProjects.find((p: { pr_name: string; pr_id: string }) => p.pr_name.normalize('NFC').toLowerCase() === targetName);
 
             if (found) {
                 console.log(`✅ Projet retrouvé via normalisation: '${pr_name}' -> '${found.pr_name}'`);
                 project = await prisma.project.findUnique({ where: { pr_id: found.pr_id } });
             } else {
-                const availableNames = userProjects.map(p => p.pr_name).join(', ');
+                const availableNames = userProjects.map((p: { pr_name: string }) => p.pr_name).join(', ');
                 console.error(`❌ Projet introuvable. Disponibles: [${availableNames}]`);
                 return notFoundResponse(`Projet "${pr_name}" non trouvé. Vos projets disponibles : [${availableNames}]`);
             }
@@ -203,14 +203,17 @@ export async function POST(request: NextRequest, context: RouteParams) {
         }
 
         // Récupère la structure complète du projet
+        console.log(`📡 [Publication] Fetching project data for ID: ${project.pr_id}`);
         const projectData = await getProjectForExport(project.pr_id, userId);
 
         if (!projectData) {
+            console.error(`❌ [Publication] Failed to getProjectForExport for ID: ${project.pr_id}`);
             return notFoundResponse("Impossible de récupérer les données du projet");
         }
 
         // Vérifie que le projet a du contenu
         if (projectData.parts.length === 0) {
+            console.warn(`⚠️ [Publication] Project ${pr_name} is empty.`);
             return errorResponse(
                 "Le projet est vide. Ajoutez du contenu avant de publier.",
                 undefined,
@@ -218,10 +221,14 @@ export async function POST(request: NextRequest, context: RouteParams) {
             );
         }
 
-        console.log(`📤 Publication du document ${format.toUpperCase()} pour le projet: ${pr_name} (Nom: ${doc_name || pr_name})`);
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const finalDocName = doc_name || `${pr_name}_${timestamp}`;
+
+        console.log(`📤 [Publication] Starting ${format.toUpperCase()} generation for: ${pr_name} (File: ${finalDocName})`);
 
         // Publie le document sur Supabase
         const publishResult = await publishDocument(projectData, format);
+        console.log(`✅ [Publication] Supabase upload result:`, publishResult);
 
         // Estime le nombre de pages
         const estimatedPages = estimatePages(projectData);
@@ -229,7 +236,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
         // Crée l'entrée dans la table Document
         const document = await prisma.document.create({
             data: {
-                doc_name: doc_name || pr_name, // Utilise le nom fourni ou le nom du projet
+                doc_name: finalDocName,
                 pages: estimatedPages,
                 doc_size: publishResult.size,
                 url_content: publishResult.url,

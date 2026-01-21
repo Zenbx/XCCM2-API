@@ -227,44 +227,50 @@ export async function POST(request: NextRequest, context: RouteParams) {
         }
 
         // Vérifie que la partie existe
-        const part = await prisma.part.findUnique({
+        const part = await prisma.part.findFirst({
             where: {
-                part_title_parent_pr: {
-                    part_title: part_title.trim(),
-                    parent_pr: project.pr_id,
-                },
+                parent_pr: project.pr_id,
+                part_title: {
+                    equals: part_title.trim(),
+                    mode: 'insensitive'
+                }
             },
         });
 
         if (!part) {
+            console.error(`[POST Notion] Part not found: "${part_title}" in project ${project.pr_id}`);
             return notFoundResponse("Structure cible de la notion introuvable (Partie)");
         }
 
         // Vérifie que le chapitre existe
-        const chapter = await prisma.chapter.findUnique({
+        const chapter = await prisma.chapter.findFirst({
             where: {
-                parent_part_chapter_title: {
-                    chapter_title: chapter_title.trim(),
-                    parent_part: part.part_id,
-                },
+                parent_part: part.part_id,
+                chapter_title: {
+                    equals: chapter_title.trim(),
+                    mode: 'insensitive'
+                }
             },
         });
 
         if (!chapter) {
+            console.error(`[POST Notion] Chapter not found: "${chapter_title}" in part ${part.part_id}`);
             return notFoundResponse("Structure cible de la notion introuvable (Chapitre)");
         }
 
         // Vérifie que le paragraphe existe
-        const paragraph = await prisma.paragraph.findUnique({
+        const paragraph = await prisma.paragraph.findFirst({
             where: {
-                parent_chapter_para_name: {
-                    para_name: para_name.trim(),
-                    parent_chapter: chapter.chapter_id,
-                },
+                parent_chapter: chapter.chapter_id,
+                para_name: {
+                    equals: para_name.trim(),
+                    mode: 'insensitive'
+                }
             },
         });
 
         if (!paragraph) {
+            console.error(`[POST Notion] Paragraph not found: "${para_name}" in chapter ${chapter.chapter_id}`);
             return notFoundResponse("Structure cible de la notion introuvable (Paragraphe)");
         }
 

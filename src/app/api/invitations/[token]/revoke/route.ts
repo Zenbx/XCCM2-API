@@ -46,12 +46,10 @@ export async function DELETE(
             );
         }
 
-        // Vérifier que l'invitation est toujours en attente
-        if (invitation.invitation_state !== "Pending") {
+        // Note: On autorise désormais la révocation même si acceptée (pour supprimer un collaborateur)
+        if (invitation.invitation_state === "Rejected") {
             return errorResponse(
-                invitation.invitation_state === "Accepted"
-                    ? "Impossible de révoquer une invitation déjà acceptée"
-                    : "Cette invitation a déjà été déclinée",
+                "Cette invitation a déjà été déclinée",
                 undefined,
                 400
             );
