@@ -12,7 +12,8 @@
     "synapse": "tsx src/synapse/server.ts",
     "synapse:check": "node scripts/check-synapse-env.js",
     "synapse:dev": "npm run synapse:check && npm run synapse",
-    "test-synapse": "node synapse-standalone.cjs"
+    "test-synapse": "node synapse-standalone.cjs",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@babel/runtime-corejs3": "^7.28.6",
