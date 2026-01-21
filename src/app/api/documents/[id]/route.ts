@@ -31,6 +31,7 @@ import {
     notFoundResponse,
     serverErrorResponse,
 } from "@/utils/api-response";
+import { verifyToken, extractTokenFromHeader } from "@/lib/auth";
 
 type RouteParams = {
     params: Promise<{ id: string }>;
@@ -48,6 +49,15 @@ export async function GET(_request: NextRequest, context: RouteParams) {
 
         console.log(`📖 Récupération du document: ${doc_id}`);
 
+        // Récupérer le userId si connecté
+        const authHeader = _request.headers.get("Authorization");
+        const token = extractTokenFromHeader(authHeader);
+        let currentUserId: string | null = null;
+        if (token) {
+            const payload = await verifyToken(token);
+            if (payload) currentUserId = payload.userId;
+        }
+
         // Récupère le document avec les infos du projet source
         const document = await prisma.document.findUnique({
             where: { doc_id },
@@ -62,6 +72,7 @@ export async function GET(_request: NextRequest, context: RouteParams) {
                         },
                     },
                 },
+                likes: true, // Inclure les likes pour le compte
             },
         });
 
@@ -110,6 +121,8 @@ export async function GET(_request: NextRequest, context: RouteParams) {
                 published_at: document.published_at,
                 downloaded: document.downloaded,
                 consult: document.consult,
+                likes: document.likes.length,
+                isLiked: currentUserId ? document.likes.some((like: any) => like.liker_id === currentUserId) : false,
             },
             project: {
                 pr_id: document.project.pr_id,

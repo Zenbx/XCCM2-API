@@ -22,6 +22,7 @@ import {
     successResponse,
     serverErrorResponse,
 } from "@/utils/api-response";
+import { verifyToken, extractTokenFromHeader } from "@/lib/auth";
 
 const DOCUMENTS_CACHE_KEY = "library:all_documents";
 const CACHE_TTL = 1800; // 30 minutes
@@ -41,11 +42,20 @@ export async function GET(request: NextRequest) {
         const limit = parseInt(searchParams.get('limit') || '20', 10);
         const skip = (page - 1) * limit;
 
+        // Récupérer le userId si connecté
+        const authHeader = request.headers.get("Authorization");
+        const token = extractTokenFromHeader(authHeader);
+        let currentUserId: string | null = null;
+        if (token) {
+            const payload = await verifyToken(token);
+            if (payload) currentUserId = payload.userId;
+        }
+
         const cacheKey = `library:all_documents:page${page}:limit${limit}`;
 
         // 1. Essayer de récupérer le résultat depuis le cache Redis
         const cachedData = await cacheService.get<{ documents: any[], count: number, totalCount: number, hasMore: boolean }>(cacheKey);
-        if (cachedData) {
+        if (cachedData && !currentUserId) {
             console.log("⚡ Cache hit for library documents (page " + page + ")");
             return successResponse("Documents récupérés avec succès (cache)", cachedData);
         }
@@ -71,6 +81,7 @@ export async function GET(request: NextRequest) {
                         },
                     },
                 },
+                likes: true, // Inclure les likes pour le compte
             },
         });
 
@@ -92,6 +103,8 @@ export async function GET(request: NextRequest) {
                 `${doc.project.owner.firstname} ${doc.project.owner.lastname}`.trim(),
             tags: doc.project.tags,
             cover_image: doc.cover_image,
+            likes: doc.likes.length,
+            isLiked: currentUserId ? doc.likes.some((like: any) => like.liker_id === currentUserId) : false,
         }));
 
         const result = {
