@@ -38,7 +38,7 @@ const swaggerOptions: swaggerJSDoc.Options = {
         },
         servers: [
             {
-                url: "http://localhost:3000",
+                url: "http://xccm-2-api.vercel.app",
                 description: "Serveur de développement",
             },
             {

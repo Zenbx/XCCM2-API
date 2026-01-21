@@ -5,6 +5,8 @@
 
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
+import { realtimeService } from "@/services/realtime-service";
+import { cacheService } from "@/services/cache-service";
 import {
     successResponse,
     errorResponse,
@@ -102,6 +104,21 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
                 },
             });
 
+            // 📡 Broadcast temps réel
+            await realtimeService.broadcastStructureChange(
+                pr_name,
+                'STRUCTURE_CHANGED',
+                {
+                    type: 'chapter',
+                    action: 'moved',
+                    itemId: itemId,
+                    newParentId: newParentId
+                }
+            );
+
+            // 🗑️ Invalider le cache
+            await cacheService.delByPattern(`project:structure:${pr_name}:*`);
+
             return successResponse("Chapitre deplace avec succes", { chapter: updated });
 
         } else if (type === 'paragraph') {
@@ -142,6 +159,21 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
                     para_number: targetNumber,
                 },
             });
+
+            // 📡 Broadcast temps réel
+            await realtimeService.broadcastStructureChange(
+                pr_name,
+                'STRUCTURE_CHANGED',
+                {
+                    type: 'paragraph',
+                    action: 'moved',
+                    itemId: itemId,
+                    newParentId: newParentId
+                }
+            );
+
+            // 🗑️ Invalider le cache
+            await cacheService.delByPattern(`project:structure:${pr_name}:*`);
 
             return successResponse("Paragraphe deplace avec succes", { paragraph: updated });
 
@@ -187,6 +219,21 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
                     notion_number: targetNumber,
                 },
             });
+
+            // 📡 Broadcast temps réel
+            await realtimeService.broadcastStructureChange(
+                pr_name,
+                'STRUCTURE_CHANGED',
+                {
+                    type: 'notion',
+                    action: 'moved',
+                    itemId: itemId,
+                    newParentId: newParentId
+                }
+            );
+
+            // 🗑️ Invalider le cache
+            await cacheService.delByPattern(`project:structure:${pr_name}:*`);
 
             return successResponse("Notion deplacee avec succes", { notion: updated });
 

@@ -121,6 +121,7 @@ import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { createPartSchema } from "@/utils/validation";
 import { realtimeService } from "@/services/realtime-service";
+import { cacheService } from "@/services/cache-service";
 //import { renumberPartsAfterInsert } from "@/utils/granule-helpers";
 import {
     successResponse,
@@ -256,6 +257,9 @@ export async function POST(request: NextRequest, context: RouteParams) {
                 partId: part.part_id
             }
         );
+
+        // 🗑️ Invalider le cache
+        await cacheService.delByPattern(`project:structure:${pr_name}:*`);
 
         return successResponse("Partie créée avec succès", { part }, 201);
     } catch (error) {

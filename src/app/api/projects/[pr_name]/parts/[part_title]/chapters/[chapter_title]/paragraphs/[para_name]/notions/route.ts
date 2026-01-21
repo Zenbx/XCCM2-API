@@ -165,6 +165,7 @@ import {
 } from "@/utils/api-response";
 import { ZodError } from "zod";
 import { realtimeService } from "@/services/realtime-service";
+import { cacheService } from "@/services/cache-service";
 
 type RouteParams = {
     params: Promise<{
@@ -327,6 +328,9 @@ export async function POST(request: NextRequest, context: RouteParams) {
                 paraName: para_name
             }
         );
+
+        // 🗑️ Invalider le cache
+        await cacheService.delByPattern(`project:structure:${pr_name}:*`);
 
         return successResponse("Notion créée avec succès", { notion }, 201);
     } catch (error) {

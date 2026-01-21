@@ -130,6 +130,7 @@ import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { createChapterSchema } from "@/utils/validation";
 import { realtimeService } from "@/services/realtime-service";
+import { cacheService } from "@/services/cache-service";
 //import { renumberChaptersAfterInsert } from "@/utils/granule-helpers";
 import {
     successResponse,
@@ -277,6 +278,9 @@ export async function POST(request: NextRequest, context: RouteParams) {
                 partTitle: part_title
             }
         );
+
+        // 🗑️ Invalider le cache
+        await cacheService.delByPattern(`project:structure:${pr_name}:*`);
 
         return successResponse("Chapitre créé avec succès", { chapter }, 201);
     } catch (error) {

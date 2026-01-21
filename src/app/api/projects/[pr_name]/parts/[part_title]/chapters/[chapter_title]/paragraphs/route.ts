@@ -142,6 +142,7 @@ import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { createParagraphSchema } from "@/utils/validation";
 import { realtimeService } from "@/services/realtime-service";
+import { cacheService } from "@/services/cache-service";
 import {
     successResponse,
     errorResponse,
@@ -295,6 +296,9 @@ export async function POST(request: NextRequest, context: RouteParams) {
                 chapterTitle: chapter_title
             }
         );
+
+        // 🗑️ Invalider le cache
+        await cacheService.delByPattern(`project:structure:${pr_name}:*`);
 
         return successResponse("Paragraphe créé avec succès", { paragraph }, 201);
     } catch (error) {
