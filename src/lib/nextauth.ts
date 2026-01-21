@@ -103,27 +103,7 @@ export const authOptions: NextAuthOptions = {
         token.sub = user.id || user.email || undefined;
       }
 
-      if (profile?.name) {
-        const nameParts = (profile.name as string).split(" ");
-        token.given_name = nameParts[0];
-        token.family_name = nameParts.slice(1).join(" ");
-      }
-
-      // Si c'est une première connexion OAuth, récupérer l'utilisateur depuis la BD
-      if (account && account.provider && !user) {
-        try {
-          const prisma = require("./prisma").default;
-          const dbUser = await prisma.user.findUnique({
-            where: { email: token.email || "" },
-          });
-          if (dbUser) {
-            token.sub = dbUser.user_id || token.sub;
-          }
-        } catch (err) {
-          // Silently fail - token will use fallback
-        }
-      }
-
+      // On ne modifie pas les noms ici, on laisse le bridge gérer la logique métier
       return token;
     },
     async session({ session, token }) {
@@ -133,37 +113,13 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
     async signIn({ user, account, profile }) {
-      // Créer l'utilisateur en base SANS bloquer OAuth
-      if (profile && user?.email) {
-        try {
-          const prisma = require("./prisma").default;
-
-          const nameParts = (profile.name as string)?.split(" ") || ["", ""];
-          const firstName = nameParts[0] || (profile as any)?.given_name || "";
-          const lastName = nameParts.slice(1).join(" ") || (profile as any)?.family_name || "";
-
-          await prisma.user.upsert({
-            where: { email: user.email },
-            update: {
-              firstname: firstName,
-              lastname: lastName,
-            },
-            create: {
-              email: user.email,
-              firstname: firstName,
-              lastname: lastName,
-            },
-          });
-
-          return true;
-        } catch (error) {
-          // NE JAMAIS BLOQUER OAUTH - juste log l'erreur
-          console.error("[OAuth SignIn] DB error:", error);
-          return true;
-        }
+      // Autoriser tous les logins OAuth à passer vers le Bridge
+      // Le Bridge décidera si on crée le compte ou si on bloque selon le mode (login/register)
+      if (account?.provider === 'google' || account?.provider === 'azure-ad') {
+        return true;
       }
 
-      return false;
+      return !!user;
     },
   },
 };
