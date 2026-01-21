@@ -1,9 +1,5 @@
-/**
- * @fileoverview Générateur de documents PDF à partir de HTML
- * Utilise Puppeteer pour une conversion HTML -> PDF haute fidélité
- */
-
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
 import { PassThrough } from "stream";
 import type { ProjectForExport } from "@/types/document.types";
 
@@ -469,7 +465,26 @@ export async function generatePDF(project: ProjectForExport): Promise<PassThroug
         let browser;
         try {
             console.log("🚀 Lancement de Puppeteer pour la génération PDF...");
-            browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
+
+            const isVercel = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production';
+
+            let launchOptions: any = {
+                headless: true,
+                args: ['--no-sandbox', '--disable-setuid-sandbox'],
+            };
+
+            if (isVercel) {
+                console.log("🛠️ Configuration spécifique Vercel/Production détectée");
+                launchOptions = {
+                    args: chromium.args,
+                    defaultViewport: chromium.defaultViewport,
+                    executablePath: await chromium.executablePath(),
+                    headless: chromium.headless,
+                    ignoreHTTPSErrors: true,
+                };
+            }
+
+            browser = await puppeteer.launch(launchOptions);
             const page = await browser.newPage();
 
             await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
@@ -482,14 +497,23 @@ export async function generatePDF(project: ProjectForExport): Promise<PassThroug
                 displayHeaderFooter: false,
             });
 
-            console.log("✅ PDF généré avec succès via Puppeteer.");
+            console.log("✅ PDF généré avec succès.");
             stream.end(pdfBuffer);
 
         } catch (error: any) {
-            const isVercel = process.env.VERCEL === '1';
-            const extraInfo = isVercel ? " (Environnement Vercel détecté : Puppeteer standard non supporté sans configuration spécifique)" : "";
-            console.error("❌ Erreur lors de la génération PDF avec Puppeteer:", error);
-            stream.emit('error', new Error(`Erreur Puppeteer${extraInfo}: ${error.message}`));
+            console.error("❌ Erreur lors de la génération PDF:", error);
+
+            let detailedError = error.message;
+            if (error.message.includes("Could not find Chrome")) {
+                detailedError = "Navigateur non trouvé. ";
+                if (process.env.VERCEL) {
+                    detailedError += "Erreur de configuration sur Vercel (@sparticuz/chromium).";
+                } else {
+                    detailedError += "En local, assurez-vous d'avoir Chrome installé ou configurez PUPPETEER_EXECUTABLE_PATH.";
+                }
+            }
+
+            stream.emit('error', new Error(`Erreur Génération PDF: ${detailedError}`));
         } finally {
             if (browser) {
                 await browser.close();
