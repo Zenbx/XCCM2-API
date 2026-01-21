@@ -34,6 +34,7 @@ export interface PublicUser {
     occupation?: string | null;
     profile_picture?: string | null;
     role?: string;
+    created_at: Date;
 }
 
 /**

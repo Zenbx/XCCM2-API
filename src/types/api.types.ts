@@ -75,4 +75,5 @@ export interface UserStats {
     totalLikesOnPublishedCourses: number;
     isActive: boolean;
     recentActivities: RecentActivity[];
+    createdAt: Date;
 }

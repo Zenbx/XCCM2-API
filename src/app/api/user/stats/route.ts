@@ -108,7 +108,12 @@ export async function GET(request: NextRequest) {
             return notFoundResponse("Utilisateur non trouvé");
         }
 
-        // 1. Nombre total de documents publiés (snapshots)
+        // 1. Nombre total de projets créés (Cours Créés)
+        const totalProjectsCreated = await prisma.project.count({
+            where: { owner_id: userId },
+        });
+
+        // 2. Nombre total de documents publiés (snapshots)
         const totalDocumentsPublished = await prisma.document.count({
             where: {
                 project: {
@@ -117,8 +122,7 @@ export async function GET(request: NextRequest) {
             },
         });
 
-        // 2. Récupère tous les documents publiés (snapshots) liés aux projets de l'utilisateur
-        // On ne filtre pas par project.is_published car un projet peut avoir des documents publiés même s'il est en cours d'édition (WIP)
+        // 3. Récupère tous les documents publiés (snapshots) liés aux projets de l'utilisateur
         const publishedDocuments = await prisma.document.findMany({
             where: {
                 project: {
@@ -141,8 +145,7 @@ export async function GET(request: NextRequest) {
             totalDownloadsOnPublishedCourses += doc.downloaded || 0;
         }
 
-        // 3. Nombre de likes sur les cours publiés
-        // 3. Nombre de likes sur les documents publiés
+        // 4. Nombre de likes sur les documents publiés
         const totalLikesOnPublishedCourses = await prisma.like.count({
             where: {
                 document: {
@@ -153,7 +156,7 @@ export async function GET(request: NextRequest) {
             },
         });
 
-        // 4. Détermine si l'utilisateur est actif (activité dans les 30 derniers jours)
+        // 5. Détermine si l'utilisateur est actif (activité dans les 30 derniers jours)
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -208,7 +211,7 @@ export async function GET(request: NextRequest) {
             paragraphActivity > 0 ||
             notionActivity > 0;
 
-        // 5. Récupère les activités récentes
+        // 6. Récupère les activités récentes
         const [recentProjects, recentComments, recentLikes, recentInvitations] = await Promise.all([
             prisma.project.findMany({
                 where: { owner_id: userId },
@@ -307,16 +310,17 @@ export async function GET(request: NextRequest) {
 
         // Trie toutes les activités par date décroissante
         const recentActivities = activities.sort(
-            (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
+            (a: RecentActivity, b: RecentActivity) => b.timestamp.getTime() - a.timestamp.getTime()
         ).slice(0, 20); // Limite à 20 activités les plus récentes
 
         const stats: UserStats = {
-            totalCoursesCreated: totalDocumentsPublished,
+            totalCoursesCreated: totalProjectsCreated, // On compte les projets comme cours créés
             totalViewsOnPublishedCourses,
             totalDownloadsOnPublishedCourses,
             totalLikesOnPublishedCourses,
             isActive,
             recentActivities,
+            createdAt: user.created_at,
         };
 
         return successResponse("Statistiques récupérées avec succès", stats);

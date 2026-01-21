@@ -164,5 +164,6 @@ export function toPublicUser(user: {
         occupation: user.occupation,
         profile_picture: user.profile_picture,
         role: user.role || 'user',
+        created_at: user.created_at,
     };
 }
