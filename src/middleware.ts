@@ -59,6 +59,7 @@ const PUBLIC_ROUTES: string[] = [
     "/api/auth/callback",          // Covers all callback sub-routes
     "/api/auth/signin",            // NextAuth sign in routes (Google, Microsoft, etc.)
     "/api/auth/session",           // NextAuth session endpoint
+    "/api/auth/bridge",            // Bridge to convert Session to JWT/Token
     "/api/auth/session-token",     // Bridge endpoint to convert NextAuth session to JWT
     "/api/auth/providers",         // NextAuth providers list
     "/api/auth/csrf",              // NextAuth CSRF token
