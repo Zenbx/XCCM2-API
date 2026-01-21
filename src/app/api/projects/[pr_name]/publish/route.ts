@@ -227,8 +227,18 @@ export async function POST(request: NextRequest, context: RouteParams) {
         console.log(`📤 [Publication] Starting ${format.toUpperCase()} generation for: ${pr_name} (File: ${finalDocName})`);
 
         // Publie le document sur Supabase
-        const publishResult = await publishDocument(projectData, format);
-        console.log(`✅ [Publication] Supabase upload result:`, publishResult);
+        let publishResult;
+        try {
+            publishResult = await publishDocument(projectData, format);
+            console.log(`✅ [Publication] Supabase upload result:`, publishResult);
+        } catch (pubError: any) {
+            console.error(`❌ [Publication] Error in publishDocument (${format}):`, pubError);
+            return errorResponse(
+                `Erreur lors de la génération/upload du document (${format})`,
+                pubError.message || "Erreur inconnue",
+                500
+            );
+        }
 
         // Estime le nombre de pages
         const estimatedPages = estimatePages(projectData);

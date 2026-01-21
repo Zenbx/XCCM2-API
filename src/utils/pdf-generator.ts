@@ -482,9 +482,11 @@ export async function generatePDF(project: ProjectForExport): Promise<PassThroug
             console.log("✅ PDF généré avec succès via Puppeteer.");
             stream.end(pdfBuffer);
 
-        } catch (error) {
+        } catch (error: any) {
+            const isVercel = process.env.VERCEL === '1';
+            const extraInfo = isVercel ? " (Environnement Vercel détecté : Puppeteer standard non supporté sans configuration spécifique)" : "";
             console.error("❌ Erreur lors de la génération PDF avec Puppeteer:", error);
-            stream.emit('error', new Error('Erreur Puppeteer'));
+            stream.emit('error', new Error(`Erreur Puppeteer${extraInfo}: ${error.message}`));
         } finally {
             if (browser) {
                 await browser.close();

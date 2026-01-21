@@ -143,7 +143,17 @@ export async function GET(request: NextRequest, context: RouteParams) {
         console.log(`📄 Génération du document ${format.toUpperCase()} pour le projet: ${pr_name}`);
 
         // Génère le document
-        const documentStream = await generateDocument(projectData, format);
+        let documentStream;
+        try {
+            documentStream = await generateDocument(projectData, format);
+        } catch (genError: any) {
+            console.error(`❌ [Export] Error in generateDocument (${format}):`, genError);
+            return errorResponse(
+                `Erreur lors de la génération du document (${format})`,
+                genError.message || "Erreur inconnue",
+                500
+            );
+        }
 
         // Prépare le nom du fichier
         const fileName = `${pr_name.replace(/[^a-z0-9]/gi, "_")}.${format}`;
