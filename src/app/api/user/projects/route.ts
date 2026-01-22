@@ -7,26 +7,27 @@ import {
 } from "@/utils/api-response";
 
 /**
- * GET /api/admin/projects
- * Récupère tous les projets de la plateforme (Admin uniquement)
+ * GET /api/user/projects
+ * Get all projects for the authenticated user with aggregated stats
  */
 export async function GET(request: NextRequest) {
     try {
-        const userRole = request.headers.get("x-user-role");
+        const userId = request.headers.get("x-user-id");
+
+        if (!userId) {
+            return errorResponse("Non authentifié", undefined, 401);
+        }
 
         const projects = await prisma.project.findMany({
+            where: {
+                owner_id: userId,
+            },
             include: {
-                owner: {
-                    select: {
-                        user_id: true,
-                        firstname: true,
-                        lastname: true,
-                        email: true,
-                    },
-                },
                 _count: {
                     select: {
                         parts: true,
+                        documents: true,
+                        comments: true,
                     },
                 },
                 documents: {
@@ -35,14 +36,15 @@ export async function GET(request: NextRequest) {
                         downloaded: true,
                         _count: {
                             select: {
-                                likes: true
+                                likes: true,
+                                views: true,
                             }
                         }
                     }
                 }
             },
             orderBy: {
-                created_at: "desc",
+                updated_at: "desc",
             },
         });
 
@@ -50,19 +52,25 @@ export async function GET(request: NextRequest) {
             const totalViews = p.documents.reduce((acc, doc) => acc + (doc.consult || 0), 0);
             const totalDownloads = p.documents.reduce((acc, doc) => acc + (doc.downloaded || 0), 0);
             const totalLikes = p.documents.reduce((acc, doc) => acc + (doc._count?.likes || 0), 0);
+            const totalDocViews = p.documents.reduce((acc, doc) => acc + (doc._count?.views || 0), 0);
 
             return {
                 id: p.pr_id,
                 name: p.pr_name,
-                owner: p.owner ? `${p.owner.firstname} ${p.owner.lastname}` : "Inconnu",
-                email: p.owner?.email || "N/A",
-                created: p.created_at,
-                status: p.is_published ? "Published" : "Active",
-                size: `${p._count?.parts || 0} chapitres`,
+                created_at: p.created_at,
+                updated_at: p.updated_at,
+                is_published: p.is_published,
+                description: p.description,
+                category: p.category,
+                level: p.level,
                 stats: {
+                    parts: p._count?.parts || 0,
+                    documents: p._count?.documents || 0,
+                    comments: p._count?.comments || 0,
                     views: totalViews,
                     downloads: totalDownloads,
-                    likes: totalLikes
+                    likes: totalLikes,
+                    uniqueViews: totalDocViews,
                 }
             };
         });
@@ -72,7 +80,7 @@ export async function GET(request: NextRequest) {
             count: formattedProjects.length,
         });
     } catch (error) {
-        console.error("Erreur /api/admin/projects:", error);
+        console.error("Erreur /api/user/projects:", error);
         return serverErrorResponse(
             "Erreur serveur",
             error instanceof Error ? error.message : undefined
