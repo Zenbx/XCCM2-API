@@ -172,9 +172,12 @@ export async function middleware(request: NextRequest) {
          */
         const requestHeaders = new Headers(request.headers);
 
-        // Type assertion pour s'assurer que payload a une propriété userId
+        // Type assertion pour s'assurer que payload a une propriété userId et role
         const userId = (payload as any).userId;
+        const userRole = (payload as any).role || 'user';
+
         requestHeaders.set("x-user-id", String(userId));
+        requestHeaders.set("x-user-role", String(userRole));
 
         const responseWithHeaders = NextResponse.next({
             request: {
