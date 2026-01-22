@@ -30,6 +30,8 @@ model User {
   occupation      String?
   profile_picture String?
   role            String   @default("user")
+  reset_token     String?
+  reset_expires   DateTime?
 
   // Métadonnées recommandées pour le cycle de vie des données
   created_at DateTime @default(now())

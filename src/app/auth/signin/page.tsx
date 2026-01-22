@@ -97,7 +97,7 @@ function SignInContent() {
                             </div>
 
                             <a
-                                href="http://localhost:3000/login"
+                                href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/login`}
                                 className="block text-center text-sm font-medium text-[#99334C] hover:text-[#7a283d] transition-colors"
                             >
                                 Retour à la connexion classique

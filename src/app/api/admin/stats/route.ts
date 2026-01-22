@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
             totalLikes,
             totalComments,
             recentUsers,
+            recentProjects,
         ] = await Promise.all([
             prisma.user.count(),
             prisma.project.count(),
@@ -34,13 +35,25 @@ export async function GET(request: NextRequest) {
             prisma.comment.count(),
             prisma.user.findMany({
                 orderBy: { created_at: "desc" },
-                take: 10,
+                take: 5,
                 select: {
                     user_id: true,
                     firstname: true,
                     lastname: true,
                     email: true,
                     created_at: true,
+                },
+            }),
+            prisma.project.findMany({
+                orderBy: { created_at: "desc" },
+                take: 5,
+                include: {
+                    owner: {
+                        select: {
+                            firstname: true,
+                            lastname: true,
+                        },
+                    },
                 },
             }),
         ]);
@@ -95,6 +108,7 @@ export async function GET(request: NextRequest) {
                 totalComments,
             },
             recentUsers,
+            recentProjects,
             users: usersWithStats,
         });
     } catch (error) {
