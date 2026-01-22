@@ -82,14 +82,17 @@ export async function GET(request: NextRequest) {
         // 4. Redirect to Frontend with Token
         const redirectUrl = new URL(`${frontendUrl}/auth/callback`);
         redirectUrl.searchParams.set("token", token);
-        if (mode) redirectUrl.searchParams.set("mode", mode);
+        if (mode === "register") {
+            redirectUrl.searchParams.set("mode", "register");
+        }
 
-        console.log("[Bridge] Redirecting to:", redirectUrl.toString());
+        console.log(`[Bridge] Successful ${mode} for ${session.user.email}. Redirecting to frontend...`);
         return NextResponse.redirect(redirectUrl);
 
     } catch (error) {
-        console.error("[Bridge] Error:", error);
         const mode = request.nextUrl.searchParams.get("mode") || "login";
+        console.error(`[Bridge] Critical error during ${mode}:`, error);
+
         const frontendUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://xccm-2.vercel.app";
         const redirectPath = mode === "register" ? "/register" : "/login";
         return NextResponse.redirect(`${frontendUrl}${redirectPath}?error=BridgeError`);
