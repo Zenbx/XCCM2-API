@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
             return errorResponse("Utilisateur non trouvé", undefined, 404);
         }
 
-        return successResponse("Utilisateur récupéré", user);
+        return successResponse("Utilisateur récupéré", { user });
     } catch (error) {
         console.error("Erreur /api/auth/me:", error);
         return serverErrorResponse(
