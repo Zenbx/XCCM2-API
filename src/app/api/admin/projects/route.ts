@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     try {
         const userRole = request.headers.get("x-user-role");
 
-        if (userRole !== "admin") {
+        if (userRole?.toLowerCase() !== "admin") {
             return errorResponse("Accès refusé", undefined, 403);
         }
 
@@ -42,11 +42,11 @@ export async function GET(request: NextRequest) {
         const formattedProjects = projects.map((p) => ({
             id: p.pr_id,
             name: p.pr_name,
-            owner: `${p.owner.firstname} ${p.owner.lastname}`,
-            email: p.owner.email,
+            owner: p.owner ? `${p.owner.firstname} ${p.owner.lastname}` : "Inconnu",
+            email: p.owner?.email || "N/A",
             created: p.created_at,
             status: p.is_published ? "Published" : "Active",
-            size: `${p._count.parts} chapitres`, // Simplified size info
+            size: `${p._count?.parts || 0} chapitres`,
         }));
 
         return successResponse("Projets récupérés avec succès", {
