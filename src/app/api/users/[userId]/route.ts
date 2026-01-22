@@ -113,16 +113,16 @@ export async function DELETE(
         const payload = await verifyToken(token);
         if (!payload) return errorResponse("Token invalide", undefined, 401);
 
-        // Vérifier que c'est un admin
-        const requestor = await prisma.user.findUnique({ where: { user_id: payload.userId } });
-        if (!requestor || requestor.user_role !== 'ADMIN') {
+        // Vérifier que c'est un admin via le header injecté par le middleware
+        const userRole = request.headers.get("x-user-role");
+        if (userRole !== "admin") {
             return errorResponse("Accès refusé. Réservé aux administrateurs.", undefined, 403);
         }
 
         const { userId } = await params;
 
         // Ne pas permettre de se supprimer soi-même
-        if (userId === payload.userId) {
+        if (userId === request.headers.get("x-user-id")) {
             return errorResponse("Vous ne pouvez pas supprimer votre propre compte", undefined, 400);
         }
 
@@ -160,31 +160,25 @@ export async function PATCH(
     { params }: { params: Promise<{ userId: string }> }
 ) {
     try {
-        // Vérifier l'authentification
-        const authHeader = request.headers.get("Authorization");
-        if (!authHeader) return errorResponse("Authentification requise", undefined, 401);
-
-        const token = authHeader.split(" ")[1];
-        const payload = await verifyToken(token);
-        if (!payload) return errorResponse("Token invalide", undefined, 401);
-
         // Vérifier que c'est un admin
-        const requestor = await prisma.user.findUnique({ where: { user_id: payload.userId } });
-        if (!requestor || requestor.user_role !== 'ADMIN') {
+        const userRole = request.headers.get("x-user-role");
+        if (userRole !== "admin") {
             return errorResponse("Accès refusé. Réservé aux administrateurs.", undefined, 403);
         }
 
         const { userId } = await params;
         const body = await request.json();
-        const { user_role } = body;
+        const { role } = body; // Corrigé: role au lieu de user_role
 
         // Valider le rôle
-        if (!user_role || !['USER', 'ADMIN', 'EDITOR'].includes(user_role)) {
-            return errorResponse("Rôle invalide. Doit être USER, ADMIN ou EDITOR", undefined, 400);
+        if (!role || !['user', 'admin', 'editor'].includes(role.toLowerCase())) {
+            return errorResponse("Rôle invalide. Doit être user, admin ou editor", undefined, 400);
         }
 
+        const targetRole = role.toLowerCase();
+
         // Ne pas permettre de modifier son propre rôle
-        if (userId === payload.userId) {
+        if (userId === request.headers.get("x-user-id")) {
             return errorResponse("Vous ne pouvez pas modifier votre propre rôle", undefined, 400);
         }
 
@@ -200,13 +194,13 @@ export async function PATCH(
         // Mettre à jour le rôle
         const updatedUser = await prisma.user.update({
             where: { user_id: userId },
-            data: { user_role },
+            data: { role: targetRole },
             select: {
                 user_id: true,
                 email: true,
                 firstname: true,
                 lastname: true,
-                user_role: true
+                role: true
             }
         });
 
