@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     try {
         const userRole = request.headers.get("x-user-role");
 
-        if (userRole !== "admin") {
+        if (userRole?.toLowerCase() !== "admin") {
             return errorResponse("Accès refusé", undefined, 403);
         }
 
@@ -61,7 +61,7 @@ export async function PUT(request: NextRequest) {
     try {
         const userRole = request.headers.get("x-user-role");
 
-        if (userRole !== "admin") {
+        if (userRole?.toLowerCase() !== "admin") {
             return errorResponse("Accès refusé", undefined, 403);
         }
 
