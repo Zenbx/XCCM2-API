@@ -209,10 +209,10 @@ export async function GET(request: NextRequest, context: RouteParams) {
             para_name: encodedParaName,
         } = await context.params;
 
-        const pr_name = decodeURIComponent(encodedPrName);
-        const part_title = decodeURIComponent(encodedPartTitle);
-        const chapter_title = decodeURIComponent(encodedChapterTitle);
-        const para_name = decodeURIComponent(encodedParaName);
+        const pr_name = decodeURIComponent(encodedPrName).trim();
+        const part_title = decodeURIComponent(encodedPartTitle).trim();
+        const chapter_title = decodeURIComponent(encodedChapterTitle).trim();
+        const para_name = decodeURIComponent(encodedParaName).trim();
 
         // Vérifie que le projet existe et que l'utilisateur y a accès
         const project = await prisma.project.findFirst({
@@ -309,10 +309,10 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
             para_name: encodedParaName,
         } = await context.params;
 
-        const pr_name = decodeURIComponent(encodedPrName);
-        const part_title = decodeURIComponent(encodedPartTitle);
-        const chapter_title = decodeURIComponent(encodedChapterTitle);
-        const currentName = decodeURIComponent(encodedParaName);
+        const pr_name = decodeURIComponent(encodedPrName).trim();
+        const part_title = decodeURIComponent(encodedPartTitle).trim();
+        const chapter_title = decodeURIComponent(encodedChapterTitle).trim();
+        const currentName = decodeURIComponent(encodedParaName).trim();
 
         // Vérifie que le projet existe et que l'utilisateur y a accès
         const project = await prisma.project.findFirst({
@@ -513,10 +513,10 @@ export async function DELETE(request: NextRequest, context: RouteParams) {
             para_name: encodedParaName,
         } = await context.params;
 
-        const pr_name = decodeURIComponent(encodedPrName);
-        const part_title = decodeURIComponent(encodedPartTitle);
-        const chapter_title = decodeURIComponent(encodedChapterTitle);
-        const para_name = decodeURIComponent(encodedParaName);
+        const pr_name = decodeURIComponent(encodedPrName).trim();
+        const part_title = decodeURIComponent(encodedPartTitle).trim();
+        const chapter_title = decodeURIComponent(encodedChapterTitle).trim();
+        const para_name = decodeURIComponent(encodedParaName).trim();
 
         // Vérifie que le projet existe et que l'utilisateur y a accès
         const project = await prisma.project.findFirst({

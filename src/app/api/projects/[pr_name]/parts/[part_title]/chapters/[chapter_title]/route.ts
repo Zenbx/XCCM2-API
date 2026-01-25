@@ -191,9 +191,9 @@ export async function GET(request: NextRequest, context: RouteParams) {
             chapter_title: encodedChapterTitle,
         } = await context.params;
 
-        const pr_name = decodeURIComponent(encodedPrName);
-        const part_title = decodeURIComponent(encodedPartTitle);
-        const chapter_title = decodeURIComponent(encodedChapterTitle);
+        const pr_name = decodeURIComponent(encodedPrName).trim();
+        const part_title = decodeURIComponent(encodedPartTitle).trim();
+        const chapter_title = decodeURIComponent(encodedChapterTitle).trim();
 
         // Vérifie que le projet existe et que l'utilisateur y a accès
         const project = await prisma.project.findFirst({
@@ -275,9 +275,9 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
             chapter_title: encodedChapterTitle,
         } = await context.params;
 
-        const pr_name = decodeURIComponent(encodedPrName);
-        const part_title = decodeURIComponent(encodedPartTitle);
-        const currentTitle = decodeURIComponent(encodedChapterTitle);
+        const pr_name = decodeURIComponent(encodedPrName).trim();
+        const part_title = decodeURIComponent(encodedPartTitle).trim();
+        const currentTitle = decodeURIComponent(encodedChapterTitle).trim();
 
         // Vérifie que le projet existe et que l'utilisateur y a accès
         const project = await prisma.project.findFirst({
@@ -465,9 +465,9 @@ export async function DELETE(request: NextRequest, context: RouteParams) {
             chapter_title: encodedChapterTitle,
         } = await context.params;
 
-        const pr_name = decodeURIComponent(encodedPrName);
-        const part_title = decodeURIComponent(encodedPartTitle);
-        const chapter_title = decodeURIComponent(encodedChapterTitle);
+        const pr_name = decodeURIComponent(encodedPrName).trim();
+        const part_title = decodeURIComponent(encodedPartTitle).trim();
+        const chapter_title = decodeURIComponent(encodedChapterTitle).trim();
 
         // Vérifie que le projet existe et que l'utilisateur y a accès
         const project = await prisma.project.findFirst({

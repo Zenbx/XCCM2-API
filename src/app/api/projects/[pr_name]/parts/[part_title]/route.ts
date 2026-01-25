@@ -168,8 +168,8 @@ export async function GET(request: NextRequest, context: RouteParams) {
 
         const { pr_name: encodedPrName, part_title: encodedPartTitle } =
             await context.params;
-        const pr_name = decodeURIComponent(encodedPrName);
-        const part_title = decodeURIComponent(encodedPartTitle);
+        const pr_name = decodeURIComponent(encodedPrName).trim();
+        const part_title = decodeURIComponent(encodedPartTitle).trim();
 
         // Vérifie que le projet existe et que l'utilisateur y a accès
         const project = await prisma.project.findFirst({
@@ -233,8 +233,8 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
 
         const { pr_name: encodedPrName, part_title: encodedPartTitle } =
             await context.params;
-        const pr_name = decodeURIComponent(encodedPrName);
-        const currentTitle = decodeURIComponent(encodedPartTitle);
+        const pr_name = decodeURIComponent(encodedPrName).trim();
+        const currentTitle = decodeURIComponent(encodedPartTitle).trim();
 
         // Vérifie que le projet existe et que l'utilisateur y a accès
         const project = await prisma.project.findFirst({
@@ -408,8 +408,8 @@ export async function DELETE(request: NextRequest, context: RouteParams) {
 
         const { pr_name: encodedPrName, part_title: encodedPartTitle } =
             await context.params;
-        const pr_name = decodeURIComponent(encodedPrName);
-        const part_title = decodeURIComponent(encodedPartTitle);
+        const pr_name = decodeURIComponent(encodedPrName).trim();
+        const part_title = decodeURIComponent(encodedPartTitle).trim();
 
         // Vérifie que le projet existe et que l'utilisateur y a accès
         const project = await prisma.project.findFirst({
