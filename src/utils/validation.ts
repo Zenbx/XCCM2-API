@@ -75,8 +75,8 @@ export const createProjectSchema = z.object({
         .max(100, "Le nom du projet ne peut pas dépasser 100 caractères")
         .trim()
         .regex(
-            /^[a-zA-Z0-9\s\.\-_àâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ]+$/,
-            "Le nom du projet ne peut contenir que des lettres, chiffres, espaces, points, tirets et underscores"
+            /^[a-zA-Z0-9\s\.\-_àâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ\(\)!?\:\,\'\"\/&\#\@\[\]]+$/,
+            "Le nom du projet ne peut contenir que des lettres, chiffres, espaces et ponctuation standard"
         ),
     overwrite: z.boolean().optional(),
 });
@@ -91,8 +91,8 @@ export const updateProjectSchema = z.object({
         .max(100, "Le nom du projet ne peut pas dépasser 100 caractères")
         .trim()
         .regex(
-            /^[a-zA-Z0-9\s\.\-_àâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ]+$/,
-            "Le nom du projet ne peut contenir que des lettres, chiffres, espaces, points, tirets et underscores"
+            /^[a-zA-Z0-9\s\.\-_àâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ\(\)!?\:\,\'\"\/&\#\@\[\]]+$/,
+            "Le nom du projet ne peut contenir que des lettres, chiffres, espaces et ponctuation standard"
         )
         .optional(),
 
