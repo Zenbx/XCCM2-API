@@ -298,7 +298,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
         );
 
         // 🗑️ Invalider le cache
-        await cacheService.delByPattern(`project:structure:${pr_name}:*`);
+        await cacheService.invalidateProjectStructure(pr_name);
 
         return successResponse("Paragraphe créé avec succès", { paragraph }, 201);
     } catch (error) {

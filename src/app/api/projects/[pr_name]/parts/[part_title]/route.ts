@@ -135,6 +135,7 @@ import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { updatePartSchema } from "@/utils/validation";
 import { realtimeService } from "@/services/realtime-service";
+import { cacheService } from "@/services/cache-service";
 import {
     renumberPartsAfterDelete,
     renumberPartsAfterUpdate,
@@ -368,6 +369,9 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
             }
         );
 
+        // 🗑️ Invalider le cache de la structure
+        await cacheService.invalidateProjectStructure(pr_name);
+
         return successResponse("Partie modifiée avec succès", {
             part: updatedPart,
         });
@@ -468,6 +472,9 @@ export async function DELETE(request: NextRequest, context: RouteParams) {
                 partId: existingPart.part_id
             }
         );
+
+        // 🗑️ Invalider le cache
+        await cacheService.invalidateProjectStructure(pr_name);
 
         return successResponse("Partie supprimée avec succès");
     } catch (error) {

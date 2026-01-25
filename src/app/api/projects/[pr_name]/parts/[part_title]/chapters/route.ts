@@ -280,7 +280,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
         );
 
         // 🗑️ Invalider le cache
-        await cacheService.delByPattern(`project:structure:${pr_name}:*`);
+        await cacheService.invalidateProjectStructure(pr_name);
 
         return successResponse("Chapitre créé avec succès", { chapter }, 201);
     } catch (error) {

@@ -117,7 +117,7 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
             );
 
             // 🗑️ Invalider le cache
-            await cacheService.delByPattern(`project:structure:${pr_name}:*`);
+            await cacheService.invalidateProjectStructure(pr_name);
 
             return successResponse("Chapitre deplace avec succes", { chapter: updated });
 
@@ -173,7 +173,7 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
             );
 
             // 🗑️ Invalider le cache
-            await cacheService.delByPattern(`project:structure:${pr_name}:*`);
+            await cacheService.invalidateProjectStructure(pr_name);
 
             return successResponse("Paragraphe deplace avec succes", { paragraph: updated });
 
@@ -233,7 +233,7 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
             );
 
             // 🗑️ Invalider le cache
-            await cacheService.delByPattern(`project:structure:${pr_name}:*`);
+            await cacheService.invalidateProjectStructure(pr_name);
 
             return successResponse("Notion deplacee avec succes", { notion: updated });
 

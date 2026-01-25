@@ -543,7 +543,7 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
         );
 
         // 🗑️ Invalider le cache de la structure
-        await cacheService.delByPattern(`project:structure:${pr_name}:*`);
+        await cacheService.invalidateProjectStructure(pr_name);
 
         return successResponse("Notion modifiée avec succès", {
             notion: updatedNotion,
@@ -701,6 +701,9 @@ export async function DELETE(request: NextRequest, context: RouteParams) {
                 paraName: para_name
             }
         );
+
+        // 🗑️ Invalider le cache de la structure
+        await cacheService.invalidateProjectStructure(pr_name);
 
         return successResponse("Notion supprimée avec succès");
 

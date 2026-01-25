@@ -47,6 +47,13 @@ class CacheService {
     }
 
     /**
+     * Invalide la structure d'un projet pour tous les utilisateurs
+     */
+    async invalidateProjectStructure(pr_name: string): Promise<void> {
+        await this.delByPattern(`project:structure:${pr_name}:*`);
+    }
+
+    /**
      * Supprime plusieurs clés correspondant à un pattern
      * Utile pour l'invalidation (ex: "projects:*")
      */

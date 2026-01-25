@@ -259,7 +259,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
         );
 
         // 🗑️ Invalider le cache
-        await cacheService.delByPattern(`project:structure:${pr_name}:*`);
+        await cacheService.invalidateProjectStructure(pr_name);
 
         return successResponse("Partie créée avec succès", { part }, 201);
     } catch (error) {

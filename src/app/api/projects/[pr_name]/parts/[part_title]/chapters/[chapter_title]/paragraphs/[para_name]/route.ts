@@ -170,6 +170,7 @@ import prisma from "@/lib/prisma";
 import { updateParagraphSchema } from "@/utils/validation";
 import { renumberParagraphsAfterDelete, renumberParagraphsAfterUpdate } from "@/utils/granule-helpers";
 import { realtimeService } from "@/services/realtime-service";
+import { cacheService } from "@/services/cache-service";
 import {
     successResponse,
     errorResponse,
@@ -455,140 +456,6 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
                 }),
             },
         });
-
-        // 📡 Broadcast temps réel
-        await realtimeService.broadcastStructureChange(
-            pr_name,
-            'STRUCTURE_CHANGED',
-            {
-                type: 'paragraph',
-                action: 'updated',
-                paraId: updatedParagraph.para_id,
-                chapterTitle: chapter_title
-            }
-        );
-
-        return successResponse("Paragraphe modifié avec succès", {
-            paragraph: updatedParagraph,
-        });
-    } catch (error) {
-        if (error instanceof ZodError) {
-            const errors: Record<string, string[]> = {};
-            error.issues.forEach((err) => {
-                const field = err.path.join(".");
-                if (!errors[field]) {
-                    errors[field] = [];
-                }
-                errors[field].push(err.message);
-            });
-            return validationErrorResponse(errors);
-        }
-
-        console.error("Erreur lors de la modification du paragraphe:", error);
-        return serverErrorResponse(
-            "Une erreur est survenue lors de la modification du paragraphe",
-            error instanceof Error ? error.message : undefined
-        );
-    }
-}
-
-/**
- * Handler DELETE pour supprimer un paragraphe
- * @param request - Requête Next.js
- * @param context - Contexte avec les paramètres de route
- * @returns Réponse JSON de confirmation
- */
-export async function DELETE(request: NextRequest, context: RouteParams) {
-    try {
-        const userId = request.headers.get("x-user-id");
-
-        if (!userId) {
-            return errorResponse("Utilisateur non authentifié", undefined, 401);
-        }
-
-        const {
-            pr_name: encodedPrName,
-            part_title: encodedPartTitle,
-            chapter_title: encodedChapterTitle,
-            para_name: encodedParaName,
-        } = await context.params;
-
-        const pr_name = decodeURIComponent(encodedPrName).trim();
-        const part_title = decodeURIComponent(encodedPartTitle).trim();
-        const chapter_title = decodeURIComponent(encodedChapterTitle).trim();
-        const para_name = decodeURIComponent(encodedParaName).trim();
-
-        // Vérifie que le projet existe et que l'utilisateur y a accès
-        const project = await prisma.project.findFirst({
-            where: {
-                pr_name: pr_name,
-                OR: [
-                    { owner_id: userId },
-                    {
-                        invitations: {
-                            some: {
-                                guest_id: userId,
-                                invitation_state: "Accepted"
-                            }
-                        }
-                    }
-                ]
-            },
-        });
-
-        if (!project) {
-            return notFoundResponse("Projet non trouvé");
-        }
-
-        const part = await prisma.part.findUnique({
-            where: {
-                part_title_parent_pr: {
-                    part_title,
-                    parent_pr: project.pr_id,
-                },
-            },
-        });
-
-        if (!part) {
-            return notFoundResponse("Partie non trouvée");
-        }
-
-        const chapter = await prisma.chapter.findUnique({
-            where: {
-                parent_part_chapter_title: {
-                    chapter_title,
-                    parent_part: part.part_id,
-                },
-            },
-        });
-
-        if (!chapter) {
-            return notFoundResponse("Chapitre non trouvé");
-        }
-
-        const existingParagraph = await prisma.paragraph.findUnique({
-            where: {
-                parent_chapter_para_name: {
-                    para_name,
-                    parent_chapter: chapter.chapter_id,
-                },
-            },
-        });
-
-        if (!existingParagraph) {
-            return notFoundResponse("Paragraphe non trouvé");
-        }
-
-        // Suppression du paragraphe
-        await prisma.paragraph.delete({
-            where: {
-                para_id: existingParagraph.para_id,
-            },
-        });
-
-        // Renumérotation des chapitres restants
-        await renumberParagraphsAfterDelete(chapter.chapter_id, existingParagraph.para_number);
-
         // 📡 Broadcast temps réel
         await realtimeService.broadcastStructureChange(
             pr_name,
@@ -600,6 +467,9 @@ export async function DELETE(request: NextRequest, context: RouteParams) {
                 chapterTitle: chapter_title
             }
         );
+
+        // 🗑️ Invalider le cache de la structure
+        await cacheService.invalidateProjectStructure(pr_name);
 
         return successResponse("Paragraphe supprimé avec succès");
 

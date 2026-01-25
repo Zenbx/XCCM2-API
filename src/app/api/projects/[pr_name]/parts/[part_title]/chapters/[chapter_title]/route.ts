@@ -150,6 +150,7 @@ import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { updateChapterSchema } from "@/utils/validation";
 import { realtimeService } from "@/services/realtime-service";
+import { cacheService } from "@/services/cache-service";
 import {
     renumberChaptersAfterDelete,
     renumberChaptersAfterUpdate,
@@ -408,7 +409,6 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
                 }),
             },
         });
-
         // 📡 Broadcast temps réel
         await realtimeService.broadcastStructureChange(
             pr_name,
@@ -420,6 +420,9 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
                 partTitle: part_title
             }
         );
+
+        // 🗑️ Invalider le cache
+        await cacheService.invalidateProjectStructure(pr_name);
 
         return successResponse("Chapitre modifié avec succès", {
             chapter: updatedChapter,
@@ -528,7 +531,6 @@ export async function DELETE(request: NextRequest, context: RouteParams) {
 
         // Renumérotation des chapitres restants
         await renumberChaptersAfterDelete(part.part_id, deletedNumber);
-
         // 📡 Broadcast temps réel
         await realtimeService.broadcastStructureChange(
             pr_name,
@@ -540,6 +542,9 @@ export async function DELETE(request: NextRequest, context: RouteParams) {
                 partTitle: part_title
             }
         );
+
+        // 🗑️ Invalider le cache
+        await cacheService.invalidateProjectStructure(pr_name);
 
         return successResponse("Chapitre supprimé avec succès");
     } catch (error) {
