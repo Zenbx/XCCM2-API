@@ -230,10 +230,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
         const part = await prisma.part.findFirst({
             where: {
                 parent_pr: project.pr_id,
-                part_title: {
-                    equals: part_title.trim(),
-                    mode: 'insensitive'
-                }
+                part_title: part_title
             },
         });
 
@@ -246,10 +243,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
         const chapter = await prisma.chapter.findFirst({
             where: {
                 parent_part: part.part_id,
-                chapter_title: {
-                    equals: chapter_title.trim(),
-                    mode: 'insensitive'
-                }
+                chapter_title: chapter_title
             },
         });
 
@@ -262,10 +256,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
         const paragraph = await prisma.paragraph.findFirst({
             where: {
                 parent_chapter: chapter.chapter_id,
-                para_name: {
-                    equals: para_name.trim(),
-                    mode: 'insensitive'
-                }
+                para_name: para_name
             },
         });
 
