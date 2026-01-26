@@ -34,6 +34,9 @@ export async function GET(
                         updated_at: true,
                         documents: {
                             select: {
+                                doc_id: true,
+                                doc_name: true,
+                                published_at: true,
                                 consult: true,
                                 likes: { select: { id: true } }
                             }

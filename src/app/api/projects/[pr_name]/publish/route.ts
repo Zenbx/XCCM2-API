@@ -271,8 +271,9 @@ export async function POST(request: NextRequest, context: RouteParams) {
 
         console.log(`✅ Document publié avec succès: ${document.doc_id}`);
 
-        // 5. Invalider le cache de la bibliothèque (toutes les pages)
+        // 5. Invalider les caches
         await cacheService.delByPattern("library:all_documents*");
+        await cacheService.del(`projects:user:${userId}`); // CRUCIAL pour le /account
 
         return successResponse(
             "Document publié avec succès",

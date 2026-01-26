@@ -30,8 +30,10 @@ import {
     successResponse,
     notFoundResponse,
     serverErrorResponse,
+    errorResponse,
 } from "@/utils/api-response";
 import { verifyToken, extractTokenFromHeader } from "@/lib/auth";
+import { cacheService } from "@/services/cache-service";
 
 type RouteParams = {
     params: Promise<{ id: string }>;
@@ -166,6 +168,64 @@ export async function GET(_request: NextRequest, context: RouteParams) {
         console.error("Erreur lors de la récupération du document:", error);
         return serverErrorResponse(
             "Une erreur est survenue lors de la récupération du document",
+            error instanceof Error ? error.message : undefined
+        );
+    }
+}
+
+/**
+ * DELETE /api/documents/[id]
+ * Dépublie un document (supprime le snapshot de la bibliothèque)
+ */
+export async function DELETE(_request: NextRequest, context: RouteParams) {
+    try {
+        const { id: doc_id } = await context.params;
+
+        // 1. Authentification
+        const authHeader = _request.headers.get("Authorization");
+        const token = extractTokenFromHeader(authHeader);
+        if (!token) return errorResponse("Authentification requise", undefined, 401);
+
+        const payload = await verifyToken(token);
+        if (!payload) return errorResponse("Token invalide", undefined, 401);
+        const currentUserId = payload.userId;
+        const userRole = _request.headers.get("x-user-role");
+
+        // 2. Récupérer le document
+        const document = await prisma.document.findUnique({
+            where: { doc_id },
+            include: { project: true }
+        });
+
+        if (!document) {
+            return notFoundResponse("Document non trouvé");
+        }
+
+        // 3. Vérifier les droits (Owner du projet ou Admin)
+        const isOwner = document.project.owner_id === currentUserId;
+        const isAdmin = userRole === "admin";
+
+        if (!isOwner && !isAdmin) {
+            return errorResponse("Vous n'avez pas le droit de dépublier ce document", undefined, 403);
+        }
+
+        // 4. Suppression
+        await prisma.document.delete({
+            where: { doc_id }
+        });
+
+        console.log(`🗑️ Document dépublié par ${isOwner ? 'auteur' : 'admin'}: ${doc_id}`);
+
+        // 5. Invalider les caches
+        await cacheService.delByPattern("library:all_documents*");
+        await cacheService.del(`projects:user:${document.project.owner_id}`);
+
+        return successResponse("Document dépublié avec succès");
+
+    } catch (error) {
+        console.error("Erreur lors de la dépublication:", error);
+        return serverErrorResponse(
+            "Une erreur est survenue lors de la dépublication",
             error instanceof Error ? error.message : undefined
         );
     }
