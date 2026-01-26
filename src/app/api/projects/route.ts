@@ -254,6 +254,9 @@ export async function GET(request: NextRequest) {
             where: {
                 owner_id: userId,
             },
+            include: {
+                documents: true, // Crucial pour le /account
+            },
             orderBy: {
                 created_at: "desc",
             },
@@ -272,7 +275,11 @@ export async function GET(request: NextRequest) {
                 guest_id: userId
             },
             include: {
-                project: true
+                project: {
+                    include: {
+                        documents: true // Crucial pour le /account
+                    }
+                }
             }
         });
 
