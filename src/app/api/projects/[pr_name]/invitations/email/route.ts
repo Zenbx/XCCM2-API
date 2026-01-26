@@ -62,17 +62,6 @@ export async function POST(
             return errorResponse("Projet non trouvé ou vous n'êtes pas autorisé à y accéder", undefined, 404);
         }
 
-        // Vérifier qu'il n'y a qu'une seule personne invitée (max)
-
-        // Vérifier qu'il n'y a qu'une seule personne invitée (max)
-        if (project.invitations.length > 0) {
-            return errorResponse(
-                "Un collaborateur est déjà assigné à ce projet. Un seul collaborateur est autorisé par projet.",
-                undefined,
-                409
-            );
-        }
-
         // Vérifier que l'email n'appartient pas à l'utilisateur lui-même
         const invitingUser = await prisma.user.findUnique({
             where: { email: validatedData.guestEmail },

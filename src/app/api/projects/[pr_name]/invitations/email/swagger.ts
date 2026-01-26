@@ -4,8 +4,8 @@
  *   post:
  *     tags:
  *       - Invitations
- *     summary: Inviter un collaborateur par email
- *     description: "Envoie une invitation de collaboration par email. Un seul collaborateur par projet."
+ *     summary: Inviter des collaborateurs par email
+ *     description: "Envoie une invitation de collaboration par email aux futurs membres de l'équipe."
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -67,8 +67,6 @@
  *         description: "Vous n'êtes pas le créateur de ce projet"
  *       404:
  *         description: "Projet ou utilisateur non trouvé"
- *       409:
- *         description: "Un collaborateur est déjà assigné à ce projet"
  *       500:
  *         description: "Erreur serveur (ex: email non envoyé)"
  */
