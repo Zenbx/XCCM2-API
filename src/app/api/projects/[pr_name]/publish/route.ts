@@ -250,18 +250,33 @@ export async function POST(request: NextRequest, context: RouteParams) {
         const estimatedPages = estimatePages(projectData);
 
         // Crée l'entrée dans la table Document
-        const document = await prisma.document.create({
-            data: {
-                doc_name: finalDocName,
-                pages: estimatedPages,
-                doc_size: publishResult.size,
-                url_content: publishResult.url,
-                cover_image: cover_image || null, // Sauvegarde l'image
-                pr_source: project.pr_id,
-                downloaded: 0,
-                consult: 0,
-            },
-        });
+        let document;
+        try {
+            document = await prisma.document.create({
+                data: {
+                    doc_name: finalDocName,
+                    pages: estimatedPages,
+                    doc_size: publishResult.size,
+                    url_content: publishResult.url,
+                    cover_image: cover_image || null, // Sauvegarde l'image
+                    pr_source: project.pr_id,
+                    downloaded: 0,
+                    consult: 0,
+                },
+            });
+        } catch (dbError: any) {
+            // Détecte les erreurs de contrainte unique (nom de document déjà utilisé)
+            if (dbError.code === 'P2002' || dbError.message?.includes('unique constraint')) {
+                console.error(`⚠️ [Publication] Nom de document déjà utilisé: ${finalDocName}`);
+                return errorResponse(
+                    `Ce nom de snapshot est déjà utilisé. Veuillez en choisir un autre.`,
+                    `Le snapshot "${finalDocName}" existe déjà dans la bibliothèque`,
+                    409
+                );
+            }
+            // Autres erreurs de base de données
+            throw dbError;
+        }
 
         // Marquer le projet comme publié
         await prisma.project.update({
