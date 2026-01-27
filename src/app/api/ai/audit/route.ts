@@ -31,60 +31,62 @@ export async function POST(request: NextRequest) {
                     "🔧 Pour activer la vraie analyse IA, configurez HUGGING_FACE_API_KEY dans votre .env backend."
                 ],
                 recommendedBlocks: ["Quiz", "Exemple", "Définition"],
-                isDemoMode: true  // Indicateur explicite
+                isDemoMode: true
             });
         }
 
         const hf = new HfInference(apiKey);
 
-        const systemPrompt = `Tu es SocrateAI, un expert mondial en pédagogie et sciences cognitives.
-Ta mission est d'auditer un contenu éducatif (Notion) pour en maximiser l'impact d'apprentissage.
+        const systemPrompt = `Tu es SocrateAI, un expert mondial en pédagogie.
+Audit ce contenu éducatif.
+REQUITS :
+1. BLOOM : Niveau cognitif (Mémoriser/Comprendre/Appliquer/Analyser/Évaluer/Créer).
+2. ENGAGEMENT : Score sur 100.
+3. CLARTÉ : Score sur 100.
+4. SUGGESTIONS : 3 questions socratiques.
+5. BLOCS : 3 types de blocs suggérés.
 
-ANALYSES REQUISES :
-1. BLOOM'S TAXONOMY : Détermine le niveau cognitif (Actual: Mémoriser/Comprendre vs Target: Analyser/Créer).
-2. ENGAGEMENT : Analyse le ton, la clarté et l'interactivité.
-3. SOCRATIC FEEDBACK : Pose des questions qui poussent l'auteur à approfondir, ne donne pas juste des ordres.
-4. MISSING BLOCKS : Suggère des types de blocs concrets (Exemple, Quiz, Analogie, Contre-exemple).
-
-CONTRAINTES STRICTES :
-- Réponds UNIQUEMENT en JSON valide.
-- Ton ton doit être bienveillant mais exigeant.
-- ClarityScore et EngagementScore sont sur 100.
-
-FORMAT DE SORTIE ATTENDU :
+FORMAT JSON STRICT :
 {
   "clarityScore": number,
   "engagementScore": number,
-  "bloomLevel": "Mémoriser" | "Comprendre" | "Appliquer" | "Analyser" | "Évaluer" | "Créer",
-  "suggestions": ["Question socratique 1", "Question socratique 2", "Suggestion structurelle"],
-  "recommendedBlocks": ["Exemple", "Quiz", "Définition"]
+  "bloomLevel": string,
+  "suggestions": string[],
+  "recommendedBlocks": string[]
 }`;
 
-        const response = await hf.chatCompletion({
-            model: "mistralai/Mistral-7B-Instruct-v0.3",
-            messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: `Voici le contenu à auditer : "${content.substring(0, 2000)}"` } // Limit content length for safety
-            ],
-            max_tokens: 1000,
-            temperature: 0.7,
-            response_format: { type: "json_object" }
+        const prompt = `<s>[INST] ${systemPrompt}\n\nContenu à auditer : """${content.substring(0, 3000)}""" [/INST]`;
+
+        console.log("[Socrate AI] Calling HF API...");
+
+        // Use textGeneration instead of chatCompletion for wider model support on shared HF endpoints
+        const response = await hf.textGeneration({
+            model: "mistralai/Mistral-7B-Instruct-v0.2", // More stable on HF free/shared
+            inputs: prompt,
+            parameters: {
+                max_new_tokens: 1000,
+                temperature: 0.1,
+                return_full_text: false,
+            }
         });
 
-        const rawContent = response.choices[0].message.content || "{}";
-        let auditResult;
+        const rawContent = response.generated_text || "{}";
+        console.log("[Socrate AI] Raw Response received");
 
+        // Robust JSON extraction
+        let auditResult;
         try {
-            auditResult = JSON.parse(rawContent);
+            const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+            const cleanJson = jsonMatch ? jsonMatch[0] : rawContent;
+            auditResult = JSON.parse(cleanJson);
         } catch (e) {
-            console.error("Failed to parse AI response:", rawContent);
-            // Fallback safe struct
+            console.error("[Socrate AI] JSON Parse Fail:", rawContent);
             auditResult = {
-                clarityScore: 70,
-                engagementScore: 60,
+                clarityScore: 75,
+                engagementScore: 70,
                 bloomLevel: "Comprendre",
-                suggestions: ["L'IA n'a pas pu générer un format JSON valide, mais votre contenu semble solide. Essayez d'ajouter des exemples."],
-                recommendedBlocks: ["Exemple"]
+                suggestions: ["Votre contenu est intéressant mais l'analyse automatique a rencontré une erreur de formatage. Posez-vous la question : comment rendre ce texte plus interactif ?"],
+                recommendedBlocks: ["Exemple", "Quiz"]
             };
         }
 
@@ -92,6 +94,18 @@ FORMAT DE SORTIE ATTENDU :
 
     } catch (error: any) {
         console.error("[api/ai/audit] Error:", error);
+
+        // Special handle for Model loading / busy
+        if (error.message?.includes("loading") || error.message?.includes("busy")) {
+            return successResponse("IA en cours d'éveil (Réessayez dans 20s)", {
+                clarityScore: 0,
+                engagementScore: 0,
+                bloomLevel: "Chargement...",
+                suggestions: ["L'IA est en train d'être chargée sur les serveurs. Merci de patienter quelques secondes et de relancer l'analyse."],
+                recommendedBlocks: []
+            });
+        }
+
         return serverErrorResponse("Erreur lors de l'audit AI", error.message);
     }
 }
