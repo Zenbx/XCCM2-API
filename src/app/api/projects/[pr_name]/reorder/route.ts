@@ -71,16 +71,15 @@ export async function POST(request: NextRequest, context: RouteParams) {
         // Exécuter en transaction
         await prisma.$transaction(async (tx) => {
             const TEMP_OFFSET = 10000;
+            const itemIds = items.map(i => i.id);
 
             if (type === 'part') {
-                // 1. Décalage temporaire
-                for (const item of items) {
-                    await tx.part.update({
-                        where: { part_id: item.id },
-                        data: { part_number: { increment: TEMP_OFFSET } }
-                    });
-                }
-                // 2. Assignation finale
+                // 1. Décalage temporaire en un seul appel (Optimisé)
+                await tx.part.updateMany({
+                    where: { part_id: { in: itemIds } },
+                    data: { part_number: { increment: TEMP_OFFSET } }
+                });
+                // 2. Assignation finale (Nécéssite un loop car valeurs différentes)
                 for (const item of items) {
                     await tx.part.update({
                         where: { part_id: item.id },
@@ -88,12 +87,10 @@ export async function POST(request: NextRequest, context: RouteParams) {
                     });
                 }
             } else if (type === 'chapter') {
-                for (const item of items) {
-                    await tx.chapter.update({
-                        where: { chapter_id: item.id },
-                        data: { chapter_number: { increment: TEMP_OFFSET } }
-                    });
-                }
+                await tx.chapter.updateMany({
+                    where: { chapter_id: { in: itemIds } },
+                    data: { chapter_number: { increment: TEMP_OFFSET } }
+                });
                 for (const item of items) {
                     await tx.chapter.update({
                         where: { chapter_id: item.id },
@@ -101,12 +98,10 @@ export async function POST(request: NextRequest, context: RouteParams) {
                     });
                 }
             } else if (type === 'paragraph') {
-                for (const item of items) {
-                    await tx.paragraph.update({
-                        where: { para_id: item.id },
-                        data: { para_number: { increment: TEMP_OFFSET } }
-                    });
-                }
+                await tx.paragraph.updateMany({
+                    where: { para_id: { in: itemIds } },
+                    data: { para_number: { increment: TEMP_OFFSET } }
+                });
                 for (const item of items) {
                     await tx.paragraph.update({
                         where: { para_id: item.id },
@@ -114,12 +109,10 @@ export async function POST(request: NextRequest, context: RouteParams) {
                     });
                 }
             } else if (type === 'notion') {
-                for (const item of items) {
-                    await tx.notion.update({
-                        where: { notion_id: item.id },
-                        data: { notion_number: { increment: TEMP_OFFSET } }
-                    });
-                }
+                await tx.notion.updateMany({
+                    where: { notion_id: { in: itemIds } },
+                    data: { notion_number: { increment: TEMP_OFFSET } }
+                });
                 for (const item of items) {
                     await tx.notion.update({
                         where: { notion_id: item.id },
@@ -127,6 +120,8 @@ export async function POST(request: NextRequest, context: RouteParams) {
                     });
                 }
             }
+        }, {
+            timeout: 15000 // Augmenter le timeout à 15s (défaut 5s) pour éviter les erreurs transactionnelles
         });
 
         // 📡 Broadcast temps réel
