@@ -25,7 +25,10 @@ export async function GET(
                 org: true,
                 created_at: true,
                 projects: {
-                    where: { is_published: true },
+                    where: {
+                        is_published: true,
+                        documents: { some: {} }
+                    },
                     select: {
                         pr_id: true,
                         pr_name: true,

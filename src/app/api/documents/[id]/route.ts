@@ -216,7 +216,20 @@ export async function DELETE(_request: NextRequest, context: RouteParams) {
 
         console.log(`🗑️ Document dépublié par ${isOwner ? 'auteur' : 'admin'}: ${doc_id}`);
 
-        // 5. Invalider les caches
+        // 5. Vérifier s'il reste d'autres documents pour ce projet
+        const remainingDocsCount = await prisma.document.count({
+            where: { pr_source: document.pr_source }
+        });
+
+        if (remainingDocsCount === 0) {
+            await prisma.project.update({
+                where: { pr_id: document.pr_source },
+                data: { is_published: false }
+            });
+            console.log(`📉 Projet ${document.pr_source} marqué comme dépublié (plus de snapshots)`);
+        }
+
+        // 6. Invalider les caches
         await cacheService.delByPattern("library:all_documents*");
         await cacheService.del(`projects:user:${document.project.owner_id}`);
 
