@@ -45,13 +45,13 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-    title: "XCCM - Cross-Cultural Content Management",
-    description: "Plateforme de gestion de contenu collaboratif avec authentification sécurisée",
-    keywords: ["XCCM", "content management", "collaboration", "documents", "API REST"],
-    authors: [{ name: "XCCM Team" }],
-    icons: {
-        icon: "/favicon.ico",
-    },
+  title: "XCCM - eXtended Content Composition Module",
+  description: "Plateforme de gestion de contenu collaboratif avec authentification sécurisée",
+  keywords: ["XCCM", "content management", "collaboration", "documents", "API REST"],
+  authors: [{ name: "XCCM Team" }],
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 /**
@@ -60,15 +60,15 @@ export const metadata: Metadata = {
  * @returns Structure HTML de base
  */
 export default function RootLayout({
-                                       children,
-                                   }: Readonly<{
-    children: React.ReactNode;
+  children,
+}: Readonly<{
+  children: React.ReactNode;
 }>) {
-    return (
-        <html lang="fr">
-        <body className={inter.className}>
+  return (
+    <html lang="fr">
+      <body className={inter.className}>
         {children}
-        </body>
-        </html>
-    );
+      </body>
+    </html>
+  );
 }

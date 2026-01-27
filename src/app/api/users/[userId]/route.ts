@@ -36,6 +36,7 @@ export async function GET(
                             select: {
                                 doc_id: true,
                                 doc_name: true,
+                                cover_image: true,
                                 published_at: true,
                                 consult: true,
                                 likes: { select: { id: true } }
@@ -54,18 +55,24 @@ export async function GET(
         let totalViews = 0;
         let totalLikes = 0;
 
-        const projectsWithStats = user.projects.map(p => {
+        const projectsWithStats = (user.projects as any[]).map((p: any) => {
             let pViews = 0;
             let pLikes = 0;
-            p.documents.forEach(d => {
+            const docs = p.documents as any[];
+
+            docs.forEach((d: any) => {
                 pViews += d.consult;
-                pLikes += d.likes.length;
+                pLikes += (d.likes?.length || 0);
             });
+
+            // Flatten cover_image from latest doc if available
+            const cover_image = docs.length > 0 ? docs[0].cover_image : null;
             totalViews += pViews;
             totalLikes += pLikes;
 
             return {
                 ...p,
+                cover_image, // Now at project level
                 views: pViews,
                 likes: pLikes
             };
