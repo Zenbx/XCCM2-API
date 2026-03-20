@@ -261,6 +261,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
         const chapter = await prisma.chapter.create({
             data: {
                 chapter_title: validatedData.chapter_title,
+                chapter_intro: validatedData.chapter_intro,
                 chapter_number: validatedData.chapter_number,
                 parent_part: part.part_id,
                 owner_id: userId,

@@ -404,6 +404,9 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
                 ...(validatedData.chapter_title && {
                     chapter_title: validatedData.chapter_title,
                 }),
+                ...(validatedData.chapter_intro !== undefined && {
+                    chapter_intro: validatedData.chapter_intro,
+                }),
                 ...(validatedData.chapter_number && {
                     chapter_number: validatedData.chapter_number,
                 }),

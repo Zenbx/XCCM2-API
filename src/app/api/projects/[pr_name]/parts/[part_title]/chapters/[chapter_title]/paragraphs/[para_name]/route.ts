@@ -451,6 +451,9 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
                 ...(validatedData.para_name && {
                     para_name: validatedData.para_name,
                 }),
+                ...(validatedData.para_intro !== undefined && {
+                    para_intro: validatedData.para_intro,
+                }),
                 ...(validatedData.para_number && {
                     para_number: validatedData.para_number,
                 }),

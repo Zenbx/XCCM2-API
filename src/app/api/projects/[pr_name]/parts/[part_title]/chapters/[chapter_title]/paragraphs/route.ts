@@ -279,6 +279,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
         const paragraph = await prisma.paragraph.create({
             data: {
                 para_name: validatedData.para_name,
+                para_intro: validatedData.para_intro,
                 para_number: validatedData.para_number,
                 parent_chapter: chapter.chapter_id,
                 owner_id: userId,

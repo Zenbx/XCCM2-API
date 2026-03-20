@@ -191,6 +191,11 @@ export const createChapterSchema = z.object({
         .max(200, "Le titre ne peut pas dépasser 200 caractères")
         .trim(),
 
+    chapter_intro: z
+        .string()
+        .trim()
+        .optional(),
+
     chapter_number: z
         .number()
         .int("Le numéro doit être un entier")
@@ -208,13 +213,18 @@ export const updateChapterSchema = z.object({
         .trim()
         .optional(),
 
+    chapter_intro: z
+        .string()
+        .trim()
+        .optional(),
+
     chapter_number: z
         .number()
         .int("Le numéro doit être un entier")
         .positive("Le numéro doit être positif")
         .optional(),
 }).refine(
-    (data) => data.chapter_title || data.chapter_number,
+    (data) => data.chapter_title !== undefined || data.chapter_intro !== undefined || data.chapter_number !== undefined,
     {
         message: "Au moins un champ doit être fourni pour la modification",
     }
@@ -229,6 +239,11 @@ export const createParagraphSchema = z.object({
         .min(3, "Le nom doit contenir au moins 3 caractères")
         .max(200, "Le nom ne peut pas dépasser 200 caractères")
         .trim(),
+
+    para_intro: z
+        .string()
+        .trim()
+        .optional(),
 
     para_number: z
         .number()
@@ -247,13 +262,18 @@ export const updateParagraphSchema = z.object({
         .trim()
         .optional(),
 
+    para_intro: z
+        .string()
+        .trim()
+        .optional(),
+
     para_number: z
         .number()
         .int("Le numéro doit être un entier")
         .positive("Le numéro doit être positif")
         .optional(),
 }).refine(
-    (data) => data.para_name || data.para_number,
+    (data) => data.para_name !== undefined || data.para_intro !== undefined || data.para_number !== undefined,
     {
         message: "Au moins un champ doit être fourni pour la modification",
     }
@@ -383,3 +403,45 @@ export const sendInvitationSchema = z.object({
 });
 
 export type SendInvitationInput = z.infer<typeof sendInvitationSchema>;
+
+// ==========================================
+// SCHÉMAS DE VALIDATION POUR LMS (CLASSES & EXERCICES)
+// ==========================================
+
+export const createClassroomSchema = z.object({
+    name: z.string().min(3, "Le nom doit contenir au moins 3 caractères").max(100).trim(),
+    description: z.string().max(500).trim().optional(),
+});
+
+export const updateClassroomSchema = z.object({
+    name: z.string().min(3).max(100).trim().optional(),
+    description: z.string().max(500).trim().optional(),
+}).refine(data => data.name !== undefined || data.description !== undefined, {
+    message: "Au moins un champ doit être fourni pour la modification",
+});
+
+export const enrollClassroomSchema = z.object({
+    join_code: z.string().min(6).max(10).trim(),
+});
+
+export const createExerciseSchema = z.object({
+    type: z.enum(["QCU", "QCM", "QRO", "QROA", "CODE", "FILL_BLANKS"]),
+    title: z.string().min(3).max(200).trim(),
+    description: z.string().trim().optional(),
+    parameters: z.any(), // Flexible depends on type
+    settings: z.any().optional(),
+    // Target constraints
+    project_id: z.string().optional(),
+    part_id: z.string().optional(),
+    chapter_id: z.string().optional(),
+    para_id: z.string().optional(),
+    notion_id: z.string().optional(),
+}).refine(data => 
+    !!data.project_id || !!data.part_id || !!data.chapter_id || !!data.para_id || !!data.notion_id, {
+    message: "L'exercice doit être rattaché à au moins un granule (projet, partie, chapitre, paragraphe ou notion)",
+});
+
+export type CreateClassroomInput = z.infer<typeof createClassroomSchema>;
+export type UpdateClassroomInput = z.infer<typeof updateClassroomSchema>;
+export type EnrollClassroomInput = z.infer<typeof enrollClassroomSchema>;
+export type CreateExerciseInput = z.infer<typeof createExerciseSchema>;
