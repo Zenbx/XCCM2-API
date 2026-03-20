@@ -20,7 +20,7 @@ model User {
   user_id String @id @default(auto()) @map("_id") @db.ObjectId
 
   // Champs d'identité
-  email     String @unique
+  email     String  @unique
   lastname  String
   firstname String
   password  String? // Sera stocké sous forme de hachage (bcrypt)
@@ -29,7 +29,7 @@ model User {
   org             String?
   occupation      String?
   profile_picture String?
-  role            String   @default("user")
+  role            String    @default("user")
   reset_token     String?
   reset_expires   DateTime?
 
@@ -50,11 +50,17 @@ model User {
   paragraphs Paragraph[]
   notions    Notion[]
   comments   Comment[]
-  
+
   // Templates créés par l'utilisateur
-  templates  Template[]
-  vaultItems VaultItem[]
+  templates        Template[]
+  vaultItems       VaultItem[]
   marketplaceItems MarketplaceItem[]
+
+  // Relations LMS
+  teaching_classes  Classroom[]  @relation("ClassroomTeacher")
+  enrollments       Enrollment[] @relation("StudentEnrollments")
+  created_exercises Exercise[]   @relation("CreatedExercises")
+  submissions       Submission[] @relation("StudentSubmissions")
 
   @@map("users") // Nom de la collection dans notre base MongoDB
 }
@@ -90,6 +96,9 @@ model Project {
 
   // Course Styles (stored as JSON)
   styles Json?
+
+  // LMS Relations
+  classroom_links ClassroomProject[]
 
   // 3. Contrainte d'unicité composée (name + owner_id)
   @@unique([pr_name, owner_id])
@@ -159,8 +168,9 @@ model Part {
 }
 
 model Chapter {
-  chapter_id     String @id @default(auto()) @map("_id") @db.ObjectId
+  chapter_id     String  @id @default(auto()) @map("_id") @db.ObjectId
   chapter_title  String
+  chapter_intro  String?
   chapter_number Int
 
   //Clé étrangère
@@ -180,8 +190,9 @@ model Chapter {
 }
 
 model Paragraph {
-  para_id     String @id @default(auto()) @map("_id") @db.ObjectId
+  para_id     String  @id @default(auto()) @map("_id") @db.ObjectId
   para_name   String
+  para_intro  String?
   para_number Int
 
   //Clé étrangère
@@ -250,8 +261,8 @@ model Invitation {
 
   // Relations
   project Project @relation(fields: [pr_id], references: [pr_id], onDelete: Cascade)
-  guest   User    @relation("GuestInvitations", fields: [guest_id], references: [user_id],  onDelete: Cascade)
-  host    User    @relation("HostInvitations", fields: [host_id], references: [user_id],  onDelete: Cascade)
+  guest   User    @relation("GuestInvitations", fields: [guest_id], references: [user_id], onDelete: Cascade)
+  host    User    @relation("HostInvitations", fields: [host_id], references: [user_id], onDelete: Cascade)
 
   // CLÉ PRIMAIRE COMPOSITE (Logique)
   // Empêche d'inviter deux fois le même user au même projet
@@ -284,8 +295,8 @@ model View {
   doc_id    String   @db.ObjectId
   viewed_at DateTime @default(now())
 
-  viewer    User     @relation(fields: [viewer_id], references: [user_id])
-  document  Document @relation(fields: [doc_id], references: [doc_id], onDelete: Cascade)
+  viewer   User     @relation(fields: [viewer_id], references: [user_id])
+  document Document @relation(fields: [doc_id], references: [doc_id], onDelete: Cascade)
 
   // Unique constraint ensures one view per user per document
   @@unique([viewer_id, doc_id])
@@ -317,11 +328,11 @@ model Template {
 
 model VaultItem {
   id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  type            String   // img, video, text, pdf, audio, part, chapter, paragraph, notion
+  type            String // img, video, text, pdf, audio, part, chapter, paragraph, notion
   title           String
   content         String?
   file_url        String?
-  original_id     String   // ID technique de l'objet source
+  original_id     String // ID technique de l'objet source
   source_doc_id   String?  @db.ObjectId
   source_doc_name String?
   added_at        DateTime @default(now())
@@ -333,20 +344,122 @@ model VaultItem {
 }
 
 model MarketplaceItem {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  type            String   // part, chapter, paragraph, notion
-  title           String
-  description     String?
-  price           Float    @default(0) // Prix en euros (0 = gratuit)
-  content         String?  // Contenu ou structure JSON
-  tags            String[] // Tags pour la recherche
-  category        String?
-  downloads       Int      @default(0)
-  rating          Float?   // Note moyenne sur 5
-  published_at    DateTime @default(now())
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  type         String // part, chapter, paragraph, notion
+  title        String
+  description  String?
+  price        Float    @default(0) // Prix en euros (0 = gratuit)
+  content      String? // Contenu ou structure JSON
+  tags         String[] // Tags pour la recherche
+  category     String?
+  downloads    Int      @default(0)
+  rating       Float? // Note moyenne sur 5
+  published_at DateTime @default(now())
 
   seller_id String @db.ObjectId
   seller    User   @relation(fields: [seller_id], references: [user_id], onDelete: Cascade)
 
   @@map("marketplace_items")
+}
+
+// --- NOUVEAUX MODELES LMS ---
+
+model Classroom {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String?
+  join_code   String   @unique // Code court pour rejoindre, ex: A7B9F1
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  teacher_id String @db.ObjectId
+  teacher    User   @relation("ClassroomTeacher", fields: [teacher_id], references: [user_id])
+
+  enrollments Enrollment[]
+  projects    ClassroomProject[]
+
+  @@map("classrooms")
+}
+
+model Enrollment {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  enrolled_at DateTime @default(now())
+
+  // Relations
+  student_id String @db.ObjectId
+  student    User   @relation("StudentEnrollments", fields: [student_id], references: [user_id], onDelete: Cascade)
+
+  classroom_id String    @db.ObjectId
+  classroom    Classroom @relation(fields: [classroom_id], references: [id], onDelete: Cascade)
+
+  @@unique([student_id, classroom_id])
+  @@map("enrollments")
+}
+
+model ClassroomProject {
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  added_at DateTime @default(now())
+
+  // Relations
+  classroom_id String    @db.ObjectId
+  classroom    Classroom @relation(fields: [classroom_id], references: [id], onDelete: Cascade)
+
+  project_id String  @db.ObjectId
+  project    Project @relation(fields: [project_id], references: [pr_id], onDelete: Cascade)
+
+  @@unique([classroom_id, project_id])
+  @@map("classroom_projects")
+}
+
+enum ExerciseType {
+  QCU
+  QCM
+  QRO
+  QROA
+  CODE
+  FILL_BLANKS
+}
+
+model Exercise {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  type        ExerciseType
+  title       String
+  description String?
+  parameters  Json // Structure flexible: questions, options, réponses
+  settings    Json? // Paramètres: temps, bloquant, points
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+
+  // Relations polymorphiques (Attachement à l'un des granules)
+  project_id String? @db.ObjectId
+  part_id    String? @db.ObjectId
+  chapter_id String? @db.ObjectId
+  para_id    String? @db.ObjectId
+  notion_id  String? @db.ObjectId
+
+  // Créateur de l'exercice
+  creator_id String @db.ObjectId
+  creator    User   @relation("CreatedExercises", fields: [creator_id], references: [user_id])
+
+  submissions Submission[]
+
+  @@map("exercises")
+}
+
+model Submission {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  answers      Json // Réponses soumises
+  score        Float? // Note
+  feedback     String? // Commentaire global
+  submitted_at DateTime @default(now())
+
+  // Relations
+  student_id String @db.ObjectId
+  student    User   @relation("StudentSubmissions", fields: [student_id], references: [user_id], onDelete: Cascade)
+
+  exercise_id String   @db.ObjectId
+  exercise    Exercise @relation(fields: [exercise_id], references: [id], onDelete: Cascade)
+
+  @@map("submissions")
 }
