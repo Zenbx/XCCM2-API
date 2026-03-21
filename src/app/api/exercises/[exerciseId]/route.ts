@@ -41,6 +41,44 @@ export async function GET(request: NextRequest, context: RouteParams) {
 }
 
 /**
+ * PUT: Modifie un exercice (uniquement le créateur)
+ */
+export async function PUT(request: NextRequest, context: RouteParams) {
+    try {
+        const userId = request.headers.get("x-user-id");
+        if (!userId) return errorResponse("Utilisateur non authentifié", undefined, 401);
+
+        const { exerciseId } = await context.params;
+        const body = await request.json();
+
+        const exercise = await prisma.exercise.findUnique({
+            where: { id: exerciseId }
+        });
+
+        if (!exercise) return notFoundResponse("Exercice non trouvé");
+        if (exercise.creator_id !== userId) {
+            return errorResponse("Seul le créateur peut modifier cet exercice", undefined, 403);
+        }
+
+        const dataToUpdate: any = {};
+        if (body.title) dataToUpdate.title = body.title;
+        if (body.parameters) dataToUpdate.parameters = body.parameters;
+        if (body.settings !== undefined) dataToUpdate.settings = body.settings;
+
+        const updatedExercise = await prisma.exercise.update({
+            where: { id: exerciseId },
+            data: dataToUpdate
+        });
+
+        return successResponse("Exercice mis à jour avec succès", { exercise: updatedExercise });
+
+    } catch (error) {
+        console.error("Erreur modification exercice:", error);
+        return serverErrorResponse("Erreur serveur", error instanceof Error ? error.message : undefined);
+    }
+}
+
+/**
  * DELETE: Supprime un exercice (uniquement le créateur)
  */
 export async function DELETE(request: NextRequest, context: RouteParams) {
