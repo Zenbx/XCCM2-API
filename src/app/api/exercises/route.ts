@@ -28,18 +28,62 @@ export async function GET(request: NextRequest) {
         const chapterId = searchParams.get('chapter_id');
         const paraId = searchParams.get('para_id');
         const notionId = searchParams.get('notion_id');
+        const mode = searchParams.get('mode'); // "student" pour masquer les réponses
 
-        // Construction du filtre: Si aucun id de granule n'est fourni, on récupère 
-        // tous les exercices créés par cet utilisateur.
-        const filter: any = {
-            creator_id: userId
-        };
+        // Construction du filtre
+        const filter: any = {};
+
+        // En mode enseignant (par défaut), on filtre par créateur
+        // En mode étudiant, on ne filtre PAS par créateur (on voit les exercices de tout le monde)
+        if (mode !== 'student') {
+            filter.creator_id = userId;
+        }
 
         if (projectId) filter.project_id = projectId;
         if (partId) filter.part_id = partId;
         if (chapterId) filter.chapter_id = chapterId;
         if (paraId) filter.para_id = paraId;
         if (notionId) filter.notion_id = notionId;
+
+        // En mode étudiant: récupérer aussi les IDs des granules parents pour associer
+        // les exercices à tous les niveaux du projet
+        if (mode === 'student' && projectId && !partId && !chapterId && !paraId && !notionId) {
+            // Récupérer tous les exercices liés à N'IMPORTE QUEL granule de ce projet
+            const project = await prisma.project.findUnique({
+                where: { pr_id: projectId },
+                include: {
+                    parts: {
+                        include: {
+                            chapters: {
+                                include: {
+                                    paragraphs: {
+                                        include: {
+                                            notions: true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            if (project) {
+                const partIds = project.parts.map((p: any) => p.part_id);
+                const chapterIds = project.parts.flatMap((p: any) => p.chapters.map((c: any) => c.chapter_id));
+                const paraIds = project.parts.flatMap((p: any) => p.chapters.flatMap((c: any) => c.paragraphs.map((pa: any) => pa.para_id)));
+                const notionIds = project.parts.flatMap((p: any) => p.chapters.flatMap((c: any) => c.paragraphs.flatMap((pa: any) => pa.notions.map((n: any) => n.notion_id))));
+
+                delete filter.project_id;
+                filter.OR = [
+                    { project_id: projectId },
+                    { part_id: { in: partIds } },
+                    { chapter_id: { in: chapterIds } },
+                    { para_id: { in: paraIds } },
+                    { notion_id: { in: notionIds } },
+                ];
+            }
+        }
 
         const exercises = await prisma.exercise.findMany({
             where: filter,
@@ -51,7 +95,38 @@ export async function GET(request: NextRequest) {
             }
         });
 
-        return successResponse("Exercices récupérés avec succès", { exercises });
+        // En mode étudiant, masquer les réponses dans les paramètres
+        const sanitizedExercises = mode === 'student'
+            ? exercises.map((ex: any) => {
+                const params = typeof ex.parameters === 'object' ? { ...ex.parameters as any } : {};
+                
+                // Masquer les bonnes réponses QCU/QCM
+                if (params.options) {
+                    params.options = params.options.map((opt: any) => ({
+                        id: opt.id,
+                        text: opt.text,
+                        // isCorrect est retiré !
+                    }));
+                }
+                // Masquer la réponse attendue QRO
+                delete params.expectedAnswer;
+                // Masquer le prompt d'évaluation QROA
+                delete params.evaluationPrompt;
+                // Masquer les cas de test CODE
+                delete params.testCases;
+                // Masquer les réponses FILL_BLANKS
+                if (params.blanks) {
+                    params.blanks = params.blanks.map((b: any) => ({
+                        id: b.id,
+                        // answer est retiré !
+                    }));
+                }
+
+                return { ...ex, parameters: params };
+            })
+            : exercises;
+
+        return successResponse("Exercices récupérés avec succès", { exercises: sanitizedExercises });
 
     } catch (error) {
         console.error("Erreur lors de la récupération des exercices:", error);
