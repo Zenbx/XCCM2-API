@@ -7,8 +7,18 @@ import { jwtVerify } from 'jose';
 
 /**
  * Synapse Server - Hocuspocus implementation for real-time collaboration
+ *
+ * Supported document types:
+ *   notion-{id}    → Notion content
+ *   part-{id}      → Part intro
+ *   chapter-{id}   → Chapter intro (future)
+ *   paragraph-{id} → Paragraph intro (future)
  */
 const PORT = process.env.PORT || process.env.SYNAPSE_PORT || 1234;
+
+// Debounce map to avoid excessive DB writes
+const storeTimers = new Map<string, NodeJS.Timeout>();
+const STORE_DEBOUNCE_MS = 2000; // 2 seconds
 
 const server = new Server({
     port: Number(PORT),
@@ -95,6 +105,24 @@ const server = new Server({
                 if (part) {
                     return TiptapTransformer.toYdoc(part.part_intro || '', 'prosemirror');
                 }
+            } else if (documentName.startsWith('chapter-')) {
+                const chapterId = documentName.replace('chapter-', '');
+                const chapter = await prisma.chapter.findUnique({
+                    where: { chapter_id: chapterId },
+                });
+
+                if (chapter) {
+                    return TiptapTransformer.toYdoc((chapter as any).chapter_intro || '', 'prosemirror');
+                }
+            } else if (documentName.startsWith('paragraph-')) {
+                const paragraphId = documentName.replace('paragraph-', '');
+                const paragraph = await prisma.paragraph.findUnique({
+                    where: { para_id: paragraphId },
+                });
+
+                if (paragraph) {
+                    return TiptapTransformer.toYdoc((paragraph as any).para_intro || '', 'prosemirror');
+                }
             }
         } catch (error) {
             console.error(`[Synapse] Error loading document ${documentName}:`, error);
@@ -105,27 +133,51 @@ const server = new Server({
 
     async onStoreDocument(data) {
         const { documentName, document } = data;
-        console.log(`[Synapse] Storing document: ${documentName}`);
 
-        try {
-            const html = TiptapTransformer.fromYdoc(document, 'prosemirror');
-
-            if (documentName.startsWith('notion-')) {
-                const notionId = documentName.replace('notion-', '');
-                await prisma.notion.update({
-                    where: { notion_id: notionId },
-                    data: { notion_content: html },
-                });
-            } else if (documentName.startsWith('part-')) {
-                const partId = documentName.replace('part-', '');
-                await prisma.part.update({
-                    where: { part_id: partId },
-                    data: { part_intro: html },
-                });
-            }
-        } catch (error) {
-            console.error(`[Synapse] Error storing document ${documentName}:`, error);
+        // Debounced store: avoid excessive DB writes during fast typing
+        if (storeTimers.has(documentName)) {
+            clearTimeout(storeTimers.get(documentName)!);
         }
+
+        storeTimers.set(documentName, setTimeout(async () => {
+            storeTimers.delete(documentName);
+
+            console.log(`[Synapse] Storing document: ${documentName}`);
+
+            try {
+                const html = TiptapTransformer.fromYdoc(document, 'prosemirror');
+
+                if (documentName.startsWith('notion-')) {
+                    const notionId = documentName.replace('notion-', '');
+                    await prisma.notion.update({
+                        where: { notion_id: notionId },
+                        data: { notion_content: html },
+                    });
+                } else if (documentName.startsWith('part-')) {
+                    const partId = documentName.replace('part-', '');
+                    await prisma.part.update({
+                        where: { part_id: partId },
+                        data: { part_intro: html },
+                    });
+                } else if (documentName.startsWith('chapter-')) {
+                    const chapterId = documentName.replace('chapter-', '');
+                    await prisma.chapter.update({
+                        where: { chapter_id: chapterId },
+                        data: { chapter_intro: html } as any,
+                    });
+                } else if (documentName.startsWith('paragraph-')) {
+                    const paragraphId = documentName.replace('paragraph-', '');
+                    await prisma.paragraph.update({
+                        where: { para_id: paragraphId },
+                        data: { para_intro: html } as any,
+                    });
+                }
+
+                console.log(`[Synapse] ✅ Stored ${documentName}`);
+            } catch (error) {
+                console.error(`[Synapse] Error storing document ${documentName}:`, error);
+            }
+        }, STORE_DEBOUNCE_MS));
     },
 
     async onConnect() {
