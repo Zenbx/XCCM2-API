@@ -421,7 +421,7 @@ export const updateClassroomSchema = z.object({
 });
 
 export const enrollClassroomSchema = z.object({
-    join_code: z.string().min(6).max(10).trim(),
+    join_code: z.string().trim().min(3, "Le code est trop court").max(12, "Le code est trop long"),
 });
 
 export const createExerciseSchema = z.object({
