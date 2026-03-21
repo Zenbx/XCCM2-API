@@ -7,6 +7,7 @@ import {
     serverErrorResponse,
     notFoundResponse,
 } from "@/utils/api-response";
+import { sendPasswordResetEmail } from "@/services/emailService";
 
 /**
  * POST /api/auth/forgot-password
@@ -42,12 +43,17 @@ export async function POST(request: NextRequest) {
             },
         });
 
-        // NOTE: En production, on enverrait un email ici.
-        // Pour le test, on renvoie le token pour pouvoir l'utiliser côté front.
-        return successResponse("Un email de récupération a été simulé", {
-            resetToken, // À retirer en production
-            email,
-        });
+        // Envoi de l'email avec lien de reset
+        try {
+            await sendPasswordResetEmail(email, resetToken);
+        } catch (mailError) {
+             console.error("Impossible d'envoyer l'email:", mailError);
+             // On ne donne pas d'erreur 500 stricte car le token est généré, 
+             // mais c'est bien de logger e.g. si mauvais identifiants SMTP.
+        }
+
+        // On ne renvoie JAMAIS le token en production !
+        return successResponse("Un courriel avec les instructions de réinitialisation a été envoyé si l'adresse est associée à un compte.");
     } catch (error) {
         console.error("Erreur /api/auth/forgot-password:", error);
         return serverErrorResponse(
