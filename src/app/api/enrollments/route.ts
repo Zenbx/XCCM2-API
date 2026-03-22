@@ -40,9 +40,9 @@ export async function POST(request: NextRequest) {
         // On vérifie si l'étudiant est déjà inscrit
         const existingEnrollment = await prisma.enrollment.findUnique({
             where: {
-                student_id_class_id: {
+                student_id_classroom_id: {
                     student_id: userId,
-                    class_id: classroom.id
+                    classroom_id: classroom.id
                 }
             }
         });
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
         const enrollment = await prisma.enrollment.create({
             data: {
                 student_id: userId,
-                class_id: classroom.id
+                classroom_id: classroom.id
             },
             include: {
                 classroom: {

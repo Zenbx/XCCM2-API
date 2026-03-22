@@ -77,8 +77,8 @@ export async function POST(request: NextRequest, context: RouteParams) {
         // Vérifier si le lien existe déjà
         const existing = await prisma.classroomProject.findUnique({
             where: {
-                class_id_project_id: {
-                    class_id: classId,
+                classroom_id_project_id: {
+                    classroom_id: classId,
                     project_id: project_id
                 }
             }
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
 
         const link = await prisma.classroomProject.create({
             data: {
-                class_id: classId,
+                classroom_id: classId,
                 project_id: project_id
             },
             include: {
@@ -128,8 +128,8 @@ export async function DELETE(request: NextRequest, context: RouteParams) {
 
         await prisma.classroomProject.delete({
             where: {
-                class_id_project_id: {
-                    class_id: classId,
+                classroom_id_project_id: {
+                    classroom_id: classId,
                     project_id: project_id
                 }
             }
