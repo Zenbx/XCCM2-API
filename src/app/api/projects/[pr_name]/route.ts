@@ -262,6 +262,11 @@ export async function GET(
                         lastname: true,
                     },
                 },
+                classroom_links: {
+                    select: {
+                        classroom_id: true
+                    }
+                }
             },
         });
 
