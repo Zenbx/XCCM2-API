@@ -36,11 +36,6 @@ export async function GET(request: NextRequest, context: RouteParams) {
                 projects: {
                     include: {
                         project: {
-                            select: {
-                                pr_id: true,
-                                pr_name: true,
-                                description: true,
-                            },
                             include: {
                                 parts: {
                                     include: {
