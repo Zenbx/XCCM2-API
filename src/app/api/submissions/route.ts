@@ -1,10 +1,11 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import {
-    successResponse,
-    errorResponse,
-    serverErrorResponse,
+import { 
+    successResponse, 
+    errorResponse, 
+    serverErrorResponse 
 } from "@/utils/api-response";
+import { HfInference } from "@huggingface/inference";
 
 /**
  * GET: Récupère les soumissions de l'étudiant connecté
@@ -186,9 +187,57 @@ export async function POST(request: NextRequest) {
             }
 
             case 'QROA': {
-                // Pas d'auto-correction IA pour l'instant → score null, correction manuelle
-                score = null;
-                feedback = "📝 Votre réponse a été soumise. Elle sera évaluée par l'IA ou le professeur.";
+                const studentAnswer = (answers.text || '').trim();
+                const expectedContext = (params.expectedAnswer || '').trim();
+                const questionText = exercise.title;
+
+                if (!studentAnswer) {
+                    score = 0;
+                    feedback = "❌ Aucune réponse fournie.";
+                    break;
+                }
+
+                const apiKey = process.env.HUGGINGFACE_API_KEY || process.env.HUGGING_FACE_API_KEY || process.env.HF_API_TOKEN;
+                
+                if (!apiKey) {
+                    score = null;
+                    feedback = "📝 Mode Démo : Votre réponse a été soumise. L'IA n'est pas configurée pour la correction automatique.";
+                    break;
+                }
+
+                try {
+                    const hf = new HfInference(apiKey);
+                    const prompt = `<s>[INST] Tu es un correcteur automatique expert.
+Évalue la réponse de l'étudiant par rapport à la réponse attendue pour la question donnée.
+Donne un score sur ${maxPoints} et un feedback constructif en français.
+
+QUESTION : ${questionText}
+RÉPONSE ATTENDUE (CONCEPTS CLÉS) : ${expectedContext}
+RÉPONSE ÉTUDIANT : ${studentAnswer}
+
+FORMAT JSON STRICT :
+{
+  "score": number,
+  "feedback": "string"
+} [/INST]`;
+
+                    const response = await hf.textGeneration({
+                        model: "mistralai/Mistral-7B-Instruct-v0.2",
+                        inputs: prompt,
+                        parameters: { max_new_tokens: 500, temperature: 0.1, return_full_text: false }
+                    });
+
+                    const raw = response.generated_text || "{}";
+                    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+                    const result = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+                    
+                    score = Math.min(maxPoints, Math.max(0, result.score || 0));
+                    feedback = `🤖 (IA) ${result.feedback || "Évaluation terminée."}`;
+                } catch (e) {
+                    console.error("Erreur correction IA QROA:", e);
+                    score = null;
+                    feedback = "📝 Erreur technique lors de la correction IA. Votre réponse sera validée par le professeur.";
+                }
                 break;
             }
 

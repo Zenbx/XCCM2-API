@@ -89,28 +89,67 @@ export async function GET(_request: NextRequest, context: RouteParams) {
         });
 
         // Récupérer la structure complète du projet source
-        const projectId = document.pr_source;
+        let structure = [];
+        let isSnapshot = false;
 
-        // Récupérer toutes les parties avec leurs enfants
-        const parts = await prisma.part.findMany({
-            where: { parent_pr: projectId },
-            orderBy: { part_number: "asc" },
-            include: {
-                chapters: {
-                    orderBy: { chapter_number: "asc" },
-                    include: {
-                        paragraphs: {
-                            orderBy: { para_number: "asc" },
-                            include: {
-                                notions: {
-                                    orderBy: { notion_number: "asc" },
+        if (document.url_content) {
+            try {
+                const parsedContent = JSON.parse(document.url_content);
+                if (Array.isArray(parsedContent) && parsedContent.length > 0) {
+                    structure = parsedContent;
+                    isSnapshot = true;
+                    console.log(`✓ Utilisation du Snapshot JSON pour le document ${doc_id}`);
+                }
+            } catch (e) {
+                console.warn(`⚠️ Impossible de parser url_content pour le document ${doc_id}, fallback sur la base de données.`);
+            }
+        }
+
+        if (!isSnapshot) {
+            const projectId = document.pr_source;
+            const parts = await prisma.part.findMany({
+                where: { parent_pr: projectId },
+                orderBy: { part_number: "asc" },
+                include: {
+                    chapters: {
+                        orderBy: { chapter_number: "asc" },
+                        include: {
+                            paragraphs: {
+                                orderBy: { para_number: "asc" },
+                                include: {
+                                    notions: {
+                                        orderBy: { notion_number: "asc" },
+                                    },
                                 },
                             },
                         },
                     },
                 },
-            },
-        });
+            });
+
+            structure = parts.map((part) => ({
+                part_id: part.part_id,
+                part_title: part.part_title,
+                part_number: part.part_number,
+                part_intro: part.part_intro,
+                chapters: part.chapters.map((chapter) => ({
+                    chapter_id: chapter.chapter_id,
+                    chapter_title: chapter.chapter_title,
+                    chapter_number: chapter.chapter_number,
+                    paragraphs: chapter.paragraphs.map((paragraph) => ({
+                        para_id: paragraph.para_id,
+                        para_name: paragraph.para_name,
+                        para_number: paragraph.para_number,
+                        notions: paragraph.notions.map((notion) => ({
+                            notion_id: notion.notion_id,
+                            notion_name: notion.notion_name,
+                            notion_number: notion.notion_number,
+                            notion_content: notion.notion_content,
+                        })),
+                    })),
+                })),
+            }));
+        }
 
         // Construire la réponse avec le document et la structure
         const response = {
@@ -138,28 +177,7 @@ export async function GET(_request: NextRequest, context: RouteParams) {
                 tags: document.project.tags,
                 styles: document.project.styles,
             },
-            structure: parts.map((part) => ({
-                part_id: part.part_id,
-                part_title: part.part_title,
-                part_number: part.part_number,
-                part_intro: part.part_intro,
-                chapters: part.chapters.map((chapter) => ({
-                    chapter_id: chapter.chapter_id,
-                    chapter_title: chapter.chapter_title,
-                    chapter_number: chapter.chapter_number,
-                    paragraphs: chapter.paragraphs.map((paragraph) => ({
-                        para_id: paragraph.para_id,
-                        para_name: paragraph.para_name,
-                        para_number: paragraph.para_number,
-                        notions: paragraph.notions.map((notion) => ({
-                            notion_id: notion.notion_id,
-                            notion_name: notion.notion_name,
-                            notion_number: notion.notion_number,
-                            notion_content: notion.notion_content,
-                        })),
-                    })),
-                })),
-            })),
+            structure: structure,
         };
 
         return successResponse("Document récupéré avec succès", response);

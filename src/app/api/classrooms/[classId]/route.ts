@@ -37,6 +37,9 @@ export async function GET(request: NextRequest, context: RouteParams) {
                 teacher: {
                     select: { firstname: true, lastname: true, email: true }
                 },
+                _count: {
+                    select: { enrollments: true }
+                },
                 projects: {
                     include: {
                         project: {

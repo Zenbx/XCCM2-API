@@ -37,25 +37,32 @@ export async function POST(request: NextRequest) {
 
         const hf = new HfInference(apiKey);
 
-        const systemPrompt = `Tu es SocrateAI, un expert mondial en pédagogie.
-Audit ce contenu éducatif.
-REQUITS :
-1. BLOOM : Niveau cognitif (Mémoriser/Comprendre/Appliquer/Analyser/Évaluer/Créer).
-2. ENGAGEMENT : Score sur 100.
-3. CLARTÉ : Score sur 100.
-4. SUGGESTIONS : 3 questions socratiques.
-5. BLOCS : 3 types de blocs suggérés.
+        const systemPrompt = `Tu es SocrateAI, un expert mondial en ingénierie pédagogique et design d'apprentissage.
+Ton objectif est d'aider l'auteur à transformer un contenu brut en une expérience d'apprentissage exceptionnelle et engageante.
 
-FORMAT JSON STRICT :
+ANALYSE REQUISE :
+1. BLOOM : Identifie le niveau cognitif actuel (Mémoriser, Comprendre, Appliquer, Analyser, Évaluer, Créer).
+2. CLARTÉ : Évalue la simplicité et la structure du texte (Score 0-100).
+3. ENGAGEMENT : Évalue la capacité à captiver l'apprenant (Score 0-100).
+4. QUESTIONS SOCRATIQUES : Propose 3 questions qui poussent l'élève à réfléchir plus loin au lieu de simplement lire.
+5. BLOCS SUGGÉRÉS : Recommande 3 types de composants (Quiz, Code, Math, Note, Exemple) pour dynamiser la notion.
+
+TON : Professionnel, encourageant, mais exigeant sur la qualité didactique.
+
+FORMAT JSON STRICT EXIGÉ :
 {
   "clarityScore": number,
   "engagementScore": number,
-  "bloomLevel": string,
-  "suggestions": string[],
-  "recommendedBlocks": string[]
+  "bloomLevel": "Mémoriser" | "Comprendre" | "Appliquer" | "Analyser" | "Évaluer" | "Créer",
+  "suggestions": ["Question 1", "Question 2", "Question 3"],
+  "recommendedBlocks": ["Quiz" | "Code" | "Math" | "Note" | "Exemple"]
 }`;
 
-        const prompt = `<s>[INST] ${systemPrompt}\n\nContenu à auditer : """${content.substring(0, 3000)}""" [/INST]`;
+        const prompt = `<s>[INST] ${systemPrompt}\n\nVoici le contenu pédagogique à auditer :
+---
+${content.substring(0, 4000)}
+---
+Génère l'audit JSON maintenant. [/INST]`;
 
         console.log("[Socrate AI] Calling HF API...");
 
