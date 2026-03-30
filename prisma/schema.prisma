@@ -400,6 +400,7 @@ model Enrollment {
 model ClassroomProject {
   id       String   @id @default(auto()) @map("_id") @db.ObjectId
   added_at DateTime @default(now())
+  doc_id   String?  @db.ObjectId // Reference to the published Document snapshot
 
   // Relations
   classroom_id String    @db.ObjectId
