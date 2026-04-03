@@ -69,48 +69,31 @@ export async function POST(request: NextRequest, context: RouteParams) {
         const structureJson = JSON.stringify(parts);
 
         // 4. CRÉER OU RÉUTILISER UN DOCUMENT (SNAPSHOT)
-        let document;
         const docName = `${link.project.pr_name} (Snapshot Class ${classroom.name})`;
 
-        if (link.doc_id) {
-            try {
-                // Mettre à jour l'existant pour éviter l'erreur de duplication de nom
-                document = await prisma.document.update({
-                    where: { doc_id: link.doc_id },
-                    data: {
-                        doc_name: docName,
-                        doc_size: structureJson.length,
-                        url_content: structureJson,
-                        published_at: new Date(),
-                    }
-                });
-            } catch (error) {
-                // Si le document lié a été supprimé, on en recrée un
-                document = await prisma.document.create({
-                    data: {
-                        doc_name: docName,
-                        pages: 0,
-                        doc_size: structureJson.length,
-                        url_content: structureJson,
-                        pr_source: projectId,
-                    }
-                });
-            }
-        } else {
-            // Première synchronisation
-            document = await prisma.document.create({
-                data: {
+        const document = await prisma.document.upsert({
+            where: {
+                doc_name_pr_source: {
                     doc_name: docName,
-                    pages: 0,
-                    doc_size: structureJson.length,
-                    url_content: structureJson,
-                    pr_source: projectId,
+                    pr_source: projectId
                 }
-            });
-        }
+            },
+            update: {
+                doc_size: structureJson.length,
+                url_content: structureJson,
+                published_at: new Date(),
+            },
+            create: {
+                doc_name: docName,
+                pages: 0,
+                doc_size: structureJson.length,
+                url_content: structureJson,
+                pr_source: projectId,
+            }
+        });
 
         // 5. METTRE À JOUR LE LIEN CLASSROOM-PROJECT (si nécessaire)
-        if (!link.doc_id || link.doc_id !== document.doc_id) {
+        if (link.doc_id !== document.doc_id) {
             await prisma.classroomProject.update({
                 where: { id: link.id },
                 data: { doc_id: document.doc_id }
