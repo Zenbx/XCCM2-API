@@ -272,12 +272,20 @@ export async function GET(request: NextRequest) {
         // Récupère les invitations de l'utilisateur
         const invitations = await prisma.invitation.findMany({
             where: {
-                guest_id: userId
+                guest_id: userId,
+                invitation_state: 'Accepted' // Seuls les projets acceptés apparaissent normalement, mais gardons la logique actuelle si besoin
             },
             include: {
                 project: {
                     include: {
-                        documents: true // Crucial pour le /account
+                        documents: true, // Crucial pour le /account
+                        owner: {
+                            select: {
+                                firstname: true,
+                                lastname: true,
+                                email: true
+                            }
+                        }
                     }
                 }
             }

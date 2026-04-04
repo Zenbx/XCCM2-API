@@ -205,7 +205,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
         console.log(`[POST Notion] pr_name: ${pr_name}, part: ${part_title}, chap: ${chapter_title}, para: ${para_name}`);
 
         // Vérifie que le projet existe et que l'utilisateur y a accès
-        const project = await prisma.project.findFirst({
+        const projects = await prisma.project.findMany({
             where: {
                 pr_name: pr_name,
                 OR: [
@@ -221,6 +221,9 @@ export async function POST(request: NextRequest, context: RouteParams) {
                 ]
             },
         });
+
+        // 🚨 Priorité au projet possédé par l'utilisateur s'il y a plusieurs matches
+        const project = projects.find(p => p.owner_id === userId) || projects[0];
 
         if (!project) {
             return notFoundResponse("Projet non trouvé");
@@ -380,7 +383,7 @@ export async function GET(request: NextRequest, context: RouteParams) {
         const para_name = decodeURIComponent(encodedParaName);
 
         // Vérifie que le projet existe et que l'utilisateur y a accès
-        const project = await prisma.project.findFirst({
+        const projects = await prisma.project.findMany({
             where: {
                 pr_name: pr_name,
                 OR: [
@@ -396,6 +399,9 @@ export async function GET(request: NextRequest, context: RouteParams) {
                 ]
             },
         });
+
+        // 🚨 Priorité au projet possédé par l'utilisateur s'il y a plusieurs matches
+        const project = projects.find(p => p.owner_id === userId) || projects[0];
 
         if (!project) {
             return notFoundResponse("Projet non trouvé");

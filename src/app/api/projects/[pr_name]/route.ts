@@ -236,9 +236,9 @@ export async function GET(
 
         console.log("🔍 Recherche du projet:", { pr_name, userId });
 
-        // Recherche le projet par son nom ET soit il appartient à l'utilisateur,
+        // Recherche les projets par son nom ET soit il appartient à l'utilisateur,
         // soit l'utilisateur y est invité (Accepté).
-        const project = await prisma.project.findFirst({
+        const projects = await prisma.project.findMany({
             where: {
                 pr_name: pr_name,
                 OR: [
@@ -269,6 +269,9 @@ export async function GET(
                 }
             },
         });
+
+        // 🚨 Priorité au projet possédé par l'utilisateur s'il y a plusieurs matches
+        const project = projects.find(p => p.owner_id === userId) || projects[0];
 
         if (!project) {
             console.log("❌ Projet non trouvé");

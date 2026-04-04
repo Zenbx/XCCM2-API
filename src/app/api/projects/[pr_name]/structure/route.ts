@@ -45,7 +45,7 @@ export async function GET(request: NextRequest, context: RouteParams) {
         console.log(`🐢 Cache miss for project structure: ${pr_name}, querying database...`);
 
         // 2. Vérifier que le projet existe et appartient à l'utilisateur
-        const project = await prisma.project.findFirst({
+        const projects = await prisma.project.findMany({
             where: {
                 pr_name,
                 OR: [
@@ -61,6 +61,9 @@ export async function GET(request: NextRequest, context: RouteParams) {
                 ]
             }
         });
+
+        // 🚨 Priorité au projet possédé par l'utilisateur s'il y a plusieurs matches
+        const project = projects.find(p => p.owner_id === userId) || projects[0];
 
         if (!project) {
             return notFoundResponse("Projet non trouvé ou accès refusé");
