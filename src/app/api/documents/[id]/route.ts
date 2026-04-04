@@ -127,28 +127,49 @@ export async function GET(_request: NextRequest, context: RouteParams) {
                 },
             });
 
-            structure = parts.map((part) => ({
-                part_id: part.part_id,
-                part_title: part.part_title,
-                part_number: part.part_number,
-                part_intro: part.part_intro,
-                chapters: part.chapters.map((chapter) => ({
-                    chapter_id: chapter.chapter_id,
-                    chapter_title: chapter.chapter_title,
-                    chapter_number: chapter.chapter_number,
-                    paragraphs: chapter.paragraphs.map((paragraph) => ({
-                        para_id: paragraph.para_id,
-                        para_name: paragraph.para_name,
-                        para_number: paragraph.para_number,
-                        notions: paragraph.notions.map((notion) => ({
-                            notion_id: notion.notion_id,
-                            notion_name: notion.notion_name,
-                            notion_number: notion.notion_number,
-                            notion_content: notion.notion_content,
-                        })),
-                    })),
-                })),
-            }));
+            // Récupérer tous les exercices du projet pour le fallback
+            const allExercises = await prisma.exercise.findMany({
+                where: { project_id: projectId }
+            });
+
+            structure = parts.map((part) => {
+                const partExs = allExercises.filter(ex => ex.part_id === part.part_id);
+                return {
+                    part_id: part.part_id,
+                    part_title: part.part_title,
+                    part_number: part.part_number,
+                    part_intro: part.part_intro,
+                    exercises: partExs,
+                    chapters: part.chapters.map((chapter) => {
+                        const chapExs = allExercises.filter(ex => ex.chapter_id === chapter.chapter_id);
+                        return {
+                            chapter_id: chapter.chapter_id,
+                            chapter_title: chapter.chapter_title,
+                            chapter_number: chapter.chapter_number,
+                            exercises: chapExs,
+                            paragraphs: chapter.paragraphs.map((paragraph) => {
+                                const paraExs = allExercises.filter(ex => ex.para_id === paragraph.para_id);
+                                return {
+                                    para_id: paragraph.para_id,
+                                    para_name: paragraph.para_name,
+                                    para_number: paragraph.para_number,
+                                    exercises: paraExs,
+                                    notions: paragraph.notions.map((notion) => {
+                                        const notionExs = allExercises.filter(ex => ex.notion_id === notion.notion_id);
+                                        return {
+                                            notion_id: notion.notion_id,
+                                            notion_name: notion.notion_name,
+                                            notion_number: notion.notion_number,
+                                            notion_content: notion.notion_content,
+                                            exercises: notionExs
+                                        };
+                                    }),
+                                };
+                            }),
+                        };
+                    }),
+                };
+            });
         }
 
         // Construire la réponse avec le document et la structure

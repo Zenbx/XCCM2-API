@@ -47,7 +47,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
 
         if (!link) return notFoundResponse("Le projet n'est pas associé à cette classe");
 
-        // 3. RECUPERER LA STRUCTURE ACTUELLE (Similaire à l'export)
+        // 3. RECUPERER LA STRUCTURE ACTUELLE (Similaire à l'export) avec EXERCICES
         const parts = await prisma.part.findMany({
             where: { parent_pr: projectId },
             orderBy: { part_number: 'asc' },
@@ -66,7 +66,42 @@ export async function POST(request: NextRequest, context: RouteParams) {
             }
         });
 
-        const structureJson = JSON.stringify(parts);
+        // Récupérer tous les exercices du projet
+        const allExercises = await prisma.exercise.findMany({
+            where: { project_id: projectId }
+        });
+
+        // Enrichir la structure avec les exercices
+        const enrichedParts = parts.map((part: any) => {
+            const partExs = allExercises.filter(ex => ex.part_id === part.part_id);
+            return {
+                ...part,
+                exercises: partExs,
+                chapters: part.chapters.map((chap: any) => {
+                    const chapExs = allExercises.filter(ex => ex.chapter_id === chap.chapter_id);
+                    return {
+                        ...chap,
+                        exercises: chapExs,
+                        paragraphs: chap.paragraphs.map((para: any) => {
+                            const paraExs = allExercises.filter(ex => ex.para_id === para.para_id);
+                            return {
+                                ...para,
+                                exercises: paraExs,
+                                notions: para.notions.map((notion: any) => {
+                                    const notionExs = allExercises.filter(ex => ex.notion_id === notion.notion_id);
+                                    return {
+                                        ...notion,
+                                        exercises: notionExs
+                                    };
+                                })
+                            };
+                        })
+                    };
+                })
+            };
+        });
+
+        const structureJson = JSON.stringify(enrichedParts);
 
         // 4. CRÉER OU RÉUTILISER UN DOCUMENT (SNAPSHOT)
         const docName = `${link.project.pr_name} (Snapshot Class ${classroom.name})`;
