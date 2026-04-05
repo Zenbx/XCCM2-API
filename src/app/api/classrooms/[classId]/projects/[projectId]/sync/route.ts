@@ -66,9 +66,23 @@ export async function POST(request: NextRequest, context: RouteParams) {
             }
         });
 
-        // Récupérer tous les exercices du projet
+        // 3.5 RECUPERER TOUS LES EXERCICES LIES AU PROJET OU SES GRANULES
+        // On extrait tous les IDs de la structure pour être sûr de tout trouver
+        const partIds = parts.map(p => p.part_id);
+        const chapterIds = parts.flatMap(p => p.chapters.map(c => c.chapter_id));
+        const paraIds = parts.flatMap(p => p.chapters.flatMap(c => c.paragraphs.map(pa => pa.para_id)));
+        const notionIds = parts.flatMap(p => p.chapters.flatMap(c => c.paragraphs.flatMap(pa => pa.notions.map(n => n.notion_id))));
+
         const allExercises = await prisma.exercise.findMany({
-            where: { project_id: projectId }
+            where: {
+                OR: [
+                    { project_id: projectId },
+                    { part_id: { in: partIds } },
+                    { chapter_id: { in: chapterIds } },
+                    { para_id: { in: paraIds } },
+                    { notion_id: { in: notionIds } },
+                ]
+            }
         });
 
         // Enrichir la structure avec les exercices

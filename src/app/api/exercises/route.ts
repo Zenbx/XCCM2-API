@@ -82,6 +82,10 @@ export async function GET(request: NextRequest) {
                     { para_id: { in: paraIds } },
                     { notion_id: { in: notionIds } },
                 ];
+            } else {
+                // Si le projet n'est pas trouvé par son ID, on reste sur le filtre simple project_id
+                // mais on s'assure qu'on cherche au moins les exercices liés au projet lui-même
+                filter.project_id = projectId;
             }
         }
 
