@@ -111,12 +111,14 @@ export async function POST(request: NextRequest) {
 
         if (!exercise) return errorResponse("Exercice non trouvé", undefined, 404);
 
+        // Nombre de tentatives déjà effectuées
+        const existingCount = await prisma.submission.count({
+            where: { student_id: userId, exercise_id }
+        });
+
         // Vérifier les tentatives max
         const settings = exercise.settings as any;
         if (settings?.maxAttempts) {
-            const existingCount = await prisma.submission.count({
-                where: { student_id: userId, exercise_id }
-            });
             if (existingCount >= settings.maxAttempts) {
                 return errorResponse(`Nombre maximum de tentatives atteint (${settings.maxAttempts})`, undefined, 403);
             }
@@ -133,10 +135,14 @@ export async function POST(request: NextRequest) {
                 const selectedId = answers.selectedOptionId;
                 const correctOption = params.options?.find((o: any) => o.isCorrect);
                 const isCorrect = selectedId === correctOption?.id;
+                const isLastAttempt = settings?.maxAttempts ? (existingCount + 1 >= settings.maxAttempts) : true;
+
                 score = isCorrect ? maxPoints : 0;
                 feedback = isCorrect
                     ? "✅ Bonne réponse !"
-                    : `❌ Incorrect. La bonne réponse était : "${correctOption?.text}"`;
+                    : isLastAttempt
+                        ? `❌ Incorrect. La bonne réponse était : "${correctOption?.text}"`
+                        : "❌ Incorrect. Réessayez !";
                 break;
             }
 
@@ -162,10 +168,14 @@ export async function POST(request: NextRequest) {
                 const isCorrect = caseSensitive
                     ? studentAnswer === expected
                     : studentAnswer.toLowerCase() === expected.toLowerCase();
+                const isLastAttempt = settings?.maxAttempts ? (existingCount + 1 >= settings.maxAttempts) : true;
+
                 score = isCorrect ? maxPoints : 0;
                 feedback = isCorrect
                     ? "✅ Bonne réponse !"
-                    : `❌ Incorrect. La réponse attendue était : "${expected}"`;
+                    : isLastAttempt
+                        ? `❌ Incorrect. La réponse attendue était : "${expected}"`
+                        : "❌ Incorrect. Réessayez !";
                 break;
             }
 
@@ -242,9 +252,64 @@ FORMAT JSON STRICT :
             }
 
             case 'CODE': {
-                // Pas d'exécution de code côté serveur pour l'instant
-                score = null;
-                feedback = "💻 Votre code a été soumis. Il sera évalué par le professeur.";
+                const studentCode = (answers.code || '').trim();
+                const language = answers.language || params.language;
+                const testCases = params.testCases || [];
+                const questionText = exercise.title;
+
+                if (!studentCode) {
+                    score = 0;
+                    feedback = "❌ Aucun code fourni.";
+                    break;
+                }
+
+                const apiKey = process.env.HUGGINGFACE_API_KEY || process.env.HUGGING_FACE_API_KEY || process.env.HF_API_TOKEN;
+                
+                if (!apiKey) {
+                    score = null;
+                    feedback = "💻 Mode Démo : Votre code a été soumis. L'évaluation IA n'est pas configurée.";
+                    break;
+                }
+
+                try {
+                    const hf = new HfInference(apiKey);
+                    const prompt = `<s>[INST] Tu es un expert en programmation et un correcteur automatique.
+Évalue le code fourni par l'étudiant pour l'exercice suivant.
+Langage : ${language}
+Énoncé : ${questionText}
+Test cases (si fournis) : ${JSON.stringify(testCases)}
+
+CODE ÉTUDIANT :
+\`\`\`${language}
+${studentCode}
+\`\`\`
+
+Analyse la syntaxe, la logique et si le code répond à l'énoncé.
+Donne un score sur ${maxPoints} et un feedback constructif en français.
+
+FORMAT JSON STRICT :
+{
+  "score": number,
+  "feedback": "string"
+} [/INST]`;
+
+                    const response = await hf.textGeneration({
+                        model: "mistralai/Mistral-7B-Instruct-v0.2",
+                        inputs: prompt,
+                        parameters: { max_new_tokens: 500, temperature: 0.1, return_full_text: false }
+                    });
+
+                    const raw = response.generated_text || "{}";
+                    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+                    const result = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+                    
+                    score = Math.min(maxPoints, Math.max(0, result.score || 0));
+                    feedback = `🤖 (IA) ${result.feedback || "Code évalué."}`;
+                } catch (e) {
+                    console.error("Erreur correction IA CODE:", e);
+                    score = null;
+                    feedback = "💻 Erreur technique lors de la correction IA de votre code. Le professeur le validera manuellement.";
+                }
                 break;
             }
         }

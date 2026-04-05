@@ -429,6 +429,7 @@ model Exercise {
   description String?
   parameters  Json // Structure flexible: questions, options, réponses
   settings    Json? // Paramètres: temps, bloquant, points
+  order       Int          @default(0)
   created_at  DateTime     @default(now())
   updated_at  DateTime     @updatedAt
 

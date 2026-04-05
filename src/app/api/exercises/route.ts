@@ -91,7 +91,10 @@ export async function GET(request: NextRequest) {
 
         const exercises = await prisma.exercise.findMany({
             where: filter,
-            orderBy: { created_at: "desc" },
+            orderBy: [
+                { order: "asc" },
+                { created_at: "asc" }
+            ],
             include: {
                 _count: {
                     select: { submissions: true }
@@ -155,7 +158,23 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const validatedData = createExerciseSchema.parse(body);
 
-        // Créer l'exercice (lié au prof et aux granules passés)
+        // 1. Trouver l'ordre maximum pour ce granule afin d'ajouter à la fin (FIFO)
+        const filter: any = {};
+        if (validatedData.project_id) filter.project_id = validatedData.project_id;
+        if (validatedData.part_id) filter.part_id = validatedData.part_id;
+        if (validatedData.chapter_id) filter.chapter_id = validatedData.chapter_id;
+        if (validatedData.para_id) filter.para_id = validatedData.para_id;
+        if (validatedData.notion_id) filter.notion_id = validatedData.notion_id;
+
+        const lastExercise = await prisma.exercise.findFirst({
+            where: filter,
+            orderBy: { order: 'desc' },
+            select: { order: true }
+        });
+
+        const nextOrder = (lastExercise?.order ?? -1) + 1;
+
+        // 2. Créer l'exercice (lié au prof et aux granules passés)
         const exercise = await prisma.exercise.create({
             data: {
                 type: validatedData.type,
@@ -168,7 +187,8 @@ export async function POST(request: NextRequest) {
                 chapter_id: validatedData.chapter_id || null,
                 para_id: validatedData.para_id || null,
                 notion_id: validatedData.notion_id || null,
-                creator_id: userId
+                creator_id: userId,
+                order: nextOrder
             }
         });
 
@@ -192,5 +212,36 @@ export async function POST(request: NextRequest) {
             "Une erreur est survenue lors de la création de l'exercice",
             error instanceof Error ? error.message : undefined
         );
+    }
+}
+/**
+ * PATCH: Mise à jour en masse de l'ordre des exercices
+ */
+export async function PATCH(request: NextRequest) {
+    try {
+        const userId = request.headers.get("x-user-id");
+        if (!userId) return errorResponse("Utilisateur non authentifié", undefined, 401);
+
+        const { exerciseIds } = await request.json();
+
+        if (!Array.isArray(exerciseIds)) {
+            return errorResponse("exerciseIds doit être un tableau", undefined, 400);
+        }
+
+        // Mise à jour séquentielle de l'ordre
+        const updates = exerciseIds.map((id, index) => 
+            prisma.exercise.update({
+                where: { id, creator_id: userId },
+                data: { order: index }
+            })
+        );
+
+        await Promise.all(updates);
+
+        return successResponse("Ordre mis à jour");
+
+    } catch (error) {
+        console.error("Erreur réordonnancement:", error);
+        return serverErrorResponse("Erreur serveur", error instanceof Error ? error.message : undefined);
     }
 }
