@@ -102,6 +102,7 @@ model Project {
 
   // 3. Contrainte d'unicité composée (name + owner_id)
   @@unique([pr_name, owner_id])
+  @@index([owner_id])
   @@map("projects")
 }
 
@@ -141,6 +142,7 @@ model Document {
 
   // Contraintes d'unicités
   @@unique([doc_name, pr_source])
+  @@index([pr_source])
   @@map("documents")
 }
 
@@ -164,6 +166,8 @@ model Part {
   //Contraintes d'unicités
   @@unique([part_title, parent_pr])
   @@unique([part_number, parent_pr])
+  @@index([parent_pr])
+  @@index([owner_id])
   @@map("parts")
 }
 
@@ -186,6 +190,8 @@ model Chapter {
   //Contraintes d'unicités
   @@unique([parent_part, chapter_title])
   @@unique([parent_part, chapter_number])
+  @@index([parent_part])
+  @@index([owner_id])
   @@map("chapters")
 }
 
@@ -208,6 +214,8 @@ model Paragraph {
   //Contraintes d'unicité
   @@unique([parent_chapter, para_name])
   @@unique([parent_chapter, para_number])
+  @@index([parent_chapter])
+  @@index([owner_id])
   @@map("paragraphs")
 }
 
@@ -227,6 +235,8 @@ model Notion {
   //Contraintes d'unicité
   @@unique([parent_para, notion_name])
   @@unique([parent_para, notion_number])
+  @@index([parent_para])
+  @@index([owner_id])
   @@map("notions")
 }
 
@@ -267,6 +277,9 @@ model Invitation {
   // CLÉ PRIMAIRE COMPOSITE (Logique)
   // Empêche d'inviter deux fois le même user au même projet
   @@unique([pr_id, guest_id])
+  @@index([pr_id])
+  @@index([guest_id])
+  @@index([host_id])
   @@map("invitations")
 }
 
@@ -286,6 +299,8 @@ model Like {
   // CLÉ PRIMAIRE COMPOSITE (Logique)
   // Garantit qu'un utilisateur ne peut liker un document qu'une seule fois
   @@unique([liker_id, doc_id])
+  @@index([liker_id])
+  @@index([doc_id])
   @@map("likes")
 }
 
@@ -300,6 +315,8 @@ model View {
 
   // Unique constraint ensures one view per user per document
   @@unique([viewer_id, doc_id])
+  @@index([viewer_id])
+  @@index([doc_id])
   @@map("views")
 }
 
@@ -322,7 +339,7 @@ model Template {
 
   // Métadonnées
   usage_count Int @default(0) // Nombre de fois utilisé
-
+  @@index([creator_id])
   @@map("templates")
 }
 
@@ -339,7 +356,7 @@ model VaultItem {
 
   owner_id String @db.ObjectId
   owner    User   @relation(fields: [owner_id], references: [user_id], onDelete: Cascade)
-
+  @@index([owner_id])
   @@map("vault_items")
 }
 
@@ -358,7 +375,7 @@ model MarketplaceItem {
 
   seller_id String @db.ObjectId
   seller    User   @relation(fields: [seller_id], references: [user_id], onDelete: Cascade)
-
+  @@index([seller_id])
   @@map("marketplace_items")
 }
 
@@ -378,7 +395,7 @@ model Classroom {
 
   enrollments Enrollment[]
   projects    ClassroomProject[]
-
+  @@index([teacher_id])
   @@map("classrooms")
 }
 
@@ -394,6 +411,8 @@ model Enrollment {
   classroom    Classroom @relation(fields: [classroom_id], references: [id], onDelete: Cascade)
 
   @@unique([student_id, classroom_id])
+  @@index([student_id])
+  @@index([classroom_id])
   @@map("enrollments")
 }
 
@@ -410,6 +429,8 @@ model ClassroomProject {
   project    Project @relation(fields: [project_id], references: [pr_id], onDelete: Cascade)
 
   @@unique([classroom_id, project_id])
+  @@index([classroom_id])
+  @@index([project_id])
   @@map("classroom_projects")
 }
 
@@ -445,7 +466,12 @@ model Exercise {
   creator    User   @relation("CreatedExercises", fields: [creator_id], references: [user_id])
 
   submissions Submission[]
-
+  @@index([project_id])
+  @@index([part_id])
+  @@index([chapter_id])
+  @@index([para_id])
+  @@index([notion_id])
+  @@index([creator_id])
   @@map("exercises")
 }
 
@@ -462,6 +488,7 @@ model Submission {
 
   exercise_id String   @db.ObjectId
   exercise    Exercise @relation(fields: [exercise_id], references: [id], onDelete: Cascade)
-
+  @@index([student_id])
+  @@index([exercise_id])
   @@map("submissions")
 }
