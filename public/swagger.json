@@ -1,0 +1,3516 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "XCCM API Documentation",
+    "version": "1.0.0",
+    "description": "\n        API REST pour la plateforme XCCM (Cross-Cultural Content Management).\n        \n        ## Authentification\n        La plupart des endpoints nécessitent un token JWT.\n        Ajoutez le header: `Authorization: Bearer <votre_token>`\n        \n        ## Fonctionnalités principales\n        - Gestion des utilisateurs et authentification\n        - Gestion des projets collaboratifs\n        - Gestion des documents et contenus\n        - Système de likes et d'invitations\n      ",
+    "contact": {
+      "name": "Support XCCM",
+      "email": "support@xccm.com"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3001",
+      "description": "Serveur local"
+    },
+    {
+      "url": "https://xccm-2-api.vercel.app",
+      "description": "Serveur Vercel (Staging)"
+    },
+    {
+      "url": "https://api.xccm.com",
+      "description": "Serveur de production"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "Endpoints d'authentification et gestion de session"
+    },
+    {
+      "name": "Projects",
+      "description": "Gestion des projets collaboratifs"
+    },
+    {
+      "name": "Health",
+      "description": "Endpoints de santé de l'API"
+    },
+    {
+      "name": "Parts",
+      "description": "Gestion des parties (granules de niveau 1)"
+    },
+    {
+      "name": "Chapters",
+      "description": "Gestion des chapitres (granules de niveau 2)"
+    },
+    {
+      "name": "Paragraphs",
+      "description": "Gestion des paragraphes (granules de niveau 3)"
+    },
+    {
+      "name": "Notions",
+      "description": "Gestion des notions (granules de niveau 4)"
+    },
+    {
+      "name": "Documents",
+      "description": "Gestion des documents PDF (téléchargement, génération)"
+    },
+    {
+      "name": "Invitations",
+      "description": "Gestion des invitations de collaboration"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Entrez votre token JWT"
+      }
+    },
+    "schemas": {
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "message": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Connexion d'un utilisateur",
+        "description": "Authentifie un utilisateur avec email et mot de passe, retourne un token JWT",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "john.doe@example.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "example": "SecurePass123"
+                  },
+                  "password_confirmation": {
+                    "type": "string",
+                    "format": "password",
+                    "example": "SecurePass123"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Connexion réussie",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Connexion réussie"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "user": {
+                          "$ref": "#/components/schemas/User"
+                        },
+                        "token": {
+                          "type": "string",
+                          "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Identifiants incorrects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erreur de validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erreur serveur",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Déconnexion d'un utilisateur",
+        "description": "Déconnecte l'utilisateur (le client doit supprimer le token)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Déconnexion réussie",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Déconnexion réussie"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non autorisé (token manquant ou invalide)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Inscription d'un nouvel utilisateur",
+        "description": "Crée un nouveau compte utilisateur avec email, mot de passe et informations personnelles",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password",
+                  "password_confirmation",
+                  "lastname",
+                  "firstname"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "john.doe@example.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "minLength": 8,
+                    "example": "SecurePass123",
+                    "description": "Doit contenir au moins une majuscule, une minuscule et un chiffre"
+                  },
+                  "password_confirmation": {
+                    "type": "string",
+                    "format": "password",
+                    "minLength": 8,
+                    "example": "SecurePass123",
+                    "description": "Doit contenir au moins une majuscule, une minuscule et un chiffre"
+                  },
+                  "lastname": {
+                    "type": "string",
+                    "minLength": 2,
+                    "example": "Doe"
+                  },
+                  "firstname": {
+                    "type": "string",
+                    "minLength": 2,
+                    "example": "John"
+                  },
+                  "org": {
+                    "type": "string",
+                    "example": "XCCM Inc.",
+                    "description": "Organisation (optionnel)"
+                  },
+                  "occupation": {
+                    "type": "string",
+                    "example": "Développeur Full-Stack",
+                    "description": "Métier/Occupation (optionnel)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Utilisateur créé avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Utilisateur créé avec succès"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "user": {
+                          "$ref": "#/components/schemas/User"
+                        },
+                        "token": {
+                          "type": "string",
+                          "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Email déjà utilisé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erreur de validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erreur serveur",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/contact": {
+      "post": {
+        "tags": [
+          "Contact"
+        ],
+        "summary": "Envoyer un message de contact",
+        "description": "Permet aux visiteurs d'envoyer un message à l'équipe technique. Un email de confirmation sera envoyé immédiatement.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "name",
+                  "subject",
+                  "message"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "john.doe@example.com"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "example": "John Doe"
+                  },
+                  "subject": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 200,
+                    "example": "Demande d'information"
+                  },
+                  "message": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 5000,
+                    "example": "Bonjour, je souhaite avoir des informations sur vos services..."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Message envoyé avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Votre message a été envoyé avec succès. Nous vous recontacterons dans les plus brefs délais."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erreur de validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erreur serveur lors de l'envoi de l'email",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{id}/download": {
+      "post": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Télécharger un document",
+        "description": "Retourne l'URL de téléchargement et incrémente le compteur de téléchargements",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID du document"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "URL de téléchargement retournée avec succès"
+          },
+          "404": {
+            "description": "Document non trouvé"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      }
+    },
+    "/api/documents/{id}": {
+      "get": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Récupérer un document par ID avec la structure du projet",
+        "description": "Retourne les métadonnées du document ET la structure complète du projet source pour le book-reader",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID du document"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document récupéré avec succès"
+          },
+          "404": {
+            "description": "Document non trouvé"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      }
+    },
+    "/api/documents": {
+      "get": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Récupérer tous les documents publiés",
+        "description": "Retourne la liste des documents publiés avec les infos du projet",
+        "responses": {
+          "200": {
+            "description": "Documents récupérés avec succès"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Vérification de l'état de l'API",
+        "description": "Endpoint simple pour vérifier que l'API fonctionne correctement",
+        "responses": {
+          "200": {
+            "description": "API fonctionnelle",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "API fonctionne correctement"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "example": "ok"
+                        },
+                        "timestamp": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2024-01-15T10:30:00.000Z"
+                        },
+                        "environment": {
+                          "type": "string",
+                          "example": "development"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/newsletter/subscribe": {
+      "post": {
+        "tags": [
+          "Newsletter"
+        ],
+        "summary": "S'abonner à la newsletter",
+        "description": "Permet à un utilisateur de s'abonner à la newsletter. Un email de confirmation sera envoyé immédiatement.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "john.doe@example.com"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Abonnement réussi, email de confirmation envoyé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Abonnement réussi. Un email de confirmation a été envoyé."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Email invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erreur de validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erreur serveur lors de l'envoi de l'email",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{pr_name}/export": {
+      "get": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Exporter un projet en PDF ou DOCX",
+        "description": "Génère un document et l'envoie directement au client pour téléchargement",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet"
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pdf",
+                "docx"
+              ],
+              "default": "pdf"
+            },
+            "description": "Format du document à exporter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document généré avec succès",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Format invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non autorisé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Projet non trouvé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erreur serveur",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{pr_name}/invitations/email": {
+      "post": {
+        "tags": [
+          "Invitations"
+        ],
+        "summary": "Inviter des collaborateurs par email",
+        "description": "Envoie une invitation de collaboration par email aux futurs membres de l'équipe.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet",
+            "example": "Mon Super Projet"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "guestEmail"
+                ],
+                "properties": {
+                  "guestEmail": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "collaborator@example.com",
+                    "description": "Email de la personne à inviter"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Invitation envoyée avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Invitation envoyée avec succès"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "invitation": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "guest_email": {
+                              "type": "string"
+                            },
+                            "token": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "Pending",
+                                "Accepted",
+                                "Rejected"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Email invalide ou utilisateur inexistant"
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "403": {
+            "description": "Vous n'êtes pas le créateur de ce projet"
+          },
+          "404": {
+            "description": "Projet ou utilisateur non trouvé"
+          },
+          "500": {
+            "description": "Erreur serveur (ex: email non envoyé)"
+          }
+        }
+      }
+    },
+    "/api/projects/{pr_name}/parts/{part_title}/chapters/{chapter_title}/paragraphs/{para_name}/notions/{notion_name}/rephrase": {
+      "post": {
+        "tags": [
+          "Notions"
+        ],
+        "summary": "Reformuler une notion spécifique",
+        "description": "Reformuler le contenu d'une Notion via chatbot IA",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet"
+          },
+          {
+            "in": "path",
+            "name": "part_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre de la partie"
+          },
+          {
+            "in": "path",
+            "name": "chapter_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre du chapitre"
+          },
+          {
+            "in": "path",
+            "name": "para_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du paragraphe"
+          },
+          {
+            "in": "path",
+            "name": "notion_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom de la notion"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "style"
+                ],
+                "properties": {
+                  "style": {
+                    "type": "string",
+                    "description": "Style de reformulation (ex. simple, formal, french)",
+                    "example": "simple"
+                  },
+                  "previewOnly": {
+                    "type": "boolean",
+                    "description": "Si true, ne sauvegarde pas en base (mode preview)",
+                    "default": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Notion reformulée avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Notion reformulée avec succès"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "original_content": {
+                          "type": "string",
+                          "description": "Contenu original de la notion"
+                        },
+                        "rephrased_content": {
+                          "type": "string",
+                          "description": "Contenu reformulé par le chatbot"
+                        },
+                        "preview_only": {
+                          "type": "boolean",
+                          "description": "Indique si la reformulation a été seulement prévisualisée"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non autorisé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ressource non trouvée (projet/partie/chapitre/paragraphe/notion)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erreur serveur",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{pr_name}/parts/{part_title}/chapters/{chapter_title}/paragraphs/{para_name}/notions/{notion_name}": {
+      "get": {
+        "tags": [
+          "Notions"
+        ],
+        "summary": "Récupérer une notion spécifique",
+        "description": "Récupère une notion par son nom",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet"
+          },
+          {
+            "in": "path",
+            "name": "part_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre de la partie"
+          },
+          {
+            "in": "path",
+            "name": "chapter_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre du chapitre"
+          },
+          {
+            "in": "path",
+            "name": "para_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du paragraphe"
+          },
+          {
+            "in": "path",
+            "name": "notion_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom de la notion"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notion récupérée avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Notion récupérée avec succès"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "notion": {
+                          "$ref": "#/components/schemas/Notion"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non autorisé"
+          },
+          "404": {
+            "description": "Notion non trouvée"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Notions"
+        ],
+        "summary": "Modifier une notion",
+        "description": "Met à jour le nom ou le contenu d'une notion",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet"
+          },
+          {
+            "in": "path",
+            "name": "part_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre de la partie"
+          },
+          {
+            "in": "path",
+            "name": "chapter_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre du chapitre"
+          },
+          {
+            "in": "path",
+            "name": "para_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du paragraphe"
+          },
+          {
+            "in": "path",
+            "name": "notion_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom actuel de la notion"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "notion_name": {
+                    "type": "string",
+                    "example": "Concept avancé"
+                  },
+                  "notion_number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "example": 1
+                  },
+                  "notion_content": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Notion modifiée avec succès"
+          },
+          "400": {
+            "description": "Données invalides"
+          },
+          "401": {
+            "description": "Non autorisé"
+          },
+          "404": {
+            "description": "Notion non trouvée"
+          },
+          "409": {
+            "description": "Conflit (nom déjà utilisé)"
+          },
+          "422": {
+            "description": "Erreur de validation"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Notions"
+        ],
+        "summary": "Supprimer une notion",
+        "description": "Supprime une notion définitivement",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet"
+          },
+          {
+            "in": "path",
+            "name": "part_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre de la partie"
+          },
+          {
+            "in": "path",
+            "name": "chapter_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre du chapitre"
+          },
+          {
+            "in": "path",
+            "name": "para_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du paragraphe"
+          },
+          {
+            "in": "path",
+            "name": "notion_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom de la notion à supprimer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notion supprimée avec succès"
+          },
+          "401": {
+            "description": "Non autorisé"
+          },
+          "404": {
+            "description": "Notion non trouvée"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      }
+    },
+    "/api/projects/{pr_name}/parts/{part_title}/chapters/{chapter_title}/paragraphs/{para_name}/notions": {
+      "post": {
+        "tags": [
+          "Notions"
+        ],
+        "summary": "Créer une nouvelle notion",
+        "description": "Crée une nouvelle notion dans un paragraphe",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet"
+          },
+          {
+            "in": "path",
+            "name": "part_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre de la partie"
+          },
+          {
+            "in": "path",
+            "name": "chapter_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre du chapitre"
+          },
+          {
+            "in": "path",
+            "name": "para_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du paragraphe"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "notion_name",
+                  "notion_content"
+                ],
+                "properties": {
+                  "notion_name": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 200,
+                    "example": "Concept de base"
+                  },
+                  "notion_number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "example": 1
+                  },
+                  "notion_content": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Notion créée avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Notion créée avec succès"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "notion": {
+                          "$ref": "#/components/schemas/Notion"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides"
+          },
+          "401": {
+            "description": "Non autorisé"
+          },
+          "404": {
+            "description": "Projet, partie, chapitre ou paragraphe non trouvé"
+          },
+          "409": {
+            "description": "Une notion avec ce nom existe déjà"
+          },
+          "422": {
+            "description": "Erreur de validation"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Notions"
+        ],
+        "summary": "Récupérer toutes les notions d'un paragraphe",
+        "description": "Retourne la liste de toutes les notions d'un paragraphe",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet"
+          },
+          {
+            "in": "path",
+            "name": "part_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre de la partie"
+          },
+          {
+            "in": "path",
+            "name": "chapter_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre du chapitre"
+          },
+          {
+            "in": "path",
+            "name": "para_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du paragraphe"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notions récupérées avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Notions récupérées avec succès"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "notions": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Notion"
+                          }
+                        },
+                        "count": {
+                          "type": "integer",
+                          "example": 12
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non autorisé"
+          },
+          "404": {
+            "description": "Projet, partie, chapitre ou paragraphe non trouvé"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      }
+    },
+    "/api/projects/{pr_name}/parts/{part_title}/chapters/{chapter_title}/paragraphs/{para_name}": {
+      "get": {
+        "tags": [
+          "Paragraphs"
+        ],
+        "summary": "Récupérer un paragraphe spécifique",
+        "description": "Récupère un paragraphe par son nom",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet"
+          },
+          {
+            "in": "path",
+            "name": "part_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre de la partie"
+          },
+          {
+            "in": "path",
+            "name": "chapter_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre du chapitre"
+          },
+          {
+            "in": "path",
+            "name": "para_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du paragraphe"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paragraphe récupéré avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Paragraphe récupéré avec succès"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "paragraph": {
+                          "$ref": "#/components/schemas/Paragraph"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non autorisé"
+          },
+          "404": {
+            "description": "Paragraphe non trouvé"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Paragraphs"
+        ],
+        "summary": "Modifier un paragraphe",
+        "description": "Met à jour le nom ou le numéro d'un paragraphe",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet"
+          },
+          {
+            "in": "path",
+            "name": "part_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre de la partie"
+          },
+          {
+            "in": "path",
+            "name": "chapter_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre du chapitre"
+          },
+          {
+            "in": "path",
+            "name": "para_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom actuel du paragraphe"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "para_name": {
+                    "type": "string",
+                    "example": "Nouvelles Définitions"
+                  },
+                  "para_number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "example": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Paragraphe modifié avec succès"
+          },
+          "400": {
+            "description": "Données invalides"
+          },
+          "401": {
+            "description": "Non autorisé"
+          },
+          "404": {
+            "description": "Paragraphe non trouvé"
+          },
+          "409": {
+            "description": "Conflit (nom ou numéro déjà utilisé)"
+          },
+          "422": {
+            "description": "Erreur de validation"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Paragraphs"
+        ],
+        "summary": "Supprimer un paragraphe",
+        "description": "Supprime un paragraphe définitivement",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet"
+          },
+          {
+            "in": "path",
+            "name": "part_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre de la partie"
+          },
+          {
+            "in": "path",
+            "name": "chapter_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre du chapitre"
+          },
+          {
+            "in": "path",
+            "name": "para_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du paragraphe à supprimer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paragraphe supprimé avec succès"
+          },
+          "401": {
+            "description": "Non autorisé"
+          },
+          "404": {
+            "description": "Paragraphe non trouvé"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      }
+    },
+    "/api/projects/{pr_name}/parts/{part_title}/chapters/{chapter_title}/paragraphs": {
+      "post": {
+        "tags": [
+          "Paragraphs"
+        ],
+        "summary": "Créer un nouveau paragraphe",
+        "description": "Crée un nouveau paragraphe dans un chapitre",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet"
+          },
+          {
+            "in": "path",
+            "name": "part_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre de la partie"
+          },
+          {
+            "in": "path",
+            "name": "chapter_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre du chapitre"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "para_name",
+                  "para_number"
+                ],
+                "properties": {
+                  "para_name": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 200,
+                    "example": "Définitions"
+                  },
+                  "para_number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "example": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Paragraphe créé avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Paragraphe créé avec succès"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "paragraph": {
+                          "$ref": "#/components/schemas/Paragraph"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides"
+          },
+          "401": {
+            "description": "Non autorisé"
+          },
+          "404": {
+            "description": "Projet, partie ou chapitre non trouvé"
+          },
+          "409": {
+            "description": "Un paragraphe avec ce nom ou numéro existe déjà"
+          },
+          "422": {
+            "description": "Erreur de validation"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Paragraphs"
+        ],
+        "summary": "Récupérer tous les paragraphes d'un chapitre",
+        "description": "Retourne la liste de tous les paragraphes d'un chapitre, triés par numéro",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet"
+          },
+          {
+            "in": "path",
+            "name": "part_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre de la partie"
+          },
+          {
+            "in": "path",
+            "name": "chapter_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre du chapitre"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paragraphes récupérés avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Paragraphes récupérés avec succès"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "paragraphs": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Paragraph"
+                          }
+                        },
+                        "count": {
+                          "type": "integer",
+                          "example": 8
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non autorisé"
+          },
+          "404": {
+            "description": "Projet, partie ou chapitre non trouvé"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      }
+    },
+    "/api/projects/{pr_name}/parts/{part_title}/chapters/{chapter_title}": {
+      "get": {
+        "tags": [
+          "Chapters"
+        ],
+        "summary": "Récupérer un chapitre spécifique",
+        "description": "Récupère un chapitre par son titre",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet"
+          },
+          {
+            "in": "path",
+            "name": "part_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre de la partie"
+          },
+          {
+            "in": "path",
+            "name": "chapter_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre du chapitre"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chapitre récupéré avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Chapitre récupéré avec succès"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "chapter": {
+                          "$ref": "#/components/schemas/Chapter"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non autorisé"
+          },
+          "404": {
+            "description": "Chapitre non trouvé"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Chapters"
+        ],
+        "summary": "Modifier un chapitre",
+        "description": "Met à jour le titre ou le numéro d'un chapitre",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet"
+          },
+          {
+            "in": "path",
+            "name": "part_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre de la partie"
+          },
+          {
+            "in": "path",
+            "name": "chapter_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre actuel du chapitre"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chapter_title": {
+                    "type": "string",
+                    "example": "Contexte Révisé"
+                  },
+                  "chapter_number": {
+                    "type": "integer",
+                    "example": 2
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Chapitre modifié avec succès"
+          },
+          "400": {
+            "description": "Données invalides"
+          },
+          "401": {
+            "description": "Non autorisé"
+          },
+          "404": {
+            "description": "Chapitre non trouvé"
+          },
+          "409": {
+            "description": "Conflit (titre ou numéro déjà utilisé)"
+          },
+          "422": {
+            "description": "Erreur de validation"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Chapters"
+        ],
+        "summary": "Supprimer un chapitre",
+        "description": "Supprime un chapitre et renuméroie automatiquement les autres",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet"
+          },
+          {
+            "in": "path",
+            "name": "part_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre de la partie"
+          },
+          {
+            "in": "path",
+            "name": "chapter_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre du chapitre à supprimer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chapitre supprimé avec succès"
+          },
+          "401": {
+            "description": "Non autorisé"
+          },
+          "404": {
+            "description": "Chapitre non trouvé"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      }
+    },
+    "/api/projects/{pr_name}/parts/{part_title}/chapters": {
+      "post": {
+        "tags": [
+          "Chapters"
+        ],
+        "summary": "Créer un nouveau chapitre",
+        "description": "Crée un nouveau chapitre dans une partie avec renumérotation automatique",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet"
+          },
+          {
+            "in": "path",
+            "name": "part_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre de la partie"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "chapter_title",
+                  "chapter_number"
+                ],
+                "properties": {
+                  "chapter_title": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 200,
+                    "example": "Contexte historique"
+                  },
+                  "chapter_number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "example": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Chapitre créé avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Chapitre créé avec succès"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "chapter": {
+                          "$ref": "#/components/schemas/Chapter"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides"
+          },
+          "401": {
+            "description": "Non autorisé"
+          },
+          "404": {
+            "description": "Projet ou partie non trouvé"
+          },
+          "409": {
+            "description": "Un chapitre avec ce titre existe déjà"
+          },
+          "422": {
+            "description": "Erreur de validation"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Chapters"
+        ],
+        "summary": "Récupérer tous les chapitres d'une partie",
+        "description": "Retourne la liste de tous les chapitres d'une partie, triés par numéro",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet"
+          },
+          {
+            "in": "path",
+            "name": "part_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre de la partie"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chapitres récupérés avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Chapitres récupérés avec succès"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "chapters": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Chapter"
+                          }
+                        },
+                        "count": {
+                          "type": "integer",
+                          "example": 5
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non autorisé"
+          },
+          "404": {
+            "description": "Projet ou partie non trouvé"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      }
+    },
+    "/api/projects/{pr_name}/parts/{part_title}": {
+      "get": {
+        "tags": [
+          "Parts"
+        ],
+        "summary": "Récupérer une partie spécifique",
+        "description": "Récupère une partie par son titre",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet"
+          },
+          {
+            "in": "path",
+            "name": "part_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre de la partie"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Partie récupérée avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Partie récupérée avec succès"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "part": {
+                          "$ref": "#/components/schemas/Part"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non autorisé"
+          },
+          "404": {
+            "description": "Partie non trouvée"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Parts"
+        ],
+        "summary": "Modifier une partie",
+        "description": "Met à jour le titre, l'introduction ou le numéro d'une partie",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet"
+          },
+          {
+            "in": "path",
+            "name": "part_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre actuel de la partie"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "part_title": {
+                    "type": "string",
+                    "example": "Introduction Révisée"
+                  },
+                  "part_intro": {
+                    "type": "string",
+                    "example": "Nouvelle introduction"
+                  },
+                  "part_number": {
+                    "type": "integer",
+                    "example": 2
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Partie modifiée avec succès"
+          },
+          "400": {
+            "description": "Données invalides"
+          },
+          "401": {
+            "description": "Non autorisé"
+          },
+          "404": {
+            "description": "Partie non trouvée"
+          },
+          "409": {
+            "description": "Conflit (titre ou numéro déjà utilisé)"
+          },
+          "422": {
+            "description": "Erreur de validation"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Parts"
+        ],
+        "summary": "Supprimer une partie",
+        "description": "Supprime une partie et renuméroie automatiquement les autres",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet"
+          },
+          {
+            "in": "path",
+            "name": "part_title",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Titre de la partie à supprimer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Partie supprimée avec succès"
+          },
+          "401": {
+            "description": "Non autorisé"
+          },
+          "404": {
+            "description": "Partie non trouvée"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      }
+    },
+    "/api/projects/{pr_name}/parts": {
+      "post": {
+        "tags": [
+          "Parts"
+        ],
+        "summary": "Créer une nouvelle partie",
+        "description": "Crée une nouvelle partie dans un projet avec renumérotation automatique",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "part_title",
+                  "part_number"
+                ],
+                "properties": {
+                  "part_title": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 200,
+                    "example": "Introduction"
+                  },
+                  "part_intro": {
+                    "type": "string",
+                    "example": "Cette partie présente les concepts de base"
+                  },
+                  "part_number": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "example": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Partie créée avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Partie créée avec succès"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "part": {
+                          "$ref": "#/components/schemas/Part"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides"
+          },
+          "401": {
+            "description": "Non autorisé"
+          },
+          "404": {
+            "description": "Projet non trouvé"
+          },
+          "409": {
+            "description": "Une partie avec ce titre existe déjà"
+          },
+          "422": {
+            "description": "Erreur de validation"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Parts"
+        ],
+        "summary": "Récupérer toutes les parties d'un projet",
+        "description": "Retourne la liste de toutes les parties d'un projet, triées par numéro",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Parties récupérées avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Parties récupérées avec succès"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "parts": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Part"
+                          }
+                        },
+                        "count": {
+                          "type": "integer",
+                          "example": 3
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non autorisé"
+          },
+          "404": {
+            "description": "Projet non trouvé"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      }
+    },
+    "/api/projects/{pr_name}/publish": {
+      "post": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Publier un projet",
+        "description": "Génère le document, l'upload sur Supabase Storage et enregistre l'URL",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "format"
+                ],
+                "properties": {
+                  "format": {
+                    "type": "string",
+                    "enum": [
+                      "pdf",
+                      "docx"
+                    ],
+                    "example": "pdf",
+                    "description": "Format du document à publier"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Document publié avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Document publié avec succès"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "document": {
+                          "type": "object",
+                          "properties": {
+                            "doc_id": {
+                              "type": "string"
+                            },
+                            "doc_name": {
+                              "type": "string"
+                            },
+                            "url_content": {
+                              "type": "string"
+                            },
+                            "pages": {
+                              "type": "integer"
+                            },
+                            "doc_size": {
+                              "type": "integer"
+                            },
+                            "published_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Format invalide ou projet vide"
+          },
+          "401": {
+            "description": "Non autorisé"
+          },
+          "404": {
+            "description": "Projet non trouvé"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      }
+    },
+    "/api/projects/{pr_name}": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Récupérer un projet spécifique",
+        "description": "Récupère un projet par son nom (pour l'utilisateur authentifié)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet",
+            "example": "Mon Super Projet"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Projet récupéré avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Projet récupéré avec succès"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "project": {
+                          "$ref": "#/components/schemas/ProjectWithOwner"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non autorisé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Projet non trouvé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erreur serveur",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Modifier le nom d'un projet",
+        "description": "Met à jour le nom d'un projet existant (updated_at est automatiquement mis à jour)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom actuel du projet",
+            "example": "Mon Super Projet"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "pr_name"
+                ],
+                "properties": {
+                  "pr_name": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 100,
+                    "example": "Mon Projet Renommé",
+                    "description": "Nouveau nom du projet"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Projet modifié avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Projet modifié avec succès"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "project": {
+                          "$ref": "#/components/schemas/Project"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non autorisé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Projet non trouvé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Un projet avec ce nouveau nom existe déjà",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erreur de validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erreur serveur",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Supprimer un projet",
+        "description": "Supprime définitivement un projet et toutes ses données associées",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet à supprimer",
+            "example": "Mon Super Projet"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Projet supprimé avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Projet supprimé avec succès"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non autorisé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Projet non trouvé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erreur serveur",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects": {
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Créer un nouveau projet",
+        "description": "Crée un nouveau projet pour l'utilisateur authentifié",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "pr_name"
+                ],
+                "properties": {
+                  "pr_name": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 100,
+                    "example": "Mon Super Projet",
+                    "description": "Nom du projet (unique par utilisateur)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Projet créé avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Projet créé avec succès"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "project": {
+                          "$ref": "#/components/schemas/Project"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non autorisé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Un projet avec ce nom existe déjà",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erreur de validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erreur serveur",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Récupérer tous les projets de l'utilisateur connecté",
+        "description": "Retourne la liste de tous les projets appartenant à l'utilisateur authentifié",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liste des projets récupérée avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Projets récupérés avec succès"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "projects": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Project"
+                          }
+                        },
+                        "count": {
+                          "type": "integer",
+                          "example": 5,
+                          "description": "Nombre total de projets"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non autorisé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erreur serveur",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/stats": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Récupérer les statistiques de l'utilisateur",
+        "description": "Retourne les statistiques complètes de l'utilisateur authentifié incluant le nombre de cours, vues, téléchargements, likes, et l'historique des activités récentes",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statistiques utilisateur récupérées avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Statistiques récupérées avec succès"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "totalCoursesCreated": {
+                          "type": "integer",
+                          "example": 5
+                        },
+                        "totalViewsOnPublishedCourses": {
+                          "type": "integer",
+                          "example": 250
+                        },
+                        "totalDownloadsOnPublishedCourses": {
+                          "type": "integer",
+                          "example": 45
+                        },
+                        "totalLikesOnPublishedCourses": {
+                          "type": "integer",
+                          "example": 30
+                        },
+                        "isActive": {
+                          "type": "boolean",
+                          "example": true
+                        },
+                        "recentActivities": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "project",
+                                  "document",
+                                  "comment",
+                                  "like",
+                                  "invitation"
+                                ],
+                                "example": "project"
+                              },
+                              "title": {
+                                "type": "string",
+                                "example": "Mon Cours Avancé"
+                              },
+                              "description": {
+                                "type": "string",
+                                "example": "Projet modifié"
+                              },
+                              "timestamp": {
+                                "type": "string",
+                                "format": "date-time",
+                                "example": "2024-01-15T10:30:00Z"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non autorisé (token manquant ou invalide)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erreur serveur",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

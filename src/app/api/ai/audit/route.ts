@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
-import { HfInference } from "@huggingface/inference";
+import { generateText } from "ai";
+import { google } from "@ai-sdk/google";
 import { successResponse, serverErrorResponse, errorResponse } from "@/utils/api-response";
 import { verifyToken } from "@/lib/auth";
 
@@ -15,11 +16,9 @@ export async function POST(request: NextRequest) {
         const { content } = await request.json();
         if (!content?.trim()) return errorResponse("Le contenu est vide", undefined, 400);
 
-        // ✅ Robust API Key Detection
-        const apiKey = process.env.HUGGINGFACE_API_KEY || process.env.HUGGING_FACE_API_KEY || process.env.HF_API_TOKEN;
-
-        if (!apiKey) {
-            console.warn("HUGGINGFACE_API_KEY missing, returning mock response");
+        // ✅ Vérification de la clé API Google
+        if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+            console.warn("[Audit AI] GOOGLE_GENERATIVE_AI_API_KEY missing, returning mock response");
             return successResponse("⚠️ Mode Démo - Socrate AI", {
                 clarityScore: 85,
                 engagementScore: 75,
@@ -28,14 +27,12 @@ export async function POST(request: NextRequest) {
                     "🚧 Fonctionnalité en développement : Socrate AI n'est pas encore complètement opérationnel.",
                     "💡 Cette fonctionnalité analyse votre contenu selon la taxonomie de Bloom et propose des améliorations pédagogiques.",
                     "📊 Scores affichés ci-dessus sont des exemples pour démonstration.",
-                    "🔧 Pour activer la vraie analyse IA, configurez HUGGING_FACE_API_KEY dans votre .env backend."
+                    "🔧 Pour activer la vraie analyse IA, configurez GOOGLE_GENERATIVE_AI_API_KEY dans votre .env backend."
                 ],
                 recommendedBlocks: ["Quiz", "Exemple", "Définition"],
                 isDemoMode: true
             });
         }
-
-        const hf = new HfInference(apiKey);
 
         const systemPrompt = `Tu es SocrateAI, un expert mondial en ingénierie pédagogique et design d'apprentissage.
 Ton objectif est d'aider l'auteur à transformer un contenu brut en une expérience d'apprentissage exceptionnelle et engageante.
@@ -49,7 +46,7 @@ ANALYSE REQUISE :
 
 TON : Professionnel, encourageant, mais exigeant sur la qualité didactique.
 
-FORMAT JSON STRICT EXIGÉ :
+FORMAT JSON STRICT EXIGÉ (sans markdown, sans backticks, juste le JSON brut) :
 {
   "clarityScore": number,
   "engagementScore": number,
@@ -58,27 +55,16 @@ FORMAT JSON STRICT EXIGÉ :
   "recommendedBlocks": ["Quiz" | "Code" | "Math" | "Note" | "Exemple"]
 }`;
 
-        const prompt = `<s>[INST] ${systemPrompt}\n\nVoici le contenu pédagogique à auditer :
----
-${content.substring(0, 4000)}
----
-Génère l'audit JSON maintenant. [/INST]`;
+        console.log("[Audit AI] Calling Gemini API...");
 
-        console.log("[Socrate AI] Calling HF API...");
-
-        // Use textGeneration instead of chatCompletion for wider model support on shared HF endpoints
-        const response = await hf.textGeneration({
-            model: "mistralai/Mistral-7B-Instruct-v0.2", // More stable on HF free/shared
-            inputs: prompt,
-            parameters: {
-                max_new_tokens: 1000,
-                temperature: 0.1,
-                return_full_text: false,
-            }
+        const { text: rawContent } = await generateText({
+            model: google('gemini-1.5-flash'),
+            system: systemPrompt,
+            prompt: `Voici le contenu pédagogique à auditer :\n---\n${content.substring(0, 8000)}\n---\nGénère l'audit JSON maintenant.`,
+            temperature: 0.1,
         });
 
-        const rawContent = response.generated_text || "{}";
-        console.log("[Socrate AI] Raw Response received");
+        console.log("[Audit AI] Response received");
 
         // Robust JSON extraction
         let auditResult;
@@ -87,7 +73,7 @@ Génère l'audit JSON maintenant. [/INST]`;
             const cleanJson = jsonMatch ? jsonMatch[0] : rawContent;
             auditResult = JSON.parse(cleanJson);
         } catch (e) {
-            console.error("[Socrate AI] JSON Parse Fail:", rawContent);
+            console.error("[Audit AI] JSON Parse Fail:", rawContent);
             auditResult = {
                 clarityScore: 75,
                 engagementScore: 70,
@@ -101,18 +87,6 @@ Génère l'audit JSON maintenant. [/INST]`;
 
     } catch (error: any) {
         console.error("[api/ai/audit] Error:", error);
-
-        // Special handle for Model loading / busy
-        if (error.message?.includes("loading") || error.message?.includes("busy")) {
-            return successResponse("IA en cours d'éveil (Réessayez dans 20s)", {
-                clarityScore: 0,
-                engagementScore: 0,
-                bloomLevel: "Chargement...",
-                suggestions: ["L'IA est en train d'être chargée sur les serveurs. Merci de patienter quelques secondes et de relancer l'analyse."],
-                recommendedBlocks: []
-            });
-        }
-
         return serverErrorResponse("Erreur lors de l'audit AI", error.message);
     }
 }
