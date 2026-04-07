@@ -58,7 +58,7 @@ FORMAT JSON STRICT EXIGÉ (sans markdown, sans backticks, juste le JSON brut) :
         console.log("[Audit AI] Calling Gemini API...");
 
         const { text: rawContent } = await generateText({
-            model: google('gemini-2.0-flash'),
+            model: google('gemini-pro-latest'),
             system: systemPrompt,
             prompt: `Voici le contenu pédagogique à auditer :\n---\n${content.substring(0, 8000)}\n---\nGénère l'audit JSON maintenant.`,
             temperature: 0.1,
@@ -69,9 +69,15 @@ FORMAT JSON STRICT EXIGÉ (sans markdown, sans backticks, juste le JSON brut) :
         // Robust JSON extraction
         let auditResult;
         try {
-            const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
-            const cleanJson = jsonMatch ? jsonMatch[0] : rawContent;
-            auditResult = JSON.parse(cleanJson);
+            // Robust JSON extraction (handle markdown backticks if model adds them)
+            const cleanJson = rawContent
+              .replace(/```json/g, '')
+              .replace(/```/g, '')
+              .trim();
+            
+            const jsonMatch = cleanJson.match(/\{[\s\S]*\}/);
+            const finalJson = jsonMatch ? jsonMatch[0] : cleanJson;
+            auditResult = JSON.parse(finalJson);
         } catch (e) {
             console.error("[Audit AI] JSON Parse Fail:", rawContent);
             auditResult = {
