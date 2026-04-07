@@ -58,7 +58,7 @@ FORMAT JSON STRICT EXIGÉ (sans markdown, sans backticks, juste le JSON brut) :
         console.log("[Audit AI] Calling Gemini API...");
 
         const { text: rawContent } = await generateText({
-            model: google('gemini-1.5-flash'),
+            model: google('gemini-1.5-flash-latest'),
             system: systemPrompt,
             prompt: `Voici le contenu pédagogique à auditer :\n---\n${content.substring(0, 8000)}\n---\nGénère l'audit JSON maintenant.`,
             temperature: 0.1,
