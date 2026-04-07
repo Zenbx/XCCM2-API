@@ -28,7 +28,7 @@ ${context?.notionName ? `Notion : ${context.notionName}` : ""}
 `;
 
     const result = streamText({
-      model: google('gemini-1.5-flash-latest'),
+      model: google('gemini-2.0-flash'),
       system: systemPrompt,
       messages: coreMessages,
       temperature: 0.7,
