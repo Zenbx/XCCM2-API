@@ -62,6 +62,9 @@ model User {
   created_exercises Exercise[]   @relation("CreatedExercises")
   submissions       Submission[] @relation("StudentSubmissions")
 
+  // Versioning
+  created_revisions ProjectRevision[] @relation("CreatedRevisions")
+
   @@map("users") // Nom de la collection dans notre base MongoDB
 }
 
@@ -99,6 +102,9 @@ model Project {
 
   // LMS Relations
   classroom_links ClassroomProject[]
+
+  // Versioning
+  revisions ProjectRevision[]
 
   // 3. Contrainte d'unicité composée (name + owner_id)
   @@unique([pr_name, owner_id])
@@ -491,4 +497,25 @@ model Submission {
   @@index([student_id])
   @@index([exercise_id])
   @@map("submissions")
+}
+
+// --- VERSIONING / REVISIONS ---
+
+model ProjectRevision {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  label        String?  // Nom optionnel donné par l'auteur ex: "Avant refonte Partie 2"
+  snapshot     Json     // Arbre complet: { project, structure (parts->chapters->paras->notions) }
+  created_at   DateTime @default(now())
+
+  // Clé étrangère vers le projet
+  project_id String  @db.ObjectId
+  project    Project @relation(fields: [project_id], references: [pr_id], onDelete: Cascade)
+
+  // Créateur de la révision
+  creator_id String @db.ObjectId
+  creator    User   @relation("CreatedRevisions", fields: [creator_id], references: [user_id])
+
+  @@index([project_id])
+  @@index([creator_id])
+  @@map("project_revisions")
 }
