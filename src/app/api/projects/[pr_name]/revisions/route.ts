@@ -25,8 +25,46 @@ const postSchema = z.object({
 });
 
 /**
- * GET /api/projects/:pr_name/revisions
- * Liste les révisions du projet, triées de la plus récente à la plus ancienne
+ * @openapi
+ * /api/projects/{pr_name}/revisions:
+ *   get:
+ *     tags:
+ *       - Projects
+ *     summary: Lister les révisions (snapshots) du projet
+ *     description: Récupère les 5 dernières sauvegardes manuelles de la structure du projet.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: pr_name
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Liste des révisions récupérée
+ *   post:
+ *     tags:
+ *       - Projects
+ *     summary: Créer une nouvelle révision (Snapshot)
+ *     description: Sauvegarde l'état actuel de la structure du projet. Max 5 par projet.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: pr_name
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               label: { type: string, description: "Nom de la révision" }
+ *     responses:
+ *       201:
+ *         description: Révision sauvegardée
  */
 export async function GET(request: NextRequest, context: RouteParams) {
     try {

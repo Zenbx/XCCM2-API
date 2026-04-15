@@ -1,27 +1,40 @@
 /**
  * @fileoverview Route API pour récupérer un document spécifique avec sa structure complète
  *
- * @swagger
+ * @openapi
  * /api/documents/{id}:
  *   get:
  *     tags:
  *       - Documents
- *     summary: Récupérer un document par ID avec la structure du projet
- *     description: Retourne les métadonnées du document ET la structure complète du projet source pour le book-reader
+ *     summary: Récupérer un document (Snapshot)
+ *     description: Retourne les métadonnées et la structure complète (snapshot) pour la lecture.
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         schema:
- *           type: string
- *         description: ID du document
+ *         schema: { type: string }
  *     responses:
  *       200:
  *         description: Document récupéré avec succès
  *       404:
  *         description: Document non trouvé
- *       500:
- *         description: Erreur serveur
+ *   delete:
+ *     tags:
+ *       - Documents
+ *     summary: Dépublier un document
+ *     description: Supprime un snapshot de la bibliothèque. Nécessite d'être propriétaire ou admin.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Document supprimé
+ *       403:
+ *         description: Accès refusé
  */
 
 import { NextRequest } from "next/server";

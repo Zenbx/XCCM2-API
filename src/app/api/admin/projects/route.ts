@@ -7,8 +7,20 @@ import {
 } from "@/utils/api-response";
 
 /**
- * GET /api/admin/projects
- * Récupère tous les projets de la plateforme (Admin uniquement)
+ * @openapi
+ * /api/admin/projects:
+ *   get:
+ *     tags:
+ *       - Admin
+ *     summary: Lister tous les projets de la plateforme (Admin)
+ *     description: Récupère la liste complète des projets avec leurs statistiques de consultation.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Liste des projets récupérée
+ *       403:
+ *         description: Accès refusé
  */
 export async function GET(request: NextRequest) {
     try {

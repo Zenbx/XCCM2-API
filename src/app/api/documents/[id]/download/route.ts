@@ -1,27 +1,34 @@
 /**
  * @fileoverview Route API pour télécharger un document et incrémenter le compteur
  *
- * @swagger
+ * @openapi
  * /api/documents/{id}/download:
  *   post:
  *     tags:
  *       - Documents
- *     summary: Télécharger un document
- *     description: Retourne l'URL de téléchargement et incrémente le compteur de téléchargements
+ *     summary: Obtenir l'URL de téléchargement
+ *     description: Incrémente le compteur de téléchargements et retourne l'URL publique du fichier.
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         schema:
- *           type: string
- *         description: ID du document
+ *         schema: { type: string }
  *     responses:
  *       200:
- *         description: URL de téléchargement retournée avec succès
- *       404:
- *         description: Document non trouvé
- *       500:
- *         description: Erreur serveur
+ *         description: URL de téléchargement récupérée
+ *   get:
+ *     tags:
+ *       - Documents
+ *     summary: Téléchargement direct (Redirection)
+ *     description: Incrémente le compteur et redirige directement vers l'URL du fichier sur le storage.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       302:
+ *         description: Redirection vers le fichier
  */
 
 import { NextRequest } from "next/server";

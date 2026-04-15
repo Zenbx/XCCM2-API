@@ -1,59 +1,23 @@
 /**
- * @fileoverview Route API pour l'abonnement à la newsletter
- * Gère l'abonnement des utilisateurs à la newsletter via email
- *
- * @swagger
+ * @openapi
  * /api/newsletter/subscribe:
  *   post:
  *     tags:
  *       - Newsletter
  *     summary: S'abonner à la newsletter
- *     description: Permet à un utilisateur de s'abonner à la newsletter. Un email de confirmation sera envoyé immédiatement.
+ *     description: Permet à un utilisateur de s'abonner à la newsletter.
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - email
+ *             required: [email]
  *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *                 example: john.doe@example.com
+ *               email: { type: string, format: email }
  *     responses:
  *       200:
- *         description: Abonnement réussi, email de confirmation envoyé
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Abonnement réussi. Un email de confirmation a été envoyé.
- *       400:
- *         description: Email invalide
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
- *       422:
- *         description: Erreur de validation
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
- *       500:
- *         description: Erreur serveur lors de l'envoi de l'email
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
+ *         description: Abonnement réussi
  */
 
 import { NextRequest } from "next/server";

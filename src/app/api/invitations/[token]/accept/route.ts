@@ -1,8 +1,25 @@
 /**
- * @fileoverview Route API pour accepter une invitation
- * PATCH /api/invitations/[token]/accept
- * 
- * Documentation Swagger dans: src/lib/swagger-invitations-definitions.ts
+ * @openapi
+ * /api/invitations/{token}/accept:
+ *   patch:
+ *     tags:
+ *       - Invitations
+ *     summary: Accepter une invitation
+ *     description: Change le statut de l'invitation en 'Accepted' et donne accès au projet.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: token
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Invitation acceptée
+ *       403:
+ *         description: Non destinée à cet utilisateur
+ *       404:
+ *         description: Pas trouvée
  */
 
 import { NextRequest } from "next/server";

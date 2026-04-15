@@ -1,14 +1,21 @@
-import { NextRequest } from "next/server";
-import prisma from "@/lib/prisma";
-import {
-    successResponse,
-    errorResponse,
-    serverErrorResponse,
-} from "@/utils/api-response";
-
 /**
- * GET /api/user/projects/[projectId]/analytics
- * Get detailed analytics for a specific project
+ * @openapi
+ * /api/user/projects/{projectId}/analytics:
+ *   get:
+ *     tags:
+ *       - Projects
+ *     summary: Analytics d'un projet personnel
+ *     description: Retourne les statistiques détaillées (vues, téléchargements, likes) pour un projet appartenant à l'utilisateur.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Analytics récupérées
  */
 export async function GET(
     request: NextRequest,

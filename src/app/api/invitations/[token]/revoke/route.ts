@@ -1,9 +1,23 @@
 /**
- * @fileoverview Route API pour révoquer une invitation
- * DELETE /api/invitations/[token]/revoke
- * 
- * Permet au créateur du projet (host) d'annuler une invitation avant qu'elle ne soit acceptée
- * Documentation Swagger dans: src/app/api/invitations/[token]/route.ts
+ * @openapi
+ * /api/invitations/{token}/revoke:
+ *   delete:
+ *     tags:
+ *       - Invitations
+ *     summary: Révoquer une invitation
+ *     description: Annule ou supprime une invitation (host seulement).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: token
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Invitation révoquée
+ *       403:
+ *         description: Non autorisé (pas le host)
  */
 
 import { NextRequest } from "next/server";

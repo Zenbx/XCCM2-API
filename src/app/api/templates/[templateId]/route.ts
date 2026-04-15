@@ -1,12 +1,57 @@
 /**
- * GET /api/templates/[templateId]
- * Récupérer un template par son ID
- * 
- * PATCH /api/templates/[templateId]
- * Mettre à jour un template (créateur seulement)
- * 
- * DELETE /api/templates/[templateId]
- * Supprimer un template (créateur seulement)
+ * @openapi
+ * /api/templates/{templateId}:
+ *   get:
+ *     tags:
+ *       - Projects
+ *     summary: Récupérer un modèle spécifique
+ *     parameters:
+ *       - in: path
+ *         name: templateId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Modèle récupéré
+ *   patch:
+ *     tags:
+ *       - Projects
+ *     summary: Modifier un modèle
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: templateId
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               template_name: { type: string }
+ *               description: { type: string }
+ *               category: { type: string }
+ *               is_public: { type: boolean }
+ *     responses:
+ *       200:
+ *         description: Modèle mis à jour
+ *   delete:
+ *     tags:
+ *       - Projects
+ *     summary: Supprimer un modèle
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: templateId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Modèle supprimé
  */
 
 import { NextRequest, NextResponse } from 'next/server';

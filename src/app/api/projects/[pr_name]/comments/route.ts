@@ -18,7 +18,47 @@ type RouteParams = {
 };
 
 /**
- * GET: Récupérer tous les commentaires d'un projet
+ * @openapi
+ * /api/projects/{pr_name}/comments:
+ *   get:
+ *     tags:
+ *       - Projects
+ *     summary: Lister les commentaires d'un projet
+ *     description: Récupère tous les commentaires (discussions) laissés sur le projet.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: pr_name
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Liste des commentaires récupérée
+ *   post:
+ *     tags:
+ *       - Projects
+ *     summary: Ajouter un commentaire
+ *     description: Poste un nouveau message dans la discussion du projet.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: pr_name
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [content]
+ *             properties:
+ *               content: { type: string }
+ *     responses:
+ *       201:
+ *         description: Commentaire créé
  */
 export async function GET(
     request: NextRequest,

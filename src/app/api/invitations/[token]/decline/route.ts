@@ -1,6 +1,25 @@
 /**
- * @fileoverview Route API pour décliner une invitation
- * PATCH /api/invitations/[token]/decline
+ * @openapi
+ * /api/invitations/{token}/decline:
+ *   patch:
+ *     tags:
+ *       - Invitations
+ *     summary: Décliner une invitation
+ *     description: Change le statut de l'invitation en 'Declined'.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: token
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Invitation déclinée
+ *       403:
+ *         description: Non destinée à cet utilisateur
+ *       404:
+ *         description: Pas trouvée
  */
 
 import { NextRequest } from "next/server";

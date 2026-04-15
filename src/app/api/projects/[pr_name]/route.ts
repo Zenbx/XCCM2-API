@@ -2,23 +2,22 @@
  * @fileoverview Routes API pour un projet spécifique
  * Gère la récupération, modification et suppression d'un projet par son nom
  *
- * @swagger
+/**
+ * @openapi
  * /api/projects/{pr_name}:
  *   get:
  *     tags:
  *       - Projects
  *     summary: Récupérer un projet spécifique
- *     description: Récupère un projet par son nom (pour l'utilisateur authentifié)
+ *     description: Récupère un projet par son nom (pour le propriétaire ou un invité accepté).
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: pr_name
  *         required: true
- *         schema:
- *           type: string
+ *         schema: { type: string }
  *         description: Nom du projet
- *         example: Mon Super Projet
  *     responses:
  *       200:
  *         description: Projet récupéré avec succès
@@ -27,167 +26,53 @@
  *             schema:
  *               type: object
  *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Projet récupéré avec succès
+ *                 success: { type: boolean }
  *                 data:
  *                   type: object
  *                   properties:
- *                     project:
- *                       $ref: '#/components/schemas/ProjectWithOwner'
- *       401:
- *         description: Non autorisé
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
+ *                     project: { $ref: '#/components/schemas/ProjectWithOwner' }
+ *       403:
+ *         description: Accès refusé
  *       404:
  *         description: Projet non trouvé
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
- *       500:
- *         description: Erreur serveur
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
  *   patch:
  *     tags:
  *       - Projects
- *     summary: Modifier le nom d'un projet
- *     description: Met à jour le nom d'un projet existant (updated_at est automatiquement mis à jour)
+ *     summary: Modifier un projet
+ *     description: Met à jour les métadonnées du projet (nom, description, tags, etc.).
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: pr_name
  *         required: true
- *         schema:
- *           type: string
- *         description: Nom actuel du projet
- *         example: Mon Super Projet
+ *         schema: { type: string }
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required:
- *               - pr_name
- *             properties:
- *               pr_name:
- *                 type: string
- *                 minLength: 3
- *                 maxLength: 100
- *                 example: Mon Projet Renommé
- *                 description: Nouveau nom du projet
+ *             $ref: '#/components/schemas/GranuleUpdate'
  *     responses:
  *       200:
  *         description: Projet modifié avec succès
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Projet modifié avec succès
- *                 data:
- *                   type: object
- *                   properties:
- *                     project:
- *                       $ref: '#/components/schemas/Project'
- *       400:
- *         description: Données invalides
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
- *       401:
- *         description: Non autorisé
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
- *       404:
- *         description: Projet non trouvé
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
  *       409:
- *         description: Un projet avec ce nouveau nom existe déjà
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
- *       422:
- *         description: Erreur de validation
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
- *       500:
- *         description: Erreur serveur
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
+ *         description: Conflit (nom déjà utilisé)
  *   delete:
  *     tags:
  *       - Projects
  *     summary: Supprimer un projet
- *     description: Supprime définitivement un projet et toutes ses données associées
+ *     description: Supprime définitivement un projet et toutes ses données associées (cascade).
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: pr_name
  *         required: true
- *         schema:
- *           type: string
- *         description: Nom du projet à supprimer
- *         example: Mon Super Projet
+ *         schema: { type: string }
  *     responses:
  *       200:
  *         description: Projet supprimé avec succès
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Projet supprimé avec succès
- *       401:
- *         description: Non autorisé
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
- *       404:
- *         description: Projet non trouvé
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
- *       500:
- *         description: Erreur serveur
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
  */
 
 import { NextRequest } from "next/server";

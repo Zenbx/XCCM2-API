@@ -2,36 +2,34 @@
  * @fileoverview Route API pour la publication de documents
  * Génère le document, l'upload sur Supabase Storage et stocke l'URL dans la BD
  *
- * @swagger
+ */
+/**
+ * @openapi
  * /api/projects/{pr_name}/publish:
  *   post:
  *     tags:
  *       - Documents
- *     summary: Publier un projet
- *     description: Génère le document, l'upload sur Supabase Storage et enregistre l'URL
+ *     summary: Publier un projet (Snapshot)
+ *     description: Génère un PDF ou DOCX à partir du projet et le publie dans la bibliothèque.
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: pr_name
  *         required: true
- *         schema:
- *           type: string
- *         description: Nom du projet
+ *         schema: { type: string }
+ *         description: Nom du projet à publier
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - format
+ *             required: [format]
  *             properties:
- *               format:
- *                 type: string
- *                 enum: [pdf, docx]
- *                 example: pdf
- *                 description: Format du document à publier
+ *               format: { type: string, enum: [pdf, docx] }
+ *               doc_name: { type: string, description: "Nom personnalisé du snapshot" }
+ *               cover_image: { type: string, description: "URL de l'image de couverture" }
  *     responses:
  *       201:
  *         description: Document publié avec succès
@@ -40,39 +38,13 @@
  *             schema:
  *               type: object
  *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Document publié avec succès
+ *                 success: { type: boolean }
  *                 data:
  *                   type: object
  *                   properties:
- *                     document:
- *                       type: object
- *                       properties:
- *                         doc_id:
- *                           type: string
- *                         doc_name:
- *                           type: string
- *                         url_content:
- *                           type: string
- *                         pages:
- *                           type: integer
- *                         doc_size:
- *                           type: integer
- *                         published_at:
- *                           type: string
- *                           format: date-time
- *       400:
- *         description: Format invalide ou projet vide
- *       401:
- *         description: Non autorisé
- *       404:
- *         description: Projet non trouvé
- *       500:
- *         description: Erreur serveur
+ *                     document: { $ref: '#/components/schemas/Document' }
+ *       409:
+ *         description: Nom de document déjà utilisé
  */
 
 import { NextRequest } from "next/server";

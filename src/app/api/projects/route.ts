@@ -2,13 +2,14 @@
  * @fileoverview Routes API pour la gestion des projets
  * Gère la création de projets et la récupération de tous les projets d'un utilisateur
  *
- * @swagger
+/**
+ * @openapi
  * /api/projects:
  *   post:
  *     tags:
  *       - Projects
  *     summary: Créer un nouveau projet
- *     description: Crée un nouveau projet pour l'utilisateur authentifié
+ *     description: Crée un nouveau projet pour l'utilisateur authentifié.
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -17,108 +18,22 @@
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - pr_name
+ *             required: [pr_name]
  *             properties:
- *               pr_name:
- *                 type: string
- *                 minLength: 3
- *                 maxLength: 100
- *                 example: Mon Super Projet
- *                 description: Nom du projet (unique par utilisateur)
+ *               pr_name: { type: string, minLength: 3, maxLength: 100 }
  *     responses:
  *       201:
  *         description: Projet créé avec succès
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Projet créé avec succès
- *                 data:
- *                   type: object
- *                   properties:
- *                     project:
- *                       $ref: '#/components/schemas/Project'
- *       400:
- *         description: Données invalides
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
- *       401:
- *         description: Non autorisé
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
- *       409:
- *         description: Un projet avec ce nom existe déjà
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
- *       422:
- *         description: Erreur de validation
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
- *       500:
- *         description: Erreur serveur
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
  *   get:
  *     tags:
  *       - Projects
- *     summary: Récupérer tous les projets de l'utilisateur connecté
- *     description: Retourne la liste de tous les projets appartenant à l'utilisateur authentifié
+ *     summary: Lister les projets de l'utilisateur
+ *     description: Retourne la liste de tous les projets appartenant à l'utilisateur ou auxquels il est invité.
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Liste des projets récupérée avec succès
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Projets récupérés avec succès
- *                 data:
- *                   type: object
- *                   properties:
- *                     projects:
- *                       type: array
- *                       items:
- *                         $ref: '#/components/schemas/Project'
- *                     count:
- *                       type: integer
- *                       example: 5
- *                       description: Nombre total de projets
- *       401:
- *         description: Non autorisé
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
- *       500:
- *         description: Erreur serveur
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
+ *         description: Liste des projets récupérée
  */
 
 import { NextRequest } from "next/server";

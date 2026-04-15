@@ -1,3 +1,22 @@
+/**
+ * @openapi
+ * /api/documents/{id}/view:
+ *   post:
+ *     tags:
+ *       - Documents
+ *     summary: Enregistrer une vue
+ *     description: Enregistre le passage d'un utilisateur sur un document (anti-spam inclus).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Vue enregistrée
+ */
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import {

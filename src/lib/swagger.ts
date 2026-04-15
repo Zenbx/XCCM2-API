@@ -516,13 +516,23 @@ const swaggerOptions: swaggerJSDoc.Options = {
                         submitted_at: { type: "string", format: "date-time" },
                     },
                 },
+                Invitation: {
+                    type: "object",
+                    properties: {
+                        id: { type: "string" },
+                        host_id: { type: "string" },
+                        guest_id: { type: "string" },
+                        pr_id: { type: "string" },
+                        invitation_token: { type: "string" },
+                        invitation_state: { type: "string", enum: ["Pending", "Accepted", "Rejected", "Revoked"] },
+                        invited_at: { type: "string", format: "date-time" },
+                        response_at: { type: "string", format: "date-time", nullable: true },
+                    },
+                },
             },
         },
     },
-    apis: [
-        path.join(process.cwd(), "src/app/api/**/*.ts"),
-        path.join(process.cwd(), "src/app/api/**/*.js"), // Pour le cas où certains fichiers sont compilés
-    ], // Chemins vers les fichiers contenant les annotations JSDoc
+    apis: ["./src/app/api/**/*.ts", "./src/app/api/**/*.js"], // Chemins vers les fichiers contenant les annotations JSDoc
 };
 
 // Fonction pour générer la spécification dynamiquement

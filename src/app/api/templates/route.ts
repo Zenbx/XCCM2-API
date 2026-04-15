@@ -1,6 +1,14 @@
 /**
- * GET /api/templates
- * Récupérer tous les templates publics
+ * @openapi
+ * /api/templates:
+ *   get:
+ *     tags:
+ *       - Projects
+ *     summary: Lister les modèles (Templates)
+ *     description: Récupère tous les modèles publics utilisables pour créer de nouveaux projets.
+ *     responses:
+ *       200:
+ *         description: Liste des modèles récupérée
  */
 
 import { NextRequest, NextResponse } from 'next/server';

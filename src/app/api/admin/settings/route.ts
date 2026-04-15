@@ -19,8 +19,32 @@ interface PlatformSettings {
 }
 
 /**
- * GET /api/admin/settings
- * Récupère les paramètres de la plateforme
+ * @openapi
+ * /api/admin/settings:
+ *   get:
+ *     tags:
+ *       - Admin
+ *     summary: Récupérer les paramètres système
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Paramètres récupérés
+ *   put:
+ *     tags:
+ *       - Admin
+ *     summary: Modifier les paramètres système
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Paramètres mis à jour
  */
 export async function GET(request: NextRequest) {
     try {

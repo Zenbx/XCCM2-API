@@ -76,7 +76,29 @@ type Snapshot = {
 };
 
 /**
- * POST /api/projects/:pr_name/revisions/:rev_id/restore
+ * @openapi
+ * /api/projects/{pr_name}/revisions/{rev_id}/restore:
+ *   post:
+ *     tags:
+ *       - Projects
+ *     summary: Restaurer une révision
+ *     description: Remplace la structure actuelle du projet par celle contenue dans le snapshot d'une révision. Opération non-destructive sur les IDs.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: pr_name
+ *         required: true
+ *         schema: { type: string }
+ *       - in: path
+ *         name: rev_id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Projet restauré avec succès
+ *       404:
+ *         description: Projet ou révision non trouvé
  */
 export async function POST(request: NextRequest, context: RouteParams) {
     try {

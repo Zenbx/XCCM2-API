@@ -13,10 +13,29 @@ import {
 /**
  * Handler DELETE pour supprimer un élément du coffre-fort
  */
-type RouteParams = {
-    params: Promise<{ vaultItemId: string }>;
-};
-
+/**
+ * @openapi
+ * /api/vault/{vaultItemId}:
+ *   delete:
+ *     tags:
+ *       - Vault
+ *     summary: Supprimer un élément du coffre-fort
+ *     description: Supprime définitivement un extrait sauvegardé.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: vaultItemId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Élément supprimé
+ *       403:
+ *         description: Accès refusé
+ *       404:
+ *         description: Élément non trouvé
+ */
 export async function DELETE(
     request: NextRequest,
     context: RouteParams

@@ -1,36 +1,21 @@
 /**
  * @fileoverview Route API pour la déconnexion des utilisateurs
  * Invalide le token JWT côté client (stateless)
- *
- * @swagger
+ */
+
+/**
+ * @openapi
  * /api/auth/logout:
  *   post:
  *     tags:
  *       - Authentication
  *     summary: Déconnexion d'un utilisateur
- *     description: Déconnecte l'utilisateur (le client doit supprimer le token)
+ *     description: Déconnecte l'utilisateur (le client doit supprimer le token).
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Déconnexion réussie
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Déconnexion réussie
- *       401:
- *         description: Non autorisé (token manquant ou invalide)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
  */
 
 import { successResponse } from "@/utils/api-response";

@@ -2,104 +2,33 @@
  * @fileoverview Route API pour l'inscription des utilisateurs
  * Gère la création de nouveaux comptes utilisateur avec validation
  *
- * @swagger
+ */
+/**
+ * @openapi
  * /api/auth/register:
  *   post:
  *     tags:
  *       - Authentication
  *     summary: Inscription d'un nouvel utilisateur
- *     description: Crée un nouveau compte utilisateur avec email, mot de passe et informations personnelles
+ *     description: Crée un nouveau compte utilisateur. Support JSON ou Multipart/Form-Data.
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - email
- *               - password
- *               - password_confirmation
- *               - lastname
- *               - firstname
+ *             required: [email, password, lastname, firstname]
  *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *                 example: john.doe@example.com
- *               password:
- *                 type: string
- *                 format: password
- *                 minLength: 8
- *                 example: SecurePass123
- *                 description: Doit contenir au moins une majuscule, une minuscule et un chiffre
- *               password_confirmation:
- *                 type: string
- *                 format: password
- *                 minLength: 8
- *                 example: SecurePass123
- *                 description: Doit contenir au moins une majuscule, une minuscule et un chiffre
- *               lastname:
- *                 type: string
- *                 minLength: 2
- *                 example: Doe
- *               firstname:
- *                 type: string
- *                 minLength: 2
- *                 example: John
- *               org:
- *                 type: string
- *                 example: XCCM Inc.
- *                 description: Organisation (optionnel)
- *               occupation:
- *                 type: string
- *                 example: Développeur Full-Stack
- *                 description: Métier/Occupation (optionnel)
+ *               email: { type: string, format: email }
+ *               password: { type: string, format: password }
+ *               lastname: { type: string }
+ *               firstname: { type: string }
+ *               org: { type: string }
+ *               occupation: { type: string }
+ *               profile_picture: { type: string, format: binary, description: 'Seulement pour multipart/form-data' }
  *     responses:
  *       201:
  *         description: Utilisateur créé avec succès
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Utilisateur créé avec succès
- *                 data:
- *                   type: object
- *                   properties:
- *                     user:
- *                       $ref: '#/components/schemas/User'
- *                     token:
- *                       type: string
- *                       example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
- *       400:
- *         description: Données invalides
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
- *       409:
- *         description: Email déjà utilisé
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
- *       422:
- *         description: Erreur de validation
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
- *       500:
- *         description: Erreur serveur
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
  */
 
 import { NextRequest } from "next/server";

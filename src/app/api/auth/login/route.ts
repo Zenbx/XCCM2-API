@@ -1,36 +1,24 @@
 /**
  * @fileoverview Route API pour la connexion des utilisateurs
  * Gère l'authentification et la génération de tokens JWT
- *
- * @swagger
+ /**
+ * @openapi
  * /api/auth/login:
  *   post:
  *     tags:
  *       - Authentication
  *     summary: Connexion d'un utilisateur
- *     description: Authentifie un utilisateur avec email et mot de passe, retourne un token JWT
+ *     description: Authentifie un utilisateur avec email et mot de passe, retourne un token JWT.
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - email
- *               - password
+ *             required: [email, password]
  *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *                 example: john.doe@example.com
- *               password:
- *                 type: string
- *                 format: password
- *                 example: SecurePass123
- *               password_confirmation:
- *                 type: string
- *                 format: password
- *                 example: SecurePass123
+ *               email: { type: string, format: email }
+ *               password: { type: string, format: password }
  *     responses:
  *       200:
  *         description: Connexion réussie
@@ -39,38 +27,12 @@
  *             schema:
  *               type: object
  *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Connexion réussie
+ *                 success: { type: boolean }
  *                 data:
  *                   type: object
  *                   properties:
- *                     user:
- *                       $ref: '#/components/schemas/User'
- *                     token:
- *                       type: string
- *                       example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
- *       401:
- *         description: Identifiants incorrects
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
- *       422:
- *         description: Erreur de validation
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
- *       500:
- *         description: Erreur serveur
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiError'
+ *                     user: { $ref: '#/components/schemas/User' }
+ *                     token: { type: string }
  */
 
 import { NextRequest } from "next/server";

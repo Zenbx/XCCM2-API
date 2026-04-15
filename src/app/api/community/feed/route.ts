@@ -1,3 +1,15 @@
+/**
+ * @openapi
+ * /api/community/feed:
+ *   get:
+ *     tags:
+ *       - Community
+ *     summary: Fil d'actualité de la communauté
+ *     description: Récupère les 20 derniers projets publiés par les membres de la plateforme.
+ *     responses:
+ *       200:
+ *         description: Fil d'actualité récupéré
+ */
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import {

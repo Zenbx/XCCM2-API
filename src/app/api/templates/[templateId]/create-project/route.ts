@@ -1,6 +1,32 @@
 /**
- * POST /api/templates/[templateId]/create-project
- * Créer un nouveau projet à partir d'un template
+ * @openapi
+ * /api/templates/{templateId}/create-project:
+ *   post:
+ *     tags:
+ *       - Projects
+ *     summary: Créer un projet à partir d'un modèle
+ *     description: Clone la structure du modèle vers un nouveau projet pour l'utilisateur.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: templateId
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [pr_name]
+ *             properties:
+ *               pr_name: { type: string }
+ *     responses:
+ *       201:
+ *         description: Projet créé
+ *       404:
+ *         description: Modèle non trouvé
  */
 
 import { NextRequest, NextResponse } from 'next/server';

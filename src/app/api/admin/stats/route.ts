@@ -7,8 +7,20 @@ import {
 } from "@/utils/api-response";
 
 /**
- * GET /api/admin/stats
- * Récupère les statistiques globales de la plateforme (Admin uniquement)
+ * @openapi
+ * /api/admin/stats:
+ *   get:
+ *     tags:
+ *       - Admin
+ *     summary: Statistiques globales (Admin)
+ *     description: Récupère les compteurs globaux (utilisateurs, projets, documents) et l'activité récente.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Statistiques récupérées
+ *       403:
+ *         description: Accès refusé (non-admin)
  */
 export async function GET(request: NextRequest) {
     try {

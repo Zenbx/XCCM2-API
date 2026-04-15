@@ -1,3 +1,28 @@
+/**
+ * @openapi
+ * /api/documents/{id}/like:
+ *   post:
+ *     tags:
+ *       - Documents
+ *     summary: Liker/Unliker un document
+ *     description: Alterne l'état du like pour l'utilisateur authentifié.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: État du like retourné
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 liked: { type: boolean }
+ */
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { verifyToken } from "@/lib/auth";

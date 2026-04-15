@@ -12,8 +12,23 @@ type RouteParams = {
 };
 
 /**
- * GET: Analytics complètes d'une classe pour le professeur
- * Retourne: stats globales, progression par étudiant, succès par exercice, insights
+ * @openapi
+ * /api/classrooms/{classId}/analytics:
+ *   get:
+ *     tags:
+ *       - Classrooms
+ *     summary: Obtenir les statistiques d'une classe
+ *     description: Retourne des insights détaillés sur la progression des étudiants, les scores moyens et les exercices difficiles (IA Insights).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Statistiques générées avec succès
  */
 export async function GET(request: NextRequest, context: RouteParams) {
     try {
