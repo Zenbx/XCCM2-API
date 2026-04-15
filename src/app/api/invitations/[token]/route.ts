@@ -1,19 +1,22 @@
 /**
- * @fileoverview Route API pour récupérer les détails d'une invitation par token
- * GET /api/invitations/[token]
- *
- * Cette route est publique (pas besoin d'authentification) pour permettre
- * à n'importe qui de voir les détails d'une invitation via le lien email
+ * @openapi
+ * /api/invitations/{token}:
+ *   get:
+ *     tags:
+ *       - Invitations
+ *     summary: Récupérer les détails d'une invitation
+ *     description: Route publique pour vérifier une invitation via son token unique (utilisé dans les emails).
+ *     parameters:
+ *       - in: path
+ *         name: token
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Détails de l'invitation
+ *       404:
+ *         description: Invitation non trouvée
  */
-
-import { NextRequest } from "next/server";
-import {
-    successResponse,
-    notFoundResponse,
-    serverErrorResponse,
-} from "@/utils/api-response";
-import { getInvitationByToken } from "@/utils/invitation-helpers";
-
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ token: string }> }

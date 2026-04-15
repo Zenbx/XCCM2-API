@@ -10,8 +10,27 @@ import {
 import { sendPasswordResetEmail } from "@/services/emailService";
 
 /**
- * POST /api/auth/forgot-password
- * Demande de réinitialisation de mot de passe
+ * @openapi
+ * /api/auth/forgot-password:
+ *   post:
+ *     tags:
+ *       - Authentication
+ *     summary: Demander la réinitialisation du mot de passe
+ *     description: Envoie un email contenant un lien de réinitialisation si l'utilisateur existe.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email: { type: string, format: email }
+ *     responses:
+ *       200:
+ *         description: Demande traitée
+ *       404:
+ *         description: Utilisateur non trouvé
  */
 export async function POST(request: NextRequest) {
     try {

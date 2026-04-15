@@ -4,6 +4,41 @@ import prisma from "@/lib/prisma";
 import { successResponse, errorResponse, serverErrorResponse } from "@/utils/api-response";
 import { verifyToken } from "@/lib/auth";
 
+/**
+ * @openapi
+ * /api/user/profile:
+ *   put:
+ *     tags:
+ *       - Authentication
+ *     summary: Mettre à jour le profil utilisateur
+ *     description: Met à jour les informations personnelles et la photo de profil. Supporte multipart/form-data.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               lastname: { type: string }
+ *               firstname: { type: string }
+ *               occupation: { type: string }
+ *               org: { type: string }
+ *               profile_picture: { type: string, format: binary }
+ *     responses:
+ *       200:
+ *         description: Profil mis à jour
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user: { $ref: '#/components/schemas/User' }
+ */
 export async function PUT(request: NextRequest) {
     try {
         // 1. Authenticate user

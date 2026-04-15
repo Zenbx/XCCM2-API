@@ -29,8 +29,53 @@ async function generateUniqueJoinCode(): Promise<string> {
 }
 
 /**
- * GET: Récupère toutes les classes auxquelles l'utilisateur a accès
- * (Soit en tant que professeur, soit en tant qu'étudiant inscrit)
+ * @openapi
+ * /api/classrooms:
+ *   get:
+ *     tags:
+ *       - Classrooms
+ *     summary: Récupérer toutes les classes de l'utilisateur
+ *     description: Retourne les classes où l'utilisateur est professeur et celles où il est étudiant.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Classes récupérées avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     teaching:
+ *                       type: array
+ *                       items: { $ref: '#/components/schemas/Classroom' }
+ *                     enrolled:
+ *                       type: array
+ *                       items: { $ref: '#/components/schemas/Classroom' }
+ *   post:
+ *     tags:
+ *       - Classrooms
+ *     summary: Créer une nouvelle classe
+ *     description: Crée une classe et génère d'un code d'invitation unique.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name]
+ *             properties:
+ *               name: { type: string }
+ *               description: { type: string }
+ *     responses:
+ *       201:
+ *         description: Classe créée avec succès
  */
 export async function GET(request: NextRequest) {
     try {

@@ -5,6 +5,30 @@ import { SOCRATIC_SYSTEM_PROMPT } from '@/lib/ai/prompts';
 
 export const maxDuration = 30;
 
+/**
+ * @openapi
+ * /api/ai/socratic:
+ *   post:
+ *     tags:
+ *       - AI
+ *     summary: Chat avec l'assistant Socratique
+ *     description: Envoie un message à l'IA pour obtenir de l'aide pédagogique. Retourne un flux de texte (Stream).
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [messages]
+ *             properties:
+ *               messages: { type: array, items: { type: object } }
+ *               context: { type: object, description: "Contexte de la notion ou du paragraphe actuel" }
+ *     responses:
+ *       200:
+ *         description: Flux de texte (text/plain; charset=utf-8)
+ */
 export async function POST(req: Request) {
   try {
     const { messages, context } = await req.json();

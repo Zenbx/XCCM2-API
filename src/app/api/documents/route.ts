@@ -1,18 +1,40 @@
 /**
  * @fileoverview Route API pour lister tous les documents publiés
- *
- * @swagger
+ */
+/**
+ * @openapi
  * /api/documents:
  *   get:
  *     tags:
  *       - Documents
- *     summary: Récupérer tous les documents publiés
- *     description: Retourne la liste des documents publiés avec les infos du projet
+ *     summary: Récupérer tous les documents publiés (Bilbiothèque/Library)
+ *     description: Retourne la liste paginée de tous les documents publiés sur la plateforme.
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *         description: Numéro de la page
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 20 }
+ *         description: Nombre d'éléments par page
  *     responses:
  *       200:
- *         description: Documents récupérés avec succès
- *       500:
- *         description: Erreur serveur
+ *         description: Liste des documents récupérée
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     documents:
+ *                       type: array
+ *                       items: { $ref: '#/components/schemas/Document' }
+ *                     totalCount: { type: integer }
+ *                     hasMore: { type: boolean }
  */
 
 import { NextRequest } from "next/server";

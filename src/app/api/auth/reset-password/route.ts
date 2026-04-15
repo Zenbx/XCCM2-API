@@ -9,8 +9,28 @@ import {
 } from "@/utils/api-response";
 
 /**
- * POST /api/auth/reset-password
- * Réinitialisation du mot de passe avec un token
+ * @openapi
+ * /api/auth/reset-password:
+ *   post:
+ *     tags:
+ *       - Authentication
+ *     summary: Réinitialiser le mot de passe
+ *     description: Met à jour le mot de passe en utilisant le token de réinitialisation reçu par email.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token, password]
+ *             properties:
+ *               token: { type: string }
+ *               password: { type: string, format: password }
+ *     responses:
+ *       200:
+ *         description: Mot de passe réinitialisé
+ *       403:
+ *         description: Token invalide ou expiré
  */
 export async function POST(request: NextRequest) {
     try {

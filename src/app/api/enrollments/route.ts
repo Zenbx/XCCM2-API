@@ -10,7 +10,33 @@ import {
 import { ZodError } from "zod";
 
 /**
- * POST: L'étudiant rejoint une classe via le join_code
+ * @openapi
+ * /api/enrollments:
+ *   post:
+ *     tags:
+ *       - Classrooms
+ *     summary: Rejoindre une classe (S'inscrire)
+ *     description: Permet à un étudiant de rejoindre une classe en utilisant un code d'invitation (join_code).
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [join_code]
+ *             properties:
+ *               join_code: { type: string, example: "A7B9F1" }
+ *     responses:
+ *       201:
+ *         description: Inscription réussie
+ *       400:
+ *         description: Erreur (ex: le professeur ne peut pas rejoindre sa classe)
+ *       404:
+ *         description: Code invalide
+ *       409:
+ *         description: Déjà inscrit
  */
 export async function POST(request: NextRequest) {
     try {

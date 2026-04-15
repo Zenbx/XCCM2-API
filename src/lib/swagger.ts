@@ -85,6 +85,30 @@ const swaggerOptions: swaggerJSDoc.Options = {
                 name: "Invitations",
                 description: "Gestion des invitations de collaboration",
             },
+            {
+                name: "Marketplace",
+                description: "Marché global de contenus et granules",
+            },
+            {
+                name: "Classrooms",
+                description: "Gestion des classes et des cours (LMS)",
+            },
+            {
+                name: "Vault",
+                description: "Coffre-fort personnel de l'utilisateur",
+            },
+            {
+                name: "Exercises",
+                description: "Système d'exercices et soumissions",
+            },
+            {
+                name: "AI",
+                description: "Fonctionnalités basées sur l'intelligence artificielle",
+            },
+            {
+                name: "Community",
+                description: "Fonctionnalités sociales et flux communautaire",
+            },
         ],
         // CONFIGURATION D'AUTHENTIFICATION GLOBALE
         security: [
@@ -367,6 +391,131 @@ const swaggerOptions: swaggerJSDoc.Options = {
                             format: "date-time",
                             description: "Date de création",
                         },
+                    },
+                },
+                    },
+                },
+                // OPERATION SCHEMAS
+                BulkReorderRequest: {
+                    type: "object",
+                    required: ["type", "items"],
+                    properties: {
+                        type: {
+                            type: "string",
+                            enum: ["part", "chapter", "paragraph", "notion"],
+                            description: "Type de granule à réordonner",
+                        },
+                        items: {
+                            type: "array",
+                            items: {
+                                type: "object",
+                                properties: {
+                                    id: { type: "string" },
+                                    number: { type: "integer" },
+                                },
+                            },
+                        },
+                    },
+                },
+                MoveGranuleRequest: {
+                    type: "object",
+                    required: ["type", "itemId", "newParentId"],
+                    properties: {
+                        type: {
+                            type: "string",
+                            enum: ["chapter", "paragraph", "notion"],
+                            description: "Type de granule à déplacer",
+                        },
+                        itemId: { type: "string", description: "UUID du granule à déplacer" },
+                        newParentId: { type: "string", description: "UUID du nouveau parent" },
+                        newNumber: { type: "integer", description: "Nouvel index (optionnel)" },
+                    },
+                },
+                GranuleUpdate: {
+                    type: "object",
+                    description: "Champs de mise à jour générique pour tout type de granule",
+                    properties: {
+                        part_title: { type: "string" },
+                        part_intro: { type: "string", nullable: true },
+                        chapter_title: { type: "string" },
+                        chapter_intro: { type: "string", nullable: true },
+                        para_name: { type: "string" },
+                        para_intro: { type: "string", nullable: true },
+                        notion_name: { type: "string" },
+                        notion_content: { type: "string" },
+                        number: { type: "integer" },
+                    },
+                },
+                MarketplaceItem: {
+                    type: "object",
+                    properties: {
+                        id: { type: "string" },
+                        type: { type: "string", enum: ["part", "chapter", "paragraph", "notion"] },
+                        title: { type: "string" },
+                        description: { type: "string", nullable: true },
+                        price: { type: "number", example: 0 },
+                        tags: { type: "array", items: { type: "string" } },
+                        category: { type: "string", nullable: true },
+                        downloads: { type: "integer" },
+                        rating: { type: "number", nullable: true },
+                        published_at: { type: "string", format: "date-time" },
+                        seller_id: { type: "string" },
+                    },
+                },
+                Classroom: {
+                    type: "object",
+                    properties: {
+                        id: { type: "string" },
+                        name: { type: "string" },
+                        description: { type: "string", nullable: true },
+                        join_code: { type: "string" },
+                        teacher_id: { type: "string" },
+                        created_at: { type: "string", format: "date-time" },
+                    },
+                },
+                Enrollment: {
+                    type: "object",
+                    properties: {
+                        id: { type: "string" },
+                        student_id: { type: "string" },
+                        classroom_id: { type: "string" },
+                        enrolled_at: { type: "string", format: "date-time" },
+                    },
+                },
+                VaultItem: {
+                    type: "object",
+                    properties: {
+                        id: { type: "string" },
+                        type: { type: "string" },
+                        title: { type: "string" },
+                        content: { type: "string", nullable: true },
+                        file_url: { type: "string", nullable: true },
+                        original_id: { type: "string" },
+                        added_at: { type: "string", format: "date-time" },
+                    },
+                },
+                Exercise: {
+                    type: "object",
+                    properties: {
+                        id: { type: "string" },
+                        type: { type: "string", enum: ["QCU", "QCM", "QRO", "QROA", "CODE", "FILL_BLANKS"] },
+                        title: { type: "string" },
+                        description: { type: "string", nullable: true },
+                        parameters: { type: "object", description: "Questions et réponses" },
+                        settings: { type: "object", description: "Paramètres de temps, points, etc." },
+                        created_at: { type: "string", format: "date-time" },
+                    },
+                },
+                Submission: {
+                    type: "object",
+                    properties: {
+                        id: { type: "string" },
+                        exercise_id: { type: "string" },
+                        student_id: { type: "string" },
+                        answers: { type: "object" },
+                        score: { type: "number", nullable: true },
+                        feedback: { type: "string", nullable: true },
+                        submitted_at: { type: "string", format: "date-time" },
                     },
                 },
             },

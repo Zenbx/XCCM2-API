@@ -26,7 +26,39 @@ interface MoveRequest {
 }
 
 /**
- * Handler PATCH pour deplacer un granule vers un nouveau parent
+ * @openapi
+ * /api/projects/{pr_name}/move:
+ *   patch:
+ *     tags:
+ *       - Projects
+ *     summary: Déplacer un granule vers un nouveau parent
+ *     description: Permet de changer le parent d'un chapitre, paragraphe ou notion.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: pr_name
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Nom du projet
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/MoveGranuleRequest'
+ *     responses:
+ *       200:
+ *         description: Déplacement réussi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiSuccess'
+ *       400:
+ *         description: Parent cible invalide ou non autorisé
+ *       404:
+ *         description: Projet ou granule source non trouvé
  */
 export async function PATCH(request: NextRequest, context: RouteParams) {
     try {

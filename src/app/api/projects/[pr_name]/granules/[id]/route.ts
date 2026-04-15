@@ -44,8 +44,32 @@ async function findGranuleById(id: string) {
 }
 
 /**
- * PATCH /api/projects/[pr_name]/granules/[id]
- * Met à jour un granule (part, chapter, paragraph, notion) par son UUID
+ * @openapi
+ * /api/projects/{pr_name}/granules/{id}:
+ *   patch:
+ *     tags:
+ *       - Projects
+ *     summary: Modifier un granule par UUID
+ *     description: Met à jour n'importe quel type de granule (Part, Chapter, Paragraph, Notion) via son identifiant unique global.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: pr_name
+ *         required: true
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: UUID du granule (MongoDB ObjectId)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/GranuleUpdate'
+ *     responses:
+ *       200:
+ *         description: Modification réussie
  */
 export async function PATCH(request: NextRequest, context: RouteParams) {
     try {
@@ -135,8 +159,25 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
 }
 
 /**
- * DELETE /api/projects/[pr_name]/granules/[id]
- * Supprime un granule par son UUID et renuméroie les siblings
+ * @openapi
+ * /api/projects/{pr_name}/granules/{id}:
+ *   delete:
+ *     tags:
+ *       - Projects
+ *     summary: Supprimer un granule par UUID
+ *     description: Supprime n'importe quel type de granule et renumérote automatiquement ses frères.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: pr_name
+ *         required: true
+ *       - in: path
+ *         name: id
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: Suppression réussie
  */
 export async function DELETE(request: NextRequest, context: RouteParams) {
     try {

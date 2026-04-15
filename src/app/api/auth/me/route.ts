@@ -7,8 +7,28 @@ import {
 } from "@/utils/api-response";
 
 /**
- * GET /api/auth/me
- * Récupère les informations de l'utilisateur connecté
+ * @openapi
+ * /api/auth/me:
+ *   get:
+ *     tags:
+ *       - Authentication
+ *     summary: Récupérer l'utilisateur actuel
+ *     description: Retourne les informations de profil de l'utilisateur authentifié par le token JWT.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Utilisateur récupéré
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user: { $ref: '#/components/schemas/User' }
  */
 export async function GET(request: NextRequest) {
     try {

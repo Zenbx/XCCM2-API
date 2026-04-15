@@ -20,7 +20,22 @@ type RouteParams = {
 const CACHE_TTL = 1800; // 30 minutes
 
 /**
- * Handler GET pour récupérer la structure complète du projet en 1 seul appel
+ * @openapi
+ * /api/projects/{pr_name}/structure:
+ *   get:
+ *     tags:
+ *       - Projects
+ *     summary: Récupérer la structure complète du projet
+ *     description: Retourne l'arborescence complète (Parties > Chapitres > Paragraphes > Notions) en un seul appel optimisé avec cache Redis.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: pr_name
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: Structure récupérée avec succès
  */
 export async function GET(request: NextRequest, context: RouteParams) {
     try {

@@ -12,7 +12,56 @@ import {
 } from "@/utils/api-response";
 
 /**
- * Handler GET pour récupérer tous les éléments du coffre-fort de l'utilisateur
+ * @openapi
+ * /api/vault:
+ *   get:
+ *     tags:
+ *       - Vault
+ *     summary: Récupérer tous les éléments du coffre-fort
+ *     description: Retourne tous les granules et fichiers sauvegardés par l'utilisateur connecté.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Éléments récupérés
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: array
+ *                   items: { $ref: '#/components/schemas/VaultItem' }
+ *   post:
+ *     tags:
+ *       - Vault
+ *     summary: Ajouter un élément au coffre-fort
+ *     description: Sauvegarde un granule, une image ou tout autre contenu dans le coffre personnel.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [type, title, original_id]
+ *             properties:
+ *               type: { type: string, description: "Type de contenu (img, video, text, part, etc.)" }
+ *               title: { type: string }
+ *               original_id: { type: string, description: "ID de l'objet source" }
+ *               content: { type: string }
+ *               file_url: { type: string }
+ *               source_doc_id: { type: string }
+ *               source_doc_name: { type: string }
+ *     responses:
+ *       201:
+ *         description: Élément sauvegardé
+ *       401:
+ *         description: Non autorisé
+ *       409:
+ *         description: Déjà présent dans le coffre
  */
 export async function GET(request: NextRequest) {
     try {

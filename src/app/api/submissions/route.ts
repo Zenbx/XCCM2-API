@@ -8,8 +8,57 @@ import {
 import { HfInference } from "@huggingface/inference";
 
 /**
- * GET: Récupère les soumissions de l'étudiant connecté
- * Query params: exercise_id, project_id
+ * @openapi
+ * /api/submissions:
+ *   get:
+ *     tags:
+ *       - Exercises
+ *     summary: Récupérer les soumissions
+ *     description: Retourne l'historique des tentatives d'un étudiant pour un exercice ou un projet.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: exercise_id
+ *         schema: { type: string }
+ *       - in: query
+ *         name: project_id
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Liste des soumissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     submissions:
+ *                       type: array
+ *                       items: { $ref: '#/components/schemas/Submission' }
+ *   post:
+ *     tags:
+ *       - Exercises
+ *     summary: Soumettre un exercice
+ *     description: Envoie les réponses d'un étudiant pour correction (auto-gradée ou IA).
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [exercise_id, answers]
+ *             properties:
+ *               exercise_id: { type: string }
+ *               answers: { type: object, description: "Réponses formatées selon le type d'exercice" }
+ *     responses:
+ *       201:
+ *         description: Soumission réussie (retourne le score et le feedback)
  */
 export async function GET(request: NextRequest) {
     try {

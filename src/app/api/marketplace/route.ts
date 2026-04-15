@@ -12,7 +12,69 @@ import {
 } from "@/utils/api-response";
 
 /**
- * Handler GET pour récupérer tous les items de la marketplace
+ * @openapi
+ * /api/marketplace:
+ *   get:
+ *     tags:
+ *       - Marketplace
+ *     summary: Récupérer tous les items de la marketplace
+ *     description: Retourne la liste des granules publiés avec filtres par type, catégorie et recherche textuelle.
+ *     parameters:
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [all, part, chapter, paragraph, notion]
+ *         description: Filtrer par type de granule
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *         description: Filtrer par catégorie
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Recherche par mot-clé dans le titre ou la description
+ *     responses:
+ *       200:
+ *         description: Items récupérés avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: array
+ *                   items: { $ref: '#/components/schemas/MarketplaceItem' }
+ *   post:
+ *     tags:
+ *       - Marketplace
+ *     summary: Publier un item sur la marketplace
+ *     description: Permet à un utilisateur de partager un contenu (granule) sur le marché global.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [type, title]
+ *             properties:
+ *               type: { type: string, enum: [part, chapter, paragraph, notion] }
+ *               title: { type: string }
+ *               description: { type: string }
+ *               price: { type: number, default: 0 }
+ *               content: { type: string, description: "Contenu ou structure JSON" }
+ *               category: { type: string }
+ *               tags: { type: array, items: { type: string } }
+ *     responses:
+ *       201:
+ *         description: Item publié avec succès
+ *       401:
+ *         description: Non autorisé
  */
 export async function GET(request: NextRequest) {
     try {

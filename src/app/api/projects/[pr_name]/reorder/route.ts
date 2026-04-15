@@ -24,8 +24,30 @@ interface ReorderRequest {
 }
 
 /**
- * Handler POST pour réordonner des granules
- * Utilise une stratégie d'offset temporaire pour éviter les conflits de contrainte Unique
+ * @openapi
+ * /api/projects/{pr_name}/reorder:
+ *   post:
+ *     tags:
+ *       - Projects
+ *     summary: Réordonner plusieurs granules en masse
+ *     description: Permet de mettre à jour les numéros d'ordre de plusieurs granules du même parent en une transaction.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: pr_name
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/BulkReorderRequest'
+ *     responses:
+ *       200:
+ *         description: Réordonnancement réussi
  */
 export async function POST(request: NextRequest, context: RouteParams) {
     try {

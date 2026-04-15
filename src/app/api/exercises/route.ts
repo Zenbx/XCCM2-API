@@ -10,8 +10,83 @@ import {
 import { ZodError } from "zod";
 
 /**
- * GET: Récupère les exercices créés par le professeur, ou filtre par granule
- * Query params supportés: project_id, part_id, chapter_id, para_id, notion_id
+ * @openapi
+ * /api/exercises:
+ *   get:
+ *     tags:
+ *       - Exercises
+ *     summary: Récupérer les exercices
+ *     description: Filtre les exercices par créateur ou par granule parent (projet, partie, chapitre, etc.).
+ *     parameters:
+ *       - in: query
+ *         name: project_id
+ *         schema: { type: string }
+ *       - in: query
+ *         name: mode
+ *         schema: { type: string, enum: [student, teacher] }
+ *         description: 'student' pour masquer les réponses
+ *     responses:
+ *       200:
+ *         description: Liste des exercices
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     exercises:
+ *                       type: array
+ *                       items: { $ref: '#/components/schemas/Exercise' }
+ *   post:
+ *     tags:
+ *       - Exercises
+ *     summary: Créer un exercice
+ *     description: Attache un nouvel exercice à un granule spécifique.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [type, title]
+ *             properties:
+ *               type: { type: string, enum: [QCU, QCM, QRO, QROA, CODE, FILL_BLANKS] }
+ *               title: { type: string }
+ *               description: { type: string }
+ *               parameters: { type: object }
+ *               settings: { type: object }
+ *               notion_id: { type: string }
+ *               para_id: { type: string }
+ *               chapter_id: { type: string }
+ *               part_id: { type: string }
+ *               project_id: { type: string }
+ *     responses:
+ *       201:
+ *         description: Exercice créé
+ *   patch:
+ *     tags:
+ *       - Exercises
+ *     summary: Réordonner les exercices
+ *     description: Met à jour l'ordre de tri des exercices pour un granule.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [exerciseIds]
+ *             properties:
+ *               exerciseIds: { type: array, items: { type: string } }
+ *     responses:
+ *       200:
+ *         description: Ordre mis à jour
  */
 export async function GET(request: NextRequest) {
     try {
