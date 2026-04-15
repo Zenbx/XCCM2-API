@@ -393,8 +393,6 @@ const swaggerOptions: swaggerJSDoc.Options = {
                         },
                     },
                 },
-                    },
-                },
                 // OPERATION SCHEMAS
                 BulkReorderRequest: {
                     type: "object",
