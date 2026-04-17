@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { generateText } from "ai";
-import { google } from "@ai-sdk/google";
+import { mistral } from "@ai-sdk/mistral";
 import { successResponse, serverErrorResponse, errorResponse } from "@/utils/api-response";
 import { verifyToken } from "@/lib/auth";
 
@@ -16,9 +16,9 @@ export async function POST(request: NextRequest) {
         const { content } = await request.json();
         if (!content?.trim()) return errorResponse("Le contenu est vide", undefined, 400);
 
-        // ✅ Vérification de la clé API Google
-        if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-            console.warn("[Audit AI] GOOGLE_GENERATIVE_AI_API_KEY missing, returning mock response");
+        // ✅ Vérification de la clé API Mistral
+        if (!process.env.MISTRAL_API_KEY) {
+            console.warn("[Audit AI] MISTRAL_API_KEY missing, returning mock response");
             return successResponse("⚠️ Mode Démo - Socrate AI", {
                 clarityScore: 85,
                 engagementScore: 75,
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
                     "🚧 Fonctionnalité en développement : Socrate AI n'est pas encore complètement opérationnel.",
                     "💡 Cette fonctionnalité analyse votre contenu selon la taxonomie de Bloom et propose des améliorations pédagogiques.",
                     "📊 Scores affichés ci-dessus sont des exemples pour démonstration.",
-                    "🔧 Pour activer la vraie analyse IA, configurez GOOGLE_GENERATIVE_AI_API_KEY dans votre .env backend."
+                    "🔧 Pour activer la vraie analyse IA, configurez MISTRAL_API_KEY dans votre .env backend."
                 ],
                 recommendedBlocks: ["Quiz", "Exemple", "Définition"],
                 isDemoMode: true
@@ -58,7 +58,7 @@ FORMAT JSON STRICT EXIGÉ (sans markdown, sans backticks, juste le JSON brut) :
         console.log("[Audit AI] Calling Gemini API...");
 
         const { text: rawContent } = await generateText({
-            model: google('gemini-pro-latest'),
+            model: mistral('mistral-medium-latest'),
             system: systemPrompt,
             prompt: `Voici le contenu pédagogique à auditer :\n---\n${content.substring(0, 8000)}\n---\nGénère l'audit JSON maintenant.`,
             temperature: 0.1,

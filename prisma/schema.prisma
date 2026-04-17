@@ -61,6 +61,12 @@ model User {
   enrollments       Enrollment[] @relation("StudentEnrollments")
   created_exercises Exercise[]   @relation("CreatedExercises")
   submissions       Submission[] @relation("StudentSubmissions")
+  
+  // Relations Devoirs et Annonces
+  assignment_submissions AssignmentSubmission[]
+  announcements          Announcement[]         @relation("AnnouncementAuthor")
+  announcement_comments  AnnouncementComment[]
+  notifications          Notification[]
 
   // Versioning
   created_revisions ProjectRevision[] @relation("CreatedRevisions")
@@ -399,8 +405,10 @@ model Classroom {
   teacher_id String @db.ObjectId
   teacher    User   @relation("ClassroomTeacher", fields: [teacher_id], references: [user_id])
 
-  enrollments Enrollment[]
-  projects    ClassroomProject[]
+  enrollments   Enrollment[]
+  projects      ClassroomProject[]
+  assignments   Assignment[]
+  announcements Announcement[]
   @@index([teacher_id])
   @@map("classrooms")
 }
@@ -438,6 +446,96 @@ model ClassroomProject {
   @@index([classroom_id])
   @@index([project_id])
   @@map("classroom_projects")
+}
+
+// --- NOUVEAUX MODELES DEVOIRS ET ANNONCES ---
+
+model Assignment {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  title        String
+  description  String?
+  due_date     DateTime?
+  type         String   @default("TEXT") // TEXT, FILE
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  classroom_id String    @db.ObjectId
+  classroom    Classroom @relation(fields: [classroom_id], references: [id], onDelete: Cascade)
+
+  submissions  AssignmentSubmission[]
+
+  @@index([classroom_id])
+  @@map("assignments")
+}
+
+model AssignmentSubmission {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  content       String   // Texte ou URL Cloudinary
+  score         Float?
+  feedback      String?
+  submitted_at  DateTime @default(now())
+
+  assignment_id String     @db.ObjectId
+  assignment    Assignment @relation(fields: [assignment_id], references: [id], onDelete: Cascade)
+
+  student_id    String @db.ObjectId
+  student       User   @relation(fields: [student_id], references: [user_id], onDelete: Cascade)
+
+  @@unique([assignment_id, student_id])
+  @@index([assignment_id])
+  @@index([student_id])
+  @@map("assignment_submissions")
+}
+
+model Announcement {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  content      String
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  classroom_id String    @db.ObjectId
+  classroom    Classroom @relation(fields: [classroom_id], references: [id], onDelete: Cascade)
+
+  author_id    String @db.ObjectId
+  author       User   @relation("AnnouncementAuthor", fields: [author_id], references: [user_id], onDelete: Cascade)
+
+  comments     AnnouncementComment[]
+
+  @@index([classroom_id])
+  @@index([author_id])
+  @@map("announcements")
+}
+
+model AnnouncementComment {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  content         String
+  created_at      DateTime @default(now())
+
+  announcement_id String       @db.ObjectId
+  announcement    Announcement @relation(fields: [announcement_id], references: [id], onDelete: Cascade)
+
+  author_id       String @db.ObjectId
+  author          User   @relation(fields: [author_id], references: [user_id], onDelete: Cascade)
+
+  @@index([announcement_id])
+  @@index([author_id])
+  @@map("announcement_comments")
+}
+
+model Notification {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  type       String   // NEW_ASSIGNMENT, COURSE_UPDATE, NEW_ANNOUNCEMENT
+  message    String
+  link       String?
+  is_read    Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  user_id    String @db.ObjectId
+  user       User   @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([is_read])
+  @@map("notifications")
 }
 
 enum ExerciseType {

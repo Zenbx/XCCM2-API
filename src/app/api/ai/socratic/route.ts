@@ -1,6 +1,5 @@
-// src/app/api/ai/socratic/route.ts
 import { streamText } from 'ai';
-import { google } from '@ai-sdk/google';
+import { mistral } from '@ai-sdk/mistral';
 import { SOCRATIC_SYSTEM_PROMPT } from '@/lib/ai/prompts';
 
 export const maxDuration = 30;
@@ -52,7 +51,7 @@ ${context?.notionName ? `Notion : ${context.notionName}` : ""}
 `;
 
     const result = streamText({
-      model: google('gemini-pro-latest'),
+      model: mistral('mistral-large-latest'),
       system: systemPrompt,
       messages: coreMessages,
       temperature: 0.7,
