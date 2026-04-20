@@ -40,10 +40,11 @@ export async function POST(request: NextRequest) {
         const buffer = Buffer.from(arrayBuffer);
 
         const uploadResult = await new Promise<any>((resolve, reject) => {
+            const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
             const uploadStream = cloudinary.uploader.upload_stream(
                 {
                     folder: `xccm2/assignments/${userId}`,
-                    resource_type: "auto",
+                    resource_type: isPdf ? "raw" : "auto",
                     use_filename: false,
                     unique_filename: true,
                 },

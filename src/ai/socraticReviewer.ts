@@ -1,8 +1,5 @@
-// Original SocraticReviewer implementation with dotenv and node-fetch imports
-// Removed unnecessary imports; using global fetch and Next.js env handling
-
-const HF_API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2";
-const HF_API_KEY = process.env.HUGGING_FACE_API_KEY;
+import { generateText } from 'ai';
+import { mistral } from '@ai-sdk/mistral';
 
 export interface PedagogicalFeedback {
     id: string;
@@ -35,18 +32,16 @@ export class SocraticReviewer {
     async analyzeContent(text: string): Promise<PedagogicalFeedback[]> {
         if (!text || text.length < 50) return [];
 
-        const prompt = `<s>[INST] Tu es un expert en pédagogie et didactique. Ton rôle est d'améliorer la qualité des contenus éducatifs.
-Analyse le texte suivant et identifie les problèmes pédagogiques spécifiques :
+        const systemPrompt = `Tu es un expert en pédagogie et didactique. Ton rôle est d'améliorer la qualité des contenus éducatifs.
+Analyse le texte fourni et identifie les problèmes pédagogiques spécifiques :
 
 1. Définitions circulaires (le mot défini est utilisé dans la définition)
 2. Manque d'exemples concrets pour les concepts abstraits
 3. Phrase trop complexe ou voix passive excessive
 4. Ton trop académique ou manque d'engagement
 
-Texte à analyser : """${text}"""
-
 Réponds UNIQUEMENT avec un tableau JSON valide contenant la liste des problèmes détectés.
-Si aucun problème, renvoie un tableau vide []
+Si aucun problème, renvoie un tableau vide [].
 
 Format attendu pour chaque objet du tableau :
 {
@@ -55,12 +50,16 @@ Format attendu pour chaque objet du tableau :
   "comment": "Explication courte et constructive du problème (en français)",
   "suggestions": ["Suggestion d'amélioration 1", "Suggestion 2"],
   "severity": "info" | "warning" | "error"
-}
-[/INST]`;
+}`;
 
         try {
-            const result = await this.callHF(prompt);
-            // Parsing et post-processing pour ajouter les positions
+            const { text: result } = await generateText({
+                model: mistral('mistral-medium-latest'),
+                system: systemPrompt,
+                prompt: `Texte à analyser : """${text}"""`,
+                temperature: 0.1,
+            });
+
             return this.processFeedback(result, text);
         } catch (error) {
             console.error("SocraticReviewer Error:", error);
@@ -74,10 +73,7 @@ Format attendu pour chaque objet du tableau :
     async scoreBloomTaxonomy(text: string): Promise<BloomScore> {
         if (!text || text.length < 50) return this.getDefaultBloomScore();
 
-        const prompt = `<s>[INST] Évalue le niveau cognitif de ce contenu pédagogique selon la Taxonomie de Bloom.
-
-Texte : """${text}"""
-
+        const systemPrompt = `Évalue le niveau cognitif de ce contenu pédagogique selon la Taxonomie de Bloom.
 Donne un score sur 100 pour chaque niveau : Remember, Understand, Apply, Analyze, Evaluate, Create.
 Détermine le niveau dominant et une recommandation courte pour élever le niveau.
 
@@ -91,11 +87,16 @@ Réponds UNIQUEMENT avec ce JSON :
   "create": 0-100,
   "dominant": "Nom du niveau dominant",
   "recommendation": "Conseil court"
-}
-[/INST]`;
+}`;
 
         try {
-            const result = await this.callHF(prompt);
+            const { text: result } = await generateText({
+                model: mistral('mistral-medium-latest'),
+                system: systemPrompt,
+                prompt: `Texte : """${text}"""`,
+                temperature: 0.1,
+            });
+            
             return JSON.parse(this.cleanJson(result));
         } catch (error) {
             console.error("BloomScore Error:", error);
@@ -104,35 +105,6 @@ Réponds UNIQUEMENT avec ce JSON :
     }
 
     // --- Private Helpers ---
-
-    private async callHF(prompt: string): Promise<any> {
-        const response = await fetch(HF_API_URL, {
-            headers: {
-                Authorization: `Bearer ${HF_API_KEY}`,
-                "Content-Type": "application/json",
-            },
-            method: "POST",
-            body: JSON.stringify({
-                inputs: prompt,
-                parameters: {
-                    max_new_tokens: 1000,
-                    temperature: 0.1, // Très déterministe pour JSON
-                    return_full_text: false,
-                }
-            }),
-        });
-
-        if (!response.ok) {
-            throw new Error(`HF API Error: ${response.status} ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        // Mistral returns an array [{ generated_text: "..." }]
-        if (Array.isArray(result) && result[0]?.generated_text) {
-            return result[0].generated_text;
-        }
-        return "";
-    }
 
     private cleanJson(text: string): string {
         // Nettoyage agressif pour extraire le JSON d'une réponse verbeuse
