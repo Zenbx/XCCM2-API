@@ -94,6 +94,10 @@ export async function POST(
                 type: type === "FILE" ? "FILE" : "TEXT",
                 classroom_id: classId,
             },
+            include: {
+                submissions: true,
+                _count: { select: { submissions: true } },
+            }
         });
 
         // Notify all students
