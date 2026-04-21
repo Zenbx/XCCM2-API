@@ -50,14 +50,21 @@ ${context?.paraName ? `Paragraphe : ${context.paraName}` : ""}
 ${context?.notionName ? `Notion : ${context.notionName}` : ""}
 `;
 
+    // ✅ Vérification de la clé API Mistral
+    if (!process.env.MISTRAL_API_KEY) {
+      return new Response(JSON.stringify({ 
+        error: "MISTRAL_API_KEY manquante. Assistant en mode démonstration." 
+      }), { status: 400 });
+    }
+
     const result = streamText({
-      model: mistral('mistral-large-latest'),
+      model: mistral('mistral-medium-latest'),
       system: systemPrompt,
       messages: coreMessages,
       temperature: 0.7,
     });
 
-    return result.toTextStreamResponse();
+    return result.toDataStreamResponse();
   } catch (error: any) {
     console.error('Socratic AI Stream Error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
