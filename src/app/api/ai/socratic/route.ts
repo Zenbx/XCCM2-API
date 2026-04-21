@@ -52,8 +52,8 @@ ${context?.notionName ? `Notion : ${context.notionName}` : ""}
 
     // ✅ Vérification de la clé API Mistral
     if (!process.env.MISTRAL_API_KEY) {
-      return new Response(JSON.stringify({ 
-        error: "MISTRAL_API_KEY manquante. Assistant en mode démonstration." 
+      return new Response(JSON.stringify({
+        error: "MISTRAL_API_KEY manquante. Assistant en mode démonstration."
       }), { status: 400 });
     }
 

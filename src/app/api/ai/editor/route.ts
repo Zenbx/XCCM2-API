@@ -30,8 +30,8 @@ export async function POST(req: Request) {
     const { messages, context } = await req.json();
 
     if (!process.env.MISTRAL_API_KEY) {
-      return Response.json({ 
-        error: "MISTRAL_API_KEY manquante" 
+      return Response.json({
+        error: "MISTRAL_API_KEY manquante"
       }, { status: 400 });
     }
 
@@ -119,7 +119,7 @@ ${context?.notionContent ? context.notionContent.substring(0, 2000) : 'Vide'}
 
     // Collect all tool calls from all steps
     const actions: any[] = [];
-    
+
     if (result.steps) {
       for (const step of result.steps) {
         if (step.toolCalls) {
@@ -149,7 +149,7 @@ ${context?.notionContent ? context.notionContent.substring(0, 2000) : 'Vide'}
       }
     }
 
-    const text = result.text || (actions.length > 0 
+    const text = result.text || (actions.length > 0
       ? "J'ai préparé les actions suivantes. Cliquez sur les boutons pour les exécuter :"
       : "");
 
