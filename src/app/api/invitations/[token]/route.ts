@@ -1,3 +1,7 @@
+import { NextRequest } from "next/server";
+import { getInvitationByToken } from "@/utils/invitation-helpers";
+import { successResponse, notFoundResponse, serverErrorResponse } from "@/utils/api-response";
+
 /**
  * @openapi
  * /api/invitations/{token}:
