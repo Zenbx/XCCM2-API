@@ -98,13 +98,427 @@
     }
   },
   "paths": {
+    "/api/admin/projects": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Lister tous les projets de la plateforme (Admin)",
+        "description": "Récupère la liste complète des projets avec leurs statistiques de consultation.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liste des projets récupérée"
+          },
+          "403": {
+            "description": "Accès refusé"
+          }
+        }
+      }
+    },
+    "/api/admin/settings": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Récupérer les paramètres système",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paramètres récupérés"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Modifier les paramètres système",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Paramètres mis à jour"
+          }
+        }
+      }
+    },
+    "/api/admin/stats": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Statistiques globales (Admin)",
+        "description": "Récupère les compteurs globaux (utilisateurs, projets, documents) et l'activité récente.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statistiques récupérées"
+          },
+          "403": {
+            "description": "Accès refusé (non-admin)"
+          }
+        }
+      }
+    },
+    "/api/ai/analyze-pedagogical": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Analyse pédagogique socratique",
+        "description": "Analyse un texte avec SocrateAI (Hugging Face) et retourne feedback pédagogique + score Bloom.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "text"
+                ],
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "description": "Contenu à analyser"
+                  },
+                  "notionId": {
+                    "type": "string",
+                    "description": "ID de la notion (optionnel, renvoyé dans la réponse)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Analyse pédagogique réussie",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "feedback": {
+                          "type": "object"
+                        },
+                        "bloomScore": {
+                          "type": "object"
+                        },
+                        "notionId": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "timestamp": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Texte manquant"
+          },
+          "500": {
+            "description": "Erreur IA"
+          }
+        }
+      }
+    },
+    "/api/ai/audit": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Audit pédagogique (Mistral / SocrateAI)",
+        "description": "Analyse un contenu pédagogique selon la taxonomie de Bloom et retourne scores de clarté, d'engagement et suggestions socratiques.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "content"
+                ],
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "description": "Contenu pédagogique à auditer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Résultat de l'audit pédagogique",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/AuditResult"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Contenu vide"
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "500": {
+            "description": "Erreur IA"
+          }
+        }
+      }
+    },
+    "/api/ai/editor": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Assistant IA éditeur (Mistral)",
+        "description": "Génère des actions structurées (create_structure, write_content, create_exercise) via Mistral avec tool calling.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "messages"
+                ],
+                "properties": {
+                  "messages": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "assistant"
+                          ]
+                        },
+                        "content": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "context": {
+                    "type": "object",
+                    "properties": {
+                      "projectName": {
+                        "type": "string"
+                      },
+                      "partTitle": {
+                        "type": "string"
+                      },
+                      "chapterTitle": {
+                        "type": "string"
+                      },
+                      "paraName": {
+                        "type": "string"
+                      },
+                      "notionName": {
+                        "type": "string"
+                      },
+                      "notionContent": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Réponse de l'IA avec texte et actions à exécuter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "type": "string"
+                    },
+                    "actions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "create_structure",
+                              "write_content",
+                              "create_exercise"
+                            ]
+                          },
+                          "data": {
+                            "type": "object"
+                          },
+                          "status": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "MISTRAL_API_KEY manquante"
+          },
+          "500": {
+            "description": "Erreur interne"
+          }
+        }
+      }
+    },
+    "/api/ai/socratic": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Chat avec l'assistant Socratique",
+        "description": "Envoie un message à l'IA pour obtenir de l'aide pédagogique. Retourne un flux de texte (Stream).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "messages"
+                ],
+                "properties": {
+                  "messages": {
+                    "type": "array",
+                    "items": {
+                      "type": "object"
+                    }
+                  },
+                  "context": {
+                    "type": "object",
+                    "description": "Contexte de la notion ou du paragraphe actuel"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Flux de texte (text/plain; charset=utf-8)"
+          }
+        }
+      }
+    },
+    "/api/auth/forgot-password": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Demander la réinitialisation du mot de passe",
+        "description": "Envoie un email contenant un lien de réinitialisation si l'utilisateur existe.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Demande traitée"
+          },
+          "404": {
+            "description": "Utilisateur non trouvé"
+          }
+        }
+      }
+    },
     "/api/auth/login": {
       "post": {
         "tags": [
           "Authentication"
         ],
         "summary": "Connexion d'un utilisateur",
-        "description": "Authentifie un utilisateur avec email et mot de passe, retourne un token JWT",
+        "description": "Authentifie un utilisateur avec email et mot de passe, retourne un token JWT.",
         "requestBody": {
           "required": true,
           "content": {
@@ -118,18 +532,11 @@
                 "properties": {
                   "email": {
                     "type": "string",
-                    "format": "email",
-                    "example": "john.doe@example.com"
+                    "format": "email"
                   },
                   "password": {
                     "type": "string",
-                    "format": "password",
-                    "example": "SecurePass123"
-                  },
-                  "password_confirmation": {
-                    "type": "string",
-                    "format": "password",
-                    "example": "SecurePass123"
+                    "format": "password"
                   }
                 }
               }
@@ -145,12 +552,7 @@
                   "type": "object",
                   "properties": {
                     "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Connexion réussie"
+                      "type": "boolean"
                     },
                     "data": {
                       "type": "object",
@@ -159,42 +561,11 @@
                           "$ref": "#/components/schemas/User"
                         },
                         "token": {
-                          "type": "string",
-                          "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                          "type": "string"
                         }
                       }
                     }
                   }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Identifiants incorrects",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Erreur de validation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Erreur serveur",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -208,7 +579,7 @@
           "Authentication"
         ],
         "summary": "Déconnexion d'un utilisateur",
-        "description": "Déconnecte l'utilisateur (le client doit supprimer le token)",
+        "description": "Déconnecte l'utilisateur (le client doit supprimer le token).",
         "security": [
           {
             "bearerAuth": []
@@ -216,34 +587,71 @@
         ],
         "responses": {
           "200": {
-            "description": "Déconnexion réussie",
+            "description": "Déconnexion réussie"
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Récupérer l'utilisateur actuel",
+        "description": "Retourne les informations de profil de l'utilisateur authentifié par le token JWT.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Utilisateur récupéré",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "success": {
-                      "type": "boolean",
-                      "example": true
+                      "type": "boolean"
                     },
-                    "message": {
-                      "type": "string",
-                      "example": "Déconnexion réussie"
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "user": {
+                          "$ref": "#/components/schemas/User"
+                        }
+                      }
                     }
                   }
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Renouvellement silencieux du token JWT",
+        "description": "Génère un nouveau token si l'actuel est valide et expire dans moins de 24h.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Nouveau token généré"
           },
           "401": {
-            "description": "Non autorisé (token manquant ou invalide)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
+            "description": "Token invalide ou expiré"
+          },
+          "425": {
+            "description": "Token encore valide, pas besoin de refresh"
           }
         }
       }
@@ -254,7 +662,7 @@
           "Authentication"
         ],
         "summary": "Inscription d'un nouvel utilisateur",
-        "description": "Crée un nouveau compte utilisateur avec email, mot de passe et informations personnelles",
+        "description": "Crée un nouveau compte utilisateur. Support JSON ou Multipart/Form-Data.",
         "requestBody": {
           "required": true,
           "content": {
@@ -264,49 +672,34 @@
                 "required": [
                   "email",
                   "password",
-                  "password_confirmation",
                   "lastname",
                   "firstname"
                 ],
                 "properties": {
                   "email": {
                     "type": "string",
-                    "format": "email",
-                    "example": "john.doe@example.com"
+                    "format": "email"
                   },
                   "password": {
                     "type": "string",
-                    "format": "password",
-                    "minLength": 8,
-                    "example": "SecurePass123",
-                    "description": "Doit contenir au moins une majuscule, une minuscule et un chiffre"
-                  },
-                  "password_confirmation": {
-                    "type": "string",
-                    "format": "password",
-                    "minLength": 8,
-                    "example": "SecurePass123",
-                    "description": "Doit contenir au moins une majuscule, une minuscule et un chiffre"
+                    "format": "password"
                   },
                   "lastname": {
-                    "type": "string",
-                    "minLength": 2,
-                    "example": "Doe"
+                    "type": "string"
                   },
                   "firstname": {
-                    "type": "string",
-                    "minLength": 2,
-                    "example": "John"
+                    "type": "string"
                   },
                   "org": {
-                    "type": "string",
-                    "example": "XCCM Inc.",
-                    "description": "Organisation (optionnel)"
+                    "type": "string"
                   },
                   "occupation": {
+                    "type": "string"
+                  },
+                  "profile_picture": {
                     "type": "string",
-                    "example": "Développeur Full-Stack",
-                    "description": "Métier/Occupation (optionnel)"
+                    "format": "binary",
+                    "description": "Seulement pour multipart/form-data"
                   }
                 }
               }
@@ -315,29 +708,234 @@
         },
         "responses": {
           "201": {
-            "description": "Utilisateur créé avec succès",
+            "description": "Utilisateur créé avec succès"
+          }
+        }
+      }
+    },
+    "/api/auth/reset-password": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Réinitialiser le mot de passe",
+        "description": "Met à jour le mot de passe en utilisant le token de réinitialisation reçu par email.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "token",
+                  "password"
+                ],
+                "properties": {
+                  "token": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Mot de passe réinitialisé"
+          },
+          "403": {
+            "description": "Token invalide ou expiré"
+          }
+        }
+      }
+    },
+    "/api/classrooms/{classId}/analytics": {
+      "get": {
+        "tags": [
+          "Classrooms"
+        ],
+        "summary": "Obtenir les statistiques d'une classe",
+        "description": "Retourne des insights détaillés sur la progression des étudiants, les scores moyens et les exercices difficiles (IA Insights).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "classId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statistiques générées avec succès"
+          }
+        }
+      }
+    },
+    "/api/classrooms/{classId}/announcements/{announcementId}/comments": {
+      "post": {
+        "tags": [
+          "Classrooms"
+        ],
+        "summary": "Commenter une annonce",
+        "description": "Tout membre de la classe (professeur ou étudiant inscrit) peut commenter une annonce.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "classId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "announcementId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "content"
+                ],
+                "properties": {
+                  "content": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Commentaire ajouté"
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "403": {
+            "description": "Pas membre de cette classe"
+          },
+          "404": {
+            "description": "Classe ou annonce introuvable"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Classrooms"
+        ],
+        "summary": "Supprimer un commentaire",
+        "description": "L'auteur du commentaire ou le professeur peut supprimer un commentaire.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "classId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "announcementId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "commentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Commentaire supprimé"
+          },
+          "400": {
+            "description": "commentId manquant"
+          },
+          "403": {
+            "description": "Pas autorisé à supprimer ce commentaire"
+          }
+        }
+      }
+    },
+    "/api/classrooms/{classId}/announcements": {
+      "get": {
+        "tags": [
+          "Classrooms"
+        ],
+        "summary": "Lister les annonces d'une classe",
+        "description": "Retourne toutes les annonces avec leurs commentaires. Accessible aux membres (professeur + étudiants inscrits).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "classId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Annonces récupérées",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Utilisateur créé avec succès"
+                      "type": "boolean"
                     },
                     "data": {
                       "type": "object",
                       "properties": {
-                        "user": {
-                          "$ref": "#/components/schemas/User"
-                        },
-                        "token": {
-                          "type": "string",
-                          "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                        "announcements": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Announcement"
+                          }
                         }
                       }
                     }
@@ -346,45 +944,823 @@
               }
             }
           },
-          "400": {
-            "description": "Données invalides",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+          "401": {
+            "description": "Non authentifié"
+          },
+          "403": {
+            "description": "Pas membre de cette classe"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Classrooms"
+        ],
+        "summary": "Publier une annonce (professeur uniquement)",
+        "description": "Crée une annonce et notifie tous les étudiants inscrits.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "classId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "content"
+                ],
+                "properties": {
+                  "content": {
+                    "type": "string"
+                  }
                 }
               }
             }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Annonce publiée"
+          },
+          "403": {
+            "description": "Seul le professeur peut publier des annonces"
+          }
+        }
+      }
+    },
+    "/api/classrooms/{classId}/assignments/{assignmentId}/submit": {
+      "post": {
+        "tags": [
+          "Classrooms"
+        ],
+        "summary": "Soumettre un devoir (étudiant)",
+        "description": "Crée ou met à jour la soumission de l'étudiant connecté pour un devoir donné (upsert).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "classId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "assignmentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "content"
+                ],
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "description": "Texte de la réponse ou URL Cloudinary (fichier uploadé)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Devoir soumis",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "submission": {
+                          "$ref": "#/components/schemas/AssignmentSubmission"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "403": {
+            "description": "Étudiant non inscrit"
+          },
+          "404": {
+            "description": "Devoir introuvable"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Classrooms"
+        ],
+        "summary": "Noter une soumission (professeur)",
+        "description": "Le professeur attribue un score et un commentaire à une soumission d'étudiant.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "classId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "assignmentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "submissionId"
+                ],
+                "properties": {
+                  "submissionId": {
+                    "type": "string"
+                  },
+                  "score": {
+                    "type": "number"
+                  },
+                  "feedback": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Note enregistrée"
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "403": {
+            "description": "Seul le professeur peut noter"
+          }
+        }
+      }
+    },
+    "/api/classrooms/{classId}/assignments": {
+      "get": {
+        "tags": [
+          "Classrooms"
+        ],
+        "summary": "Lister les devoirs d'une classe",
+        "description": "Professeur — voit toutes les soumissions. Étudiant — voit uniquement les siennes.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "classId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Devoirs récupérés",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "assignments": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Assignment"
+                          }
+                        },
+                        "isTeacher": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "403": {
+            "description": "Accès refusé"
+          },
+          "404": {
+            "description": "Classe introuvable"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Classrooms"
+        ],
+        "summary": "Créer un devoir (professeur uniquement)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "classId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 3
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "due_date": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "TEXT",
+                      "FILE"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Devoir créé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "assignment": {
+                          "$ref": "#/components/schemas/Assignment"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "403": {
+            "description": "Seul le professeur peut créer des devoirs"
+          }
+        }
+      }
+    },
+    "/api/classrooms/{classId}/projects/{projectId}/sync": {
+      "post": {
+        "tags": [
+          "Classrooms"
+        ],
+        "summary": "Synchroniser un cours pour la classe",
+        "description": "Crée ou met à jour un snapshot (Document) du projet pour la classe. Le snapshot inclut la structure complète avec les exercices associés.\nRéservé au professeur.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "classId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Contenu synchronisé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "doc_id": {
+                          "type": "string"
+                        },
+                        "updated_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "403": {
+            "description": "Seul le professeur peut synchroniser"
+          },
+          "404": {
+            "description": "Classe ou lien projet introuvable"
+          }
+        }
+      }
+    },
+    "/api/classrooms/{classId}/projects": {
+      "get": {
+        "tags": [
+          "Classrooms"
+        ],
+        "summary": "Cours assignés à une classe (professeur)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "classId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liste des cours",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "projects": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/ClassroomProject"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Seul le professeur peut accéder"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Classrooms"
+        ],
+        "summary": "Assigner un cours à une classe (professeur)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "classId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "project_id"
+                ],
+                "properties": {
+                  "project_id": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Cours ajouté à la classe"
           },
           "409": {
-            "description": "Email déjà utilisé",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+            "description": "Ce cours est déjà dans cette classe"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Classrooms"
+        ],
+        "summary": "Retirer un cours d'une classe (professeur)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "classId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "project_id"
+                ],
+                "properties": {
+                  "project_id": {
+                    "type": "string"
+                  }
                 }
               }
             }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cours retiré"
+          },
+          "403": {
+            "description": "Seul le professeur peut retirer des cours"
+          }
+        }
+      }
+    },
+    "/api/classrooms/{classId}": {
+      "get": {
+        "tags": [
+          "Classrooms"
+        ],
+        "summary": "Détails d'une classe",
+        "description": "Retourne les détails complets d'une classe (professeur, inscrits, projets). L'étudiant ne voit pas la liste des autres élèves.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "classId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Classe récupérée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "classroom": {
+                          "$ref": "#/components/schemas/Classroom"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "403": {
+            "description": "Pas membre de cette classe"
+          },
+          "404": {
+            "description": "Classe non trouvée"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Classrooms"
+        ],
+        "summary": "Modifier une classe (professeur uniquement)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "classId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Classe mise à jour"
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "403": {
+            "description": "Seul le professeur peut modifier"
+          },
+          "404": {
+            "description": "Classe non trouvée"
           },
           "422": {
-            "description": "Erreur de validation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
+            "description": "Erreur de validation"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Classrooms"
+        ],
+        "summary": "Supprimer une classe (professeur uniquement)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "classId",
+            "required": true,
+            "schema": {
+              "type": "string"
             }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Classe supprimée"
           },
-          "500": {
-            "description": "Erreur serveur",
+          "403": {
+            "description": "Seul le professeur peut supprimer"
+          },
+          "404": {
+            "description": "Classe non trouvée"
+          }
+        }
+      }
+    },
+    "/api/classrooms": {
+      "get": {
+        "tags": [
+          "Classrooms"
+        ],
+        "summary": "Récupérer toutes les classes de l'utilisateur",
+        "description": "Retourne les classes où l'utilisateur est professeur et celles où il est étudiant.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Classes récupérées avec succès",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "teaching": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Classroom"
+                          }
+                        },
+                        "enrolled": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Classroom"
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Classrooms"
+        ],
+        "summary": "Créer une nouvelle classe",
+        "description": "Crée une classe et génère d'un code d'invitation unique.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Classe créée avec succès"
+          }
+        }
+      }
+    },
+    "/api/community/feed": {
+      "get": {
+        "tags": [
+          "Community"
+        ],
+        "summary": "Fil d'actualité de la communauté",
+        "description": "Récupère les 20 derniers projets publiés par les membres de la plateforme.",
+        "responses": {
+          "200": {
+            "description": "Fil d'actualité récupéré"
           }
         }
       }
@@ -490,13 +1866,81 @@
         }
       }
     },
+    "/api/creators/top": {
+      "get": {
+        "tags": [
+          "Community"
+        ],
+        "summary": "Top 10 créateurs",
+        "description": "Retourne les 10 meilleurs créateurs classés par score (vues + likes × 5). Pas d'authentification requise.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Top créateurs récupérés",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "role": {
+                            "type": "string"
+                          },
+                          "profile_picture": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "stats": {
+                            "type": "object",
+                            "properties": {
+                              "views": {
+                                "type": "integer"
+                              },
+                              "likes": {
+                                "type": "integer"
+                              },
+                              "projects": {
+                                "type": "integer"
+                              }
+                            }
+                          },
+                          "score": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      }
+    },
     "/api/documents/{id}/download": {
       "post": {
         "tags": [
           "Documents"
         ],
-        "summary": "Télécharger un document",
-        "description": "Retourne l'URL de téléchargement et incrémente le compteur de téléchargements",
+        "summary": "Obtenir l'URL de téléchargement",
+        "description": "Incrémente le compteur de téléchargements et retourne l'URL publique du fichier.",
         "parameters": [
           {
             "in": "path",
@@ -504,19 +1948,75 @@
             "required": true,
             "schema": {
               "type": "string"
-            },
-            "description": "ID du document"
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "URL de téléchargement retournée avec succès"
-          },
-          "404": {
-            "description": "Document non trouvé"
-          },
-          "500": {
-            "description": "Erreur serveur"
+            "description": "URL de téléchargement récupérée"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Téléchargement direct (Redirection)",
+        "description": "Incrémente le compteur et redirige directement vers l'URL du fichier sur le storage.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirection vers le fichier"
+          }
+        }
+      }
+    },
+    "/api/documents/{id}/like": {
+      "post": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Liker/Unliker un document",
+        "description": "Alterne l'état du like pour l'utilisateur authentifié.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "État du like retourné",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "liked": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -526,8 +2026,8 @@
         "tags": [
           "Documents"
         ],
-        "summary": "Récupérer un document par ID avec la structure du projet",
-        "description": "Retourne les métadonnées du document ET la structure complète du projet source pour le book-reader",
+        "summary": "Récupérer un document (Snapshot)",
+        "description": "Retourne les métadonnées et la structure complète (snapshot) pour la lecture.",
         "parameters": [
           {
             "in": "path",
@@ -535,8 +2035,7 @@
             "required": true,
             "schema": {
               "type": "string"
-            },
-            "description": "ID du document"
+            }
           }
         ],
         "responses": {
@@ -545,9 +2044,65 @@
           },
           "404": {
             "description": "Document non trouvé"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Dépublier un document",
+        "description": "Supprime un snapshot de la bibliothèque. Nécessite d'être propriétaire ou admin.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document supprimé"
           },
-          "500": {
-            "description": "Erreur serveur"
+          "403": {
+            "description": "Accès refusé"
+          }
+        }
+      }
+    },
+    "/api/documents/{id}/view": {
+      "post": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Enregistrer une vue",
+        "description": "Enregistre le passage d'un utilisateur sur un document (anti-spam inclus).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vue enregistrée"
           }
         }
       }
@@ -557,14 +2112,196 @@
         "tags": [
           "Documents"
         ],
-        "summary": "Récupérer tous les documents publiés",
-        "description": "Retourne la liste des documents publiés avec les infos du projet",
+        "summary": "Récupérer tous les documents publiés (Bilbiothèque/Library)",
+        "description": "Retourne la liste paginée de tous les documents publiés sur la plateforme.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Numéro de la page"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            },
+            "description": "Nombre d'éléments par page"
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Documents récupérés avec succès"
+            "description": "Liste des documents récupérée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "documents": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Document"
+                          }
+                        },
+                        "totalCount": {
+                          "type": "integer"
+                        },
+                        "hasMore": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/exercises/{exerciseId}": {
+      "get": {
+        "tags": [
+          "Exercises"
+        ],
+        "summary": "Récupérer un exercice",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "exerciseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Exercice récupéré",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "exercise": {
+                          "$ref": "#/components/schemas/Exercise"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
-          "500": {
-            "description": "Erreur serveur"
+          "401": {
+            "description": "Non authentifié"
+          },
+          "404": {
+            "description": "Exercice non trouvé"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Exercises"
+        ],
+        "summary": "Modifier un exercice (créateur uniquement)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "exerciseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "parameters": {
+                    "type": "object"
+                  },
+                  "settings": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Exercice mis à jour"
+          },
+          "403": {
+            "description": "Seul le créateur peut modifier"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Exercises"
+        ],
+        "summary": "Supprimer un exercice (créateur uniquement)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "exerciseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Exercice supprimé"
+          },
+          "403": {
+            "description": "Seul le créateur peut supprimer"
+          },
+          "404": {
+            "description": "Exercice non trouvé"
           }
         }
       }
@@ -618,13 +2355,350 @@
         }
       }
     },
+    "/api/invitations/{token}/accept": {
+      "patch": {
+        "tags": [
+          "Invitations"
+        ],
+        "summary": "Accepter une invitation",
+        "description": "Change le statut de l'invitation en 'Accepted' et donne accès au projet.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invitation acceptée"
+          },
+          "403": {
+            "description": "Non destinée à cet utilisateur"
+          },
+          "404": {
+            "description": "Pas trouvée"
+          }
+        }
+      }
+    },
+    "/api/invitations/{token}/decline": {
+      "patch": {
+        "tags": [
+          "Invitations"
+        ],
+        "summary": "Décliner une invitation",
+        "description": "Change le statut de l'invitation en 'Declined'.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invitation déclinée"
+          },
+          "403": {
+            "description": "Non destinée à cet utilisateur"
+          },
+          "404": {
+            "description": "Pas trouvée"
+          }
+        }
+      }
+    },
+    "/api/invitations/{token}/revoke": {
+      "delete": {
+        "tags": [
+          "Invitations"
+        ],
+        "summary": "Révoquer une invitation",
+        "description": "Annule ou supprime une invitation (host seulement).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invitation révoquée"
+          },
+          "403": {
+            "description": "Non autorisé (pas le host)"
+          }
+        }
+      }
+    },
+    "/api/invitations/{token}": {
+      "get": {
+        "tags": [
+          "Invitations"
+        ],
+        "summary": "Récupérer les détails d'une invitation",
+        "description": "Route publique pour vérifier une invitation via son token unique (utilisé dans les emails).",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Détails de l'invitation"
+          },
+          "404": {
+            "description": "Invitation non trouvée"
+          }
+        }
+      }
+    },
+    "/api/marketplace/{itemId}": {
+      "delete": {
+        "tags": [
+          "Marketplace"
+        ],
+        "summary": "Supprimer un item (vendeur uniquement)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "itemId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Item retiré de la marketplace"
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "403": {
+            "description": "Pas autorisé à supprimer cet item"
+          },
+          "404": {
+            "description": "Item non trouvé"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Marketplace"
+        ],
+        "summary": "Incrémenter le compteur de téléchargements",
+        "description": "Appelé quand un utilisateur importe un item. Pas d'authentification requise.",
+        "security": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "itemId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Téléchargement enregistré",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/MarketplaceItem"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/marketplace": {
+      "get": {
+        "tags": [
+          "Marketplace"
+        ],
+        "summary": "Récupérer tous les items de la marketplace",
+        "description": "Retourne la liste des granules publiés avec filtres par type, catégorie et recherche textuelle.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "type",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "part",
+                "chapter",
+                "paragraph",
+                "notion"
+              ]
+            },
+            "description": "Filtrer par type de granule"
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filtrer par catégorie"
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Recherche par mot-clé dans le titre ou la description"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Items récupérés avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/MarketplaceItem"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Marketplace"
+        ],
+        "summary": "Publier un item sur la marketplace",
+        "description": "Permet à un utilisateur de partager un contenu (granule) sur le marché global.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "title"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "part",
+                      "chapter",
+                      "paragraph",
+                      "notion"
+                    ]
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "price": {
+                    "type": "number",
+                    "default": 0
+                  },
+                  "content": {
+                    "type": "string",
+                    "description": "Contenu ou structure JSON"
+                  },
+                  "category": {
+                    "type": "string"
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Item publié avec succès"
+          },
+          "401": {
+            "description": "Non autorisé"
+          }
+        }
+      }
+    },
     "/api/newsletter/subscribe": {
       "post": {
         "tags": [
           "Newsletter"
         ],
         "summary": "S'abonner à la newsletter",
-        "description": "Permet à un utilisateur de s'abonner à la newsletter. Un email de confirmation sera envoyé immédiatement.",
+        "description": "Permet à un utilisateur de s'abonner à la newsletter.",
         "requestBody": {
           "required": true,
           "content": {
@@ -637,8 +2711,7 @@
                 "properties": {
                   "email": {
                     "type": "string",
-                    "format": "email",
-                    "example": "john.doe@example.com"
+                    "format": "email"
                   }
                 }
               }
@@ -647,19 +2720,244 @@
         },
         "responses": {
           "200": {
-            "description": "Abonnement réussi, email de confirmation envoyé",
+            "description": "Abonnement réussi"
+          }
+        }
+      }
+    },
+    "/api/notifications": {
+      "get": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Récupérer les notifications",
+        "description": "Retourne les 50 dernières notifications de l'utilisateur connecté (non lues en premier).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notifications récupérées",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "success": {
-                      "type": "boolean",
-                      "example": true
+                      "type": "boolean"
                     },
-                    "message": {
-                      "type": "string",
-                      "example": "Abonnement réussi. Un email de confirmation a été envoyé."
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "notifications": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Notification"
+                          }
+                        },
+                        "unreadCount": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Marquer comme lue(s)",
+        "description": "Marque une notification spécifique ou toutes les notifications comme lues.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "all": {
+                    "type": "boolean",
+                    "description": "Si true, marque toutes les notifications comme lues"
+                  },
+                  "notificationId": {
+                    "type": "string",
+                    "description": "ID d'une notification spécifique"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Notification(s) marquée(s) comme lue(s)"
+          },
+          "400": {
+            "description": "Paramètre manquant"
+          },
+          "401": {
+            "description": "Non authentifié"
+          }
+        }
+      }
+    },
+    "/api/projects/{pr_name}/comments": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Lister les commentaires d'un projet",
+        "description": "Récupère tous les commentaires (discussions) laissés sur le projet.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liste des commentaires récupérée"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Ajouter un commentaire",
+        "description": "Poste un nouveau message dans la discussion du projet.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "content"
+                ],
+                "properties": {
+                  "content": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Commentaire créé"
+          }
+        }
+      }
+    },
+    "/api/projects/{pr_name}/convert-to-template": {
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Convertir un projet en template",
+        "description": "Crée un template réutilisable depuis la structure du projet (sans copier le contenu des notions).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "template_name"
+                ],
+                "properties": {
+                  "template_name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "category": {
+                    "type": "string"
+                  },
+                  "is_public": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Template créé avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "template": {
+                          "$ref": "#/components/schemas/Template"
+                        }
+                      }
                     }
                   }
                 }
@@ -667,34 +2965,16 @@
             }
           },
           "400": {
-            "description": "Email invalide",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
+            "description": "Nom du template manquant"
           },
-          "422": {
-            "description": "Erreur de validation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
+          "401": {
+            "description": "Non authentifié"
           },
-          "500": {
-            "description": "Erreur serveur lors de l'envoi de l'email",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
+          "404": {
+            "description": "Projet non trouvé"
+          },
+          "409": {
+            "description": "Un template avec ce nom existe déjà"
           }
         }
       }
@@ -797,6 +3077,77 @@
         }
       }
     },
+    "/api/projects/{pr_name}/granules/{id}": {
+      "patch": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Modifier un granule par UUID",
+        "description": "Met à jour n'importe quel type de granule (Part, Chapter, Paragraph, Notion) via son identifiant unique global.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "UUID du granule (MongoDB ObjectId)"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GranuleUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Modification réussie"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Supprimer un granule par UUID",
+        "description": "Supprime n'importe quel type de granule et renumérote automatiquement ses frères.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Suppression réussie"
+          }
+        }
+      }
+    },
     "/api/projects/{pr_name}/invitations/email": {
       "post": {
         "tags": [
@@ -854,14 +3205,11 @@
                       "type": "boolean",
                       "example": true
                     },
-                    "message": {
-                      "type": "string",
-                      "example": "Invitation envoyée avec succès"
-                    },
                     "data": {
                       "type": "object",
                       "properties": {
                         "invitation": {
+                          "$ref": "#/components/schemas/Invitation",
                           "type": "object",
                           "properties": {
                             "id": {
@@ -884,6 +3232,10 @@
                           }
                         }
                       }
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Invitation envoyée avec succès"
                     }
                   }
                 }
@@ -902,8 +3254,199 @@
           "404": {
             "description": "Projet ou utilisateur non trouvé"
           },
+          "409": {
+            "description": "Invitation déjà existante"
+          },
+          "422": {
+            "description": "Email invalide"
+          },
           "500": {
             "description": "Erreur serveur (ex: email non envoyé)"
+          }
+        }
+      }
+    },
+    "/api/projects/{pr_name}/invitations": {
+      "get": {
+        "tags": [
+          "Invitations"
+        ],
+        "summary": "Lister les invitations d'un projet",
+        "description": "Retourne toutes les invitations (tous statuts) pour un projet dont l'utilisateur est propriétaire.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet (URL-encoded si nécessaire)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invitations récupérées",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "invitations": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "guest_email": {
+                                "type": "string"
+                              },
+                              "guest_name": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string"
+                              },
+                              "invited_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "404": {
+            "description": "Projet non trouvé"
+          }
+        }
+      }
+    },
+    "/api/projects/{pr_name}/like": {
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Liker un projet",
+        "description": "Enregistre un like sur un projet (stub — fonctionnalité en développement).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Like enregistré",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "likes": {
+                          "type": "integer"
+                        },
+                        "isLiked": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          }
+        }
+      }
+    },
+    "/api/projects/{pr_name}/move": {
+      "patch": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Déplacer un granule vers un nouveau parent",
+        "description": "Permet de changer le parent d'un chapitre, paragraphe ou notion.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Nom du projet"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveGranuleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Déplacement réussi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parent cible invalide ou non autorisé"
+          },
+          "404": {
+            "description": "Projet ou granule source non trouvé"
           }
         }
       }
@@ -2808,8 +5351,8 @@
         "tags": [
           "Documents"
         ],
-        "summary": "Publier un projet",
-        "description": "Génère le document, l'upload sur Supabase Storage et enregistre l'URL",
+        "summary": "Publier un projet (Snapshot)",
+        "description": "Génère un PDF ou DOCX à partir du projet et le publie dans la bibliothèque.",
         "security": [
           {
             "bearerAuth": []
@@ -2823,7 +5366,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Nom du projet"
+            "description": "Nom du projet à publier"
           }
         ],
         "requestBody": {
@@ -2841,9 +5384,15 @@
                     "enum": [
                       "pdf",
                       "docx"
-                    ],
-                    "example": "pdf",
-                    "description": "Format du document à publier"
+                    ]
+                  },
+                  "doc_name": {
+                    "type": "string",
+                    "description": "Nom personnalisé du snapshot"
+                  },
+                  "cover_image": {
+                    "type": "string",
+                    "description": "URL de l'image de couverture"
                   }
                 }
               }
@@ -2859,39 +5408,13 @@
                   "type": "object",
                   "properties": {
                     "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Document publié avec succès"
+                      "type": "boolean"
                     },
                     "data": {
                       "type": "object",
                       "properties": {
                         "document": {
-                          "type": "object",
-                          "properties": {
-                            "doc_id": {
-                              "type": "string"
-                            },
-                            "doc_name": {
-                              "type": "string"
-                            },
-                            "url_content": {
-                              "type": "string"
-                            },
-                            "pages": {
-                              "type": "integer"
-                            },
-                            "doc_size": {
-                              "type": "integer"
-                            },
-                            "published_at": {
-                              "type": "string",
-                              "format": "date-time"
-                            }
-                          }
+                          "$ref": "#/components/schemas/Document"
                         }
                       }
                     }
@@ -2900,17 +5423,263 @@
               }
             }
           },
-          "400": {
-            "description": "Format invalide ou projet vide"
+          "409": {
+            "description": "Nom de document déjà utilisé"
+          }
+        }
+      }
+    },
+    "/api/projects/{pr_name}/reorder": {
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Réordonner plusieurs granules en masse",
+        "description": "Permet de mettre à jour les numéros d'ordre de plusieurs granules du même parent en une transaction.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkReorderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Réordonnancement réussi"
+          }
+        }
+      }
+    },
+    "/api/projects/{pr_name}/revisions/{rev_id}/restore": {
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Restaurer une révision",
+        "description": "Remplace la structure actuelle du projet par celle contenue dans le snapshot d'une révision. Opération non-destructive sur les IDs.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
           },
-          "401": {
-            "description": "Non autorisé"
+          {
+            "in": "path",
+            "name": "rev_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Projet restauré avec succès"
           },
           "404": {
-            "description": "Projet non trouvé"
+            "description": "Projet ou révision non trouvé"
+          }
+        }
+      }
+    },
+    "/api/projects/{pr_name}/revisions/{rev_id}": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Détail d'une révision",
+        "description": "Retourne le snapshot complet d'une révision. Accessible au propriétaire et aux collaborateurs acceptés.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
           },
-          "500": {
-            "description": "Erreur serveur"
+          {
+            "in": "path",
+            "name": "rev_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Révision récupérée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "revision": {
+                          "$ref": "#/components/schemas/Revision"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "404": {
+            "description": "Projet ou révision non trouvé"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Supprimer une révision",
+        "description": "Seul le propriétaire du projet peut supprimer une révision.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "rev_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Révision supprimée"
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "404": {
+            "description": "Révision non trouvée"
+          }
+        }
+      }
+    },
+    "/api/projects/{pr_name}/revisions": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Lister les révisions (snapshots) du projet",
+        "description": "Récupère les 5 dernières sauvegardes manuelles de la structure du projet.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liste des révisions récupérée"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Créer une nouvelle révision (Snapshot)",
+        "description": "Sauvegarde l'état actuel de la structure du projet. Max 5 par projet.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "description": "Nom de la révision"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Révision sauvegardée"
           }
         }
       }
@@ -2921,7 +5690,7 @@
           "Projects"
         ],
         "summary": "Récupérer un projet spécifique",
-        "description": "Récupère un projet par son nom (pour l'utilisateur authentifié)",
+        "description": "Récupère un projet par son nom (pour le propriétaire ou un invité accepté).",
         "security": [
           {
             "bearerAuth": []
@@ -2935,8 +5704,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Nom du projet",
-            "example": "Mon Super Projet"
+            "description": "Nom du projet"
           }
         ],
         "responses": {
@@ -2948,12 +5716,7 @@
                   "type": "object",
                   "properties": {
                     "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Projet récupéré avec succès"
+                      "type": "boolean"
                     },
                     "data": {
                       "type": "object",
@@ -2968,35 +5731,11 @@
               }
             }
           },
-          "401": {
-            "description": "Non autorisé",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
+          "403": {
+            "description": "Accès refusé"
           },
           "404": {
-            "description": "Projet non trouvé",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Erreur serveur",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
+            "description": "Projet non trouvé"
           }
         }
       },
@@ -3004,8 +5743,8 @@
         "tags": [
           "Projects"
         ],
-        "summary": "Modifier le nom d'un projet",
-        "description": "Met à jour le nom d'un projet existant (updated_at est automatiquement mis à jour)",
+        "summary": "Modifier un projet",
+        "description": "Met à jour les métadonnées du projet (nom, description, tags, etc.).",
         "security": [
           {
             "bearerAuth": []
@@ -3018,9 +5757,7 @@
             "required": true,
             "schema": {
               "type": "string"
-            },
-            "description": "Nom actuel du projet",
-            "example": "Mon Super Projet"
+            }
           }
         ],
         "requestBody": {
@@ -3028,111 +5765,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "required": [
-                  "pr_name"
-                ],
-                "properties": {
-                  "pr_name": {
-                    "type": "string",
-                    "minLength": 3,
-                    "maxLength": 100,
-                    "example": "Mon Projet Renommé",
-                    "description": "Nouveau nom du projet"
-                  }
-                }
+                "$ref": "#/components/schemas/GranuleUpdate"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Projet modifié avec succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Projet modifié avec succès"
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "project": {
-                          "$ref": "#/components/schemas/Project"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Données invalides",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Non autorisé",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Projet non trouvé",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
+            "description": "Projet modifié avec succès"
           },
           "409": {
-            "description": "Un projet avec ce nouveau nom existe déjà",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Erreur de validation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Erreur serveur",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
+            "description": "Conflit (nom déjà utilisé)"
           }
         }
       },
@@ -3141,7 +5784,7 @@
           "Projects"
         ],
         "summary": "Supprimer un projet",
-        "description": "Supprime définitivement un projet et toutes ses données associées",
+        "description": "Supprime définitivement un projet et toutes ses données associées (cascade).",
         "security": [
           {
             "bearerAuth": []
@@ -3154,61 +5797,38 @@
             "required": true,
             "schema": {
               "type": "string"
-            },
-            "description": "Nom du projet à supprimer",
-            "example": "Mon Super Projet"
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Projet supprimé avec succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Projet supprimé avec succès"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Non autorisé",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Projet non trouvé",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Erreur serveur",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
+            "description": "Projet supprimé avec succès"
+          }
+        }
+      }
+    },
+    "/api/projects/{pr_name}/structure": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Récupérer la structure complète du projet",
+        "description": "Retourne l'arborescence complète (Parties > Chapitres > Paragraphes > Notions) en un seul appel optimisé avec cache Redis.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pr_name",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Structure récupérée avec succès"
           }
         }
       }
@@ -3219,7 +5839,7 @@
           "Projects"
         ],
         "summary": "Créer un nouveau projet",
-        "description": "Crée un nouveau projet pour l'utilisateur authentifié",
+        "description": "Crée un nouveau projet pour l'utilisateur authentifié.",
         "security": [
           {
             "bearerAuth": []
@@ -3238,9 +5858,7 @@
                   "pr_name": {
                     "type": "string",
                     "minLength": 3,
-                    "maxLength": 100,
-                    "example": "Mon Super Projet",
-                    "description": "Nom du projet (unique par utilisateur)"
+                    "maxLength": 100
                   }
                 }
               }
@@ -3249,82 +5867,7 @@
         },
         "responses": {
           "201": {
-            "description": "Projet créé avec succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Projet créé avec succès"
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "project": {
-                          "$ref": "#/components/schemas/Project"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Données invalides",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Non autorisé",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Un projet avec ce nom existe déjà",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Erreur de validation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Erreur serveur",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
+            "description": "Projet créé avec succès"
           }
         }
       },
@@ -3332,8 +5875,8 @@
         "tags": [
           "Projects"
         ],
-        "summary": "Récupérer tous les projets de l'utilisateur connecté",
-        "description": "Retourne la liste de tous les projets appartenant à l'utilisateur authentifié",
+        "summary": "Lister les projets de l'utilisateur",
+        "description": "Retourne la liste de tous les projets appartenant à l'utilisateur ou auxquels il est invité.",
         "security": [
           {
             "bearerAuth": []
@@ -3341,33 +5884,40 @@
         ],
         "responses": {
           "200": {
-            "description": "Liste des projets récupérée avec succès",
+            "description": "Liste des projets récupérée"
+          }
+        }
+      }
+    },
+    "/api/realtime/auth": {
+      "post": {
+        "tags": [
+          "Realtime"
+        ],
+        "summary": "Obtenir un token Ably",
+        "description": "Génère un token temporaire Ably pour que le client se connecte aux channels temps réel.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token Ably généré",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Projets récupérés avec succès"
+                      "type": "boolean"
                     },
                     "data": {
                       "type": "object",
                       "properties": {
-                        "projects": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/components/schemas/Project"
-                          }
-                        },
-                        "count": {
-                          "type": "integer",
-                          "example": 5,
-                          "description": "Nombre total de projets"
+                        "tokenRequest": {
+                          "type": "object",
+                          "description": "Token request Ably à passer au SDK client"
                         }
                       }
                     }
@@ -3377,24 +5927,656 @@
             }
           },
           "401": {
-            "description": "Non autorisé",
+            "description": "Non authentifié"
+          },
+          "500": {
+            "description": "Erreur génération token"
+          }
+        }
+      }
+    },
+    "/api/submissions": {
+      "get": {
+        "tags": [
+          "Exercises"
+        ],
+        "summary": "Récupérer les soumissions",
+        "description": "Retourne l'historique des tentatives d'un étudiant pour un exercice ou un projet.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "exercise_id",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "project_id",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liste des soumissions",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "submissions": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Submission"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Exercises"
+        ],
+        "summary": "Soumettre un exercice",
+        "description": "Envoie les réponses d'un étudiant pour correction (auto-gradée ou IA).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "exercise_id",
+                  "answers"
+                ],
+                "properties": {
+                  "exercise_id": {
+                    "type": "string"
+                  },
+                  "answers": {
+                    "type": "object",
+                    "description": "Réponses formatées selon le type d'exercice"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Soumission réussie (retourne le score et le feedback)"
+          }
+        }
+      }
+    },
+    "/api/templates/{templateId}/create-project": {
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Créer un projet à partir d'un modèle",
+        "description": "Clone la structure du modèle vers un nouveau projet pour l'utilisateur.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "templateId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "pr_name"
+                ],
+                "properties": {
+                  "pr_name": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Projet créé"
+          },
+          "404": {
+            "description": "Modèle non trouvé"
+          }
+        }
+      }
+    },
+    "/api/templates/{templateId}": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Récupérer un modèle spécifique",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "templateId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Modèle récupéré"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Modifier un modèle",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "templateId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "template_name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "category": {
+                    "type": "string"
+                  },
+                  "is_public": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Modèle mis à jour"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Supprimer un modèle",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "templateId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Modèle supprimé"
+          }
+        }
+      }
+    },
+    "/api/templates": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Lister les modèles (Templates)",
+        "description": "Récupère tous les modèles publics utilisables pour créer de nouveaux projets.",
+        "responses": {
+          "200": {
+            "description": "Liste des modèles récupérée"
+          }
+        }
+      }
+    },
+    "/api/upload": {
+      "post": {
+        "tags": [
+          "Upload"
+        ],
+        "summary": "Uploader un fichier vers Cloudinary",
+        "description": "Upload d'un fichier (PDF, JPEG, PNG, WEBP). Valide le MIME type, les magic bytes et la taille (max 10 Mo).\nRate-limitée à 20 uploads/heure par utilisateur.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Fichier à uploader (PDF, JPEG, PNG, WEBP — max 10 Mo)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Fichier uploadé avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/UploadResult"
+                    }
+                  }
                 }
               }
             }
           },
+          "400": {
+            "description": "Format non supporté, taille dépassée ou magic bytes invalides"
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "429": {
+            "description": "Limite d'upload atteinte (20/h)"
+          },
           "500": {
-            "description": "Erreur serveur",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+            "description": "Erreur Cloudinary"
+          }
+        }
+      }
+    },
+    "/api/user/account": {
+      "delete": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Supprimer son compte",
+        "description": "Supprime définitivement le compte de l'utilisateur connecté.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Compte supprimé avec succès"
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      }
+    },
+    "/api/user/password": {
+      "put": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Changer son mot de passe",
+        "description": "Vérifie l'ancien mot de passe et remplace par le nouveau (bcrypt 10 rounds).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "currentPassword",
+                  "newPassword"
+                ],
+                "properties": {
+                  "currentPassword": {
+                    "type": "string",
+                    "format": "password"
+                  },
+                  "newPassword": {
+                    "type": "string",
+                    "format": "password",
+                    "minLength": 6
+                  }
                 }
               }
             }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Mot de passe modifié avec succès"
+          },
+          "400": {
+            "description": "Mot de passe actuel incorrect ou informations manquantes"
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "404": {
+            "description": "Utilisateur non trouvé"
+          }
+        }
+      }
+    },
+    "/api/user/profile": {
+      "put": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Mettre à jour le profil utilisateur",
+        "description": "Met à jour les informations personnelles et la photo de profil. Supporte multipart/form-data.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "lastname": {
+                    "type": "string"
+                  },
+                  "firstname": {
+                    "type": "string"
+                  },
+                  "occupation": {
+                    "type": "string"
+                  },
+                  "org": {
+                    "type": "string"
+                  },
+                  "profile_picture": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profil mis à jour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "user": {
+                          "$ref": "#/components/schemas/User"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/projects/{projectId}/analytics": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Analytics d'un projet personnel",
+        "description": "Retourne les statistiques détaillées (vues, téléchargements, likes) pour un projet appartenant à l'utilisateur.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Analytics récupérées"
+          }
+        }
+      }
+    },
+    "/api/user/projects": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Mes projets avec statistiques",
+        "description": "Retourne tous les projets de l'utilisateur connecté avec vues, téléchargements, likes et nombre de parties.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Projets récupérés avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "projects": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "stats": {
+                                "type": "object",
+                                "properties": {
+                                  "parts": {
+                                    "type": "integer"
+                                  },
+                                  "views": {
+                                    "type": "integer"
+                                  },
+                                  "downloads": {
+                                    "type": "integer"
+                                  },
+                                  "likes": {
+                                    "type": "integer"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "count": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          }
+        }
+      }
+    },
+    "/api/user/settings": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Récupérer les préférences",
+        "description": "Retourne les préférences (thème, langue, notifications...) de l'utilisateur connecté.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Préférences récupérées",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "settings": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Sauvegarder les préférences",
+        "description": "Remplace les préférences de l'utilisateur par le body envoyé (objet JSON libre).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Préférences utilisateur (structure libre)"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Préférences mises à jour"
+          },
+          "401": {
+            "description": "Non authentifié"
           }
         }
       }
@@ -3508,6 +6690,341 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/users/{userId}": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Profil public d'un utilisateur",
+        "description": "Retourne le profil public avec projets publiés, vues et likes agrégés. Pas d'authentification requise.",
+        "security": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID de l'utilisateur"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profil public récupéré",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "user": {
+                          "type": "object"
+                        },
+                        "stats": {
+                          "type": "object"
+                        },
+                        "projects": {
+                          "type": "array"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Utilisateur non trouvé"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Supprimer un utilisateur (admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Utilisateur supprimé"
+          },
+          "403": {
+            "description": "Accès refusé (non admin)"
+          },
+          "404": {
+            "description": "Utilisateur non trouvé"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Modifier le rôle d'un utilisateur (admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "role"
+                ],
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "user",
+                      "admin",
+                      "editor"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rôle mis à jour"
+          },
+          "400": {
+            "description": "Rôle invalide"
+          },
+          "403": {
+            "description": "Accès refusé (non admin)"
+          }
+        }
+      }
+    },
+    "/api/users": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Lister tous les utilisateurs (admin)",
+        "description": "Retourne la liste complète des utilisateurs avec leurs statistiques. Réservé aux administrateurs.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liste des utilisateurs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "allOf": [
+                          {
+                            "$ref": "#/components/schemas/User"
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "role": {
+                                "type": "string"
+                              },
+                              "projectsCount": {
+                                "type": "integer"
+                              },
+                              "marketplaceCount": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Accès refusé (non admin)"
+          }
+        }
+      }
+    },
+    "/api/vault/{vaultItemId}": {
+      "delete": {
+        "tags": [
+          "Vault"
+        ],
+        "summary": "Supprimer un élément du coffre-fort",
+        "description": "Supprime définitivement un extrait sauvegardé.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vaultItemId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Élément supprimé"
+          },
+          "403": {
+            "description": "Accès refusé"
+          },
+          "404": {
+            "description": "Élément non trouvé"
+          }
+        }
+      }
+    },
+    "/api/vault": {
+      "get": {
+        "tags": [
+          "Vault"
+        ],
+        "summary": "Récupérer tous les éléments du coffre-fort",
+        "description": "Retourne tous les granules et fichiers sauvegardés par l'utilisateur connecté.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éléments récupérés",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/VaultItem"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Vault"
+        ],
+        "summary": "Ajouter un élément au coffre-fort",
+        "description": "Sauvegarde un granule, une image ou tout autre contenu dans le coffre personnel.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "title",
+                  "original_id"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "Type de contenu (img, video, text, part, etc.)"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "original_id": {
+                    "type": "string",
+                    "description": "ID de l'objet source"
+                  },
+                  "content": {
+                    "type": "string"
+                  },
+                  "file_url": {
+                    "type": "string"
+                  },
+                  "source_doc_id": {
+                    "type": "string"
+                  },
+                  "source_doc_name": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Élément sauvegardé"
+          },
+          "401": {
+            "description": "Non autorisé"
+          },
+          "409": {
+            "description": "Déjà présent dans le coffre"
           }
         }
       }
