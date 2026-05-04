@@ -109,6 +109,26 @@ const swaggerOptions: swaggerJSDoc.Options = {
                 name: "Community",
                 description: "Fonctionnalités sociales et flux communautaire",
             },
+            {
+                name: "Users",
+                description: "Profils publics et gestion des utilisateurs (admin)",
+            },
+            {
+                name: "User",
+                description: "Gestion du compte personnel (paramètres, mot de passe, statistiques)",
+            },
+            {
+                name: "Upload",
+                description: "Upload de fichiers vers Cloudinary",
+            },
+            {
+                name: "Notifications",
+                description: "Système de notifications in-app",
+            },
+            {
+                name: "Realtime",
+                description: "Authentification temps réel (Ably)",
+            },
         ],
         // CONFIGURATION D'AUTHENTIFICATION GLOBALE
         security: [
@@ -527,6 +547,124 @@ const swaggerOptions: swaggerJSDoc.Options = {
                         invitation_state: { type: "string", enum: ["Pending", "Accepted", "Rejected", "Revoked"] },
                         invited_at: { type: "string", format: "date-time" },
                         response_at: { type: "string", format: "date-time", nullable: true },
+                    },
+                },
+                Assignment: {
+                    type: "object",
+                    properties: {
+                        id: { type: "string" },
+                        title: { type: "string" },
+                        description: { type: "string", nullable: true },
+                        due_date: { type: "string", format: "date-time", nullable: true },
+                        type: { type: "string", enum: ["TEXT", "FILE"] },
+                        classroom_id: { type: "string" },
+                        created_at: { type: "string", format: "date-time" },
+                    },
+                },
+                AssignmentSubmission: {
+                    type: "object",
+                    properties: {
+                        id: { type: "string" },
+                        content: { type: "string", description: "Texte ou URL Cloudinary" },
+                        assignment_id: { type: "string" },
+                        student_id: { type: "string" },
+                        score: { type: "number", nullable: true },
+                        feedback: { type: "string", nullable: true },
+                        submitted_at: { type: "string", format: "date-time" },
+                    },
+                },
+                Announcement: {
+                    type: "object",
+                    properties: {
+                        id: { type: "string" },
+                        content: { type: "string" },
+                        classroom_id: { type: "string" },
+                        author_id: { type: "string" },
+                        created_at: { type: "string", format: "date-time" },
+                        author: {
+                            type: "object",
+                            properties: {
+                                user_id: { type: "string" },
+                                firstname: { type: "string" },
+                                lastname: { type: "string" },
+                            },
+                        },
+                    },
+                },
+                Notification: {
+                    type: "object",
+                    properties: {
+                        id: { type: "string" },
+                        user_id: { type: "string" },
+                        type: { type: "string", example: "NEW_ASSIGNMENT" },
+                        message: { type: "string" },
+                        link: { type: "string", nullable: true },
+                        is_read: { type: "boolean" },
+                        created_at: { type: "string", format: "date-time" },
+                    },
+                },
+                Revision: {
+                    type: "object",
+                    properties: {
+                        id: { type: "string" },
+                        project_id: { type: "string" },
+                        author_id: { type: "string" },
+                        label: { type: "string", nullable: true },
+                        snapshot: { type: "object", description: "Snapshot JSON de la structure du projet" },
+                        created_at: { type: "string", format: "date-time" },
+                    },
+                },
+                Template: {
+                    type: "object",
+                    properties: {
+                        id: { type: "string" },
+                        template_name: { type: "string" },
+                        description: { type: "string", nullable: true },
+                        category: { type: "string", nullable: true },
+                        is_public: { type: "boolean" },
+                        structure: { type: "object", description: "Structure hiérarchique (parties, chapitres, etc.)" },
+                        usage_count: { type: "integer" },
+                        creator_id: { type: "string" },
+                        created_at: { type: "string", format: "date-time" },
+                    },
+                },
+                ClassroomProject: {
+                    type: "object",
+                    properties: {
+                        id: { type: "string" },
+                        classroom_id: { type: "string" },
+                        project_id: { type: "string" },
+                        doc_id: { type: "string", nullable: true },
+                        project: {
+                            type: "object",
+                            properties: {
+                                pr_id: { type: "string" },
+                                pr_name: { type: "string" },
+                                description: { type: "string", nullable: true },
+                            },
+                        },
+                    },
+                },
+                UploadResult: {
+                    type: "object",
+                    properties: {
+                        url: { type: "string", description: "URL sécurisée Cloudinary" },
+                        public_id: { type: "string" },
+                        format: { type: "string" },
+                        size: { type: "integer", description: "Taille en octets" },
+                    },
+                },
+                AuditResult: {
+                    type: "object",
+                    properties: {
+                        clarityScore: { type: "integer", minimum: 0, maximum: 100 },
+                        engagementScore: { type: "integer", minimum: 0, maximum: 100 },
+                        bloomLevel: {
+                            type: "string",
+                            enum: ["Mémoriser", "Comprendre", "Appliquer", "Analyser", "Évaluer", "Créer"],
+                        },
+                        suggestions: { type: "array", items: { type: "string" } },
+                        recommendedBlocks: { type: "array", items: { type: "string" } },
                     },
                 },
             },

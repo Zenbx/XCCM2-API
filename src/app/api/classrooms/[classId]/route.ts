@@ -1,3 +1,95 @@
+/**
+ * @openapi
+ * /api/classrooms/{classId}:
+ *   get:
+ *     tags:
+ *       - Classrooms
+ *     summary: Détails d'une classe
+ *     description: Retourne les détails complets d'une classe (professeur, inscrits, projets). L'étudiant ne voit pas la liste des autres élèves.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Classe récupérée
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     classroom:
+ *                       $ref: '#/components/schemas/Classroom'
+ *       401:
+ *         description: Non authentifié
+ *       403:
+ *         description: Pas membre de cette classe
+ *       404:
+ *         description: Classe non trouvée
+ *   patch:
+ *     tags:
+ *       - Classrooms
+ *     summary: Modifier une classe (professeur uniquement)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *                 nullable: true
+ *     responses:
+ *       200:
+ *         description: Classe mise à jour
+ *       401:
+ *         description: Non authentifié
+ *       403:
+ *         description: Seul le professeur peut modifier
+ *       404:
+ *         description: Classe non trouvée
+ *       422:
+ *         description: Erreur de validation
+ *   delete:
+ *     tags:
+ *       - Classrooms
+ *     summary: Supprimer une classe (professeur uniquement)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Classe supprimée
+ *       403:
+ *         description: Seul le professeur peut supprimer
+ *       404:
+ *         description: Classe non trouvée
+ */
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { updateClassroomSchema } from "@/utils/validation";

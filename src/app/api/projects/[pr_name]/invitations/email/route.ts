@@ -1,7 +1,61 @@
 /**
+ * @openapi
+ * /api/projects/{pr_name}/invitations/email:
+ *   post:
+ *     tags:
+ *       - Invitations
+ *     summary: Inviter un collaborateur par email
+ *     description: Crée une invitation et envoie un email SMTP au destinataire. Si l'email échoue, l'invitation est quand même créée.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: pr_name
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - guestEmail
+ *             properties:
+ *               guestEmail:
+ *                 type: string
+ *                 format: email
+ *     responses:
+ *       201:
+ *         description: Invitation envoyée (ou créée si email échoue)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     invitation:
+ *                       $ref: '#/components/schemas/Invitation'
+ *       400:
+ *         description: Auto-invitation refusée
+ *       401:
+ *         description: Non authentifié
+ *       404:
+ *         description: Projet ou utilisateur introuvable
+ *       409:
+ *         description: Invitation déjà existante
+ *       422:
+ *         description: Email invalide
+ */
+/**
  * @fileoverview Route API pour envoyer une invitation par email
  * POST /api/projects/[pr_name]/invitations/email
- * 
+ *
  * Documentation Swagger dans: src/lib/swagger-invitations.ts
  */
 

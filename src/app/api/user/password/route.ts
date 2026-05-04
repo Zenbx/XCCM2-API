@@ -1,3 +1,40 @@
+/**
+ * @openapi
+ * /api/user/password:
+ *   put:
+ *     tags:
+ *       - User
+ *     summary: Changer son mot de passe
+ *     description: Vérifie l'ancien mot de passe et remplace par le nouveau (bcrypt 10 rounds).
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - currentPassword
+ *               - newPassword
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *                 format: password
+ *               newPassword:
+ *                 type: string
+ *                 format: password
+ *                 minLength: 6
+ *     responses:
+ *       200:
+ *         description: Mot de passe modifié avec succès
+ *       400:
+ *         description: Mot de passe actuel incorrect ou informations manquantes
+ *       401:
+ *         description: Non authentifié
+ *       404:
+ *         description: Utilisateur non trouvé
+ */
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";

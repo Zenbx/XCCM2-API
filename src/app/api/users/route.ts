@@ -1,3 +1,39 @@
+/**
+ * @openapi
+ * /api/users:
+ *   get:
+ *     tags:
+ *       - Users
+ *     summary: Lister tous les utilisateurs (admin)
+ *     description: Retourne la liste complète des utilisateurs avec leurs statistiques. Réservé aux administrateurs.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Liste des utilisateurs
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     allOf:
+ *                       - $ref: '#/components/schemas/User'
+ *                       - type: object
+ *                         properties:
+ *                           role:
+ *                             type: string
+ *                           projectsCount:
+ *                             type: integer
+ *                           marketplaceCount:
+ *                             type: integer
+ *       403:
+ *         description: Accès refusé (non admin)
+ */
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import {

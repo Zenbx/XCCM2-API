@@ -1,3 +1,91 @@
+/**
+ * @openapi
+ * /api/users/{userId}:
+ *   get:
+ *     tags:
+ *       - Users
+ *     summary: Profil public d'un utilisateur
+ *     description: Retourne le profil public avec projets publiés, vues et likes agrégés. Pas d'authentification requise.
+ *     security: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de l'utilisateur
+ *     responses:
+ *       200:
+ *         description: Profil public récupéré
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       type: object
+ *                     stats:
+ *                       type: object
+ *                     projects:
+ *                       type: array
+ *       404:
+ *         description: Utilisateur non trouvé
+ *   delete:
+ *     tags:
+ *       - Users
+ *     summary: Supprimer un utilisateur (admin)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Utilisateur supprimé
+ *       403:
+ *         description: Accès refusé (non admin)
+ *       404:
+ *         description: Utilisateur non trouvé
+ *   patch:
+ *     tags:
+ *       - Users
+ *     summary: Modifier le rôle d'un utilisateur (admin)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - role
+ *             properties:
+ *               role:
+ *                 type: string
+ *                 enum: [user, admin, editor]
+ *     responses:
+ *       200:
+ *         description: Rôle mis à jour
+ *       400:
+ *         description: Rôle invalide
+ *       403:
+ *         description: Accès refusé (non admin)
+ */
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import {

@@ -1,4 +1,40 @@
 /**
+ * @openapi
+ * /api/projects/{pr_name}/like:
+ *   post:
+ *     tags:
+ *       - Projects
+ *     summary: Liker un projet
+ *     description: Enregistre un like sur un projet (stub — fonctionnalité en développement).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: pr_name
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Like enregistré
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     likes:
+ *                       type: integer
+ *                     isLiked:
+ *                       type: boolean
+ *       401:
+ *         description: Non authentifié
+ */
+/**
  * @fileoverview Route API pour liker un projet
  * POST /api/projects/[pr_name]/like
  *

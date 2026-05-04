@@ -1,3 +1,70 @@
+/**
+ * @openapi
+ * /api/classrooms/{classId}/announcements:
+ *   get:
+ *     tags:
+ *       - Classrooms
+ *     summary: Lister les annonces d'une classe
+ *     description: Retourne toutes les annonces avec leurs commentaires. Accessible aux membres (professeur + étudiants inscrits).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Annonces récupérées
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     announcements:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Announcement'
+ *       401:
+ *         description: Non authentifié
+ *       403:
+ *         description: Pas membre de cette classe
+ *   post:
+ *     tags:
+ *       - Classrooms
+ *     summary: Publier une annonce (professeur uniquement)
+ *     description: Crée une annonce et notifie tous les étudiants inscrits.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - content
+ *             properties:
+ *               content:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Annonce publiée
+ *       403:
+ *         description: Seul le professeur peut publier des annonces
+ */
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import {

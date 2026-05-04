@@ -1,4 +1,53 @@
 /**
+ * @openapi
+ * /api/marketplace/{itemId}:
+ *   delete:
+ *     tags:
+ *       - Marketplace
+ *     summary: Supprimer un item (vendeur uniquement)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: itemId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Item retiré de la marketplace
+ *       401:
+ *         description: Non authentifié
+ *       403:
+ *         description: Pas autorisé à supprimer cet item
+ *       404:
+ *         description: Item non trouvé
+ *   patch:
+ *     tags:
+ *       - Marketplace
+ *     summary: Incrémenter le compteur de téléchargements
+ *     description: Appelé quand un utilisateur importe un item. Pas d'authentification requise.
+ *     security: []
+ *     parameters:
+ *       - in: path
+ *         name: itemId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Téléchargement enregistré
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/MarketplaceItem'
+ */
+/**
  * @fileoverview Route API pour supprimer un item de la marketplace
  */
 

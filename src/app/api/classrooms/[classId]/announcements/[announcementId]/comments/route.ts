@@ -1,3 +1,75 @@
+/**
+ * @openapi
+ * /api/classrooms/{classId}/announcements/{announcementId}/comments:
+ *   post:
+ *     tags:
+ *       - Classrooms
+ *     summary: Commenter une annonce
+ *     description: Tout membre de la classe (professeur ou étudiant inscrit) peut commenter une annonce.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: announcementId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - content
+ *             properties:
+ *               content:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Commentaire ajouté
+ *       401:
+ *         description: Non authentifié
+ *       403:
+ *         description: Pas membre de cette classe
+ *       404:
+ *         description: Classe ou annonce introuvable
+ *   delete:
+ *     tags:
+ *       - Classrooms
+ *     summary: Supprimer un commentaire
+ *     description: L'auteur du commentaire ou le professeur peut supprimer un commentaire.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: announcementId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: commentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Commentaire supprimé
+ *       400:
+ *         description: commentId manquant
+ *       403:
+ *         description: Pas autorisé à supprimer ce commentaire
+ */
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import {

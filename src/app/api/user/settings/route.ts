@@ -1,3 +1,50 @@
+/**
+ * @openapi
+ * /api/user/settings:
+ *   get:
+ *     tags:
+ *       - User
+ *     summary: Récupérer les préférences
+ *     description: Retourne les préférences (thème, langue, notifications...) de l'utilisateur connecté.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Préférences récupérées
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     settings:
+ *                       type: object
+ *       401:
+ *         description: Non authentifié
+ *   put:
+ *     tags:
+ *       - User
+ *     summary: Sauvegarder les préférences
+ *     description: Remplace les préférences de l'utilisateur par le body envoyé (objet JSON libre).
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             description: Préférences utilisateur (structure libre)
+ *     responses:
+ *       200:
+ *         description: Préférences mises à jour
+ *       401:
+ *         description: Non authentifié
+ */
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import {

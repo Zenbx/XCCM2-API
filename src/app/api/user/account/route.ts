@@ -1,3 +1,21 @@
+/**
+ * @openapi
+ * /api/user/account:
+ *   delete:
+ *     tags:
+ *       - User
+ *     summary: Supprimer son compte
+ *     description: Supprime définitivement le compte de l'utilisateur connecté.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Compte supprimé avec succès
+ *       401:
+ *         description: Non authentifié
+ *       500:
+ *         description: Erreur serveur
+ */
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import {

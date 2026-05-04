@@ -45,6 +45,8 @@ import {
     validationErrorResponse,
     serverErrorResponse, errorResponse,
 } from "@/utils/api-response";
+import { rateLimit, getClientIp } from "@/lib/rateLimit";
+import { checkEnv } from "@/lib/env-check";
 import { ZodError } from "zod";
 
 /**
@@ -53,6 +55,15 @@ import { ZodError } from "zod";
  * @returns Réponse JSON avec l'utilisateur et le token JWT
  */
 export async function POST(request: NextRequest) {
+    checkEnv();
+
+    // 5 tentatives max par IP sur 15 minutes
+    const ip = getClientIp(request);
+    const rl = await rateLimit(`login:${ip}`, 5, 15 * 60);
+    if (!rl.allowed) {
+        return errorResponse("Trop de tentatives de connexion. Réessayez dans 15 minutes.", undefined, 429);
+    }
+
     try {
         // Parse le body de la requête
         const body = await request.json();

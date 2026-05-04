@@ -1,7 +1,58 @@
 /**
+ * @openapi
+ * /api/projects/{pr_name}/invitations:
+ *   get:
+ *     tags:
+ *       - Invitations
+ *     summary: Lister les invitations d'un projet
+ *     description: Retourne toutes les invitations (tous statuts) pour un projet dont l'utilisateur est propriétaire.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: pr_name
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Nom du projet (URL-encoded si nécessaire)
+ *     responses:
+ *       200:
+ *         description: Invitations récupérées
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     invitations:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                           guest_email:
+ *                             type: string
+ *                           guest_name:
+ *                             type: string
+ *                           status:
+ *                             type: string
+ *                           invited_at:
+ *                             type: string
+ *                             format: date-time
+ *       401:
+ *         description: Non authentifié
+ *       404:
+ *         description: Projet non trouvé
+ */
+/**
  * @fileoverview Route API pour récupérer les invitations d'un projet
  * GET /api/projects/[pr_name]/invitations
- * 
+ *
  * Documentation Swagger dans: src/lib/swagger-invitations.ts
  */
 

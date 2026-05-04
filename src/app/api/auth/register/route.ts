@@ -41,6 +41,7 @@ import {
     validationErrorResponse,
     serverErrorResponse,
 } from "@/utils/api-response";
+import { rateLimit, getClientIp } from "@/lib/rateLimit";
 import { ZodError } from "zod";
 
 /**
@@ -49,6 +50,13 @@ import { ZodError } from "zod";
  * @returns Réponse JSON avec l'utilisateur créé et le token JWT
  */
 export async function POST(request: NextRequest) {
+    // 3 inscriptions max par IP par heure
+    const ip = getClientIp(request);
+    const rl = await rateLimit(`register:${ip}`, 3, 60 * 60);
+    if (!rl.allowed) {
+        return errorResponse("Trop d'inscriptions depuis cette adresse. Réessayez dans 1 heure.", undefined, 429);
+    }
+
     try {
         // Détection du type de contenu (JSON ou FormData)
         const contentType = request.headers.get("content-type") || "";

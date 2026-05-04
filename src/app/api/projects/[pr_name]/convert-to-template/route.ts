@@ -1,4 +1,62 @@
 /**
+ * @openapi
+ * /api/projects/{pr_name}/convert-to-template:
+ *   post:
+ *     tags:
+ *       - Projects
+ *     summary: Convertir un projet en template
+ *     description: Crée un template réutilisable depuis la structure du projet (sans copier le contenu des notions).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: pr_name
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - template_name
+ *             properties:
+ *               template_name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               category:
+ *                 type: string
+ *               is_public:
+ *                 type: boolean
+ *                 default: true
+ *     responses:
+ *       200:
+ *         description: Template créé avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     template:
+ *                       $ref: '#/components/schemas/Template'
+ *       400:
+ *         description: Nom du template manquant
+ *       401:
+ *         description: Non authentifié
+ *       404:
+ *         description: Projet non trouvé
+ *       409:
+ *         description: Un template avec ce nom existe déjà
+ */
+/**
  * POST /api/projects/[pr_name]/convert-to-template
  * Convertir un projet existant en template
  */

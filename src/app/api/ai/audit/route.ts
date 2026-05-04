@@ -1,3 +1,44 @@
+/**
+ * @openapi
+ * /api/ai/audit:
+ *   post:
+ *     tags:
+ *       - AI
+ *     summary: Audit pédagogique (Mistral / SocrateAI)
+ *     description: Analyse un contenu pédagogique selon la taxonomie de Bloom et retourne scores de clarté, d'engagement et suggestions socratiques.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - content
+ *             properties:
+ *               content:
+ *                 type: string
+ *                 description: Contenu pédagogique à auditer
+ *     responses:
+ *       200:
+ *         description: Résultat de l'audit pédagogique
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/AuditResult'
+ *       400:
+ *         description: Contenu vide
+ *       401:
+ *         description: Non authentifié
+ *       500:
+ *         description: Erreur IA
+ */
 import { NextRequest } from "next/server";
 import { generateText } from "ai";
 import { mistral } from "@ai-sdk/mistral";

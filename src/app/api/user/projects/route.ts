@@ -1,3 +1,51 @@
+/**
+ * @openapi
+ * /api/user/projects:
+ *   get:
+ *     tags:
+ *       - User
+ *     summary: Mes projets avec statistiques
+ *     description: Retourne tous les projets de l'utilisateur connecté avec vues, téléchargements, likes et nombre de parties.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Projets récupérés avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     projects:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                           name:
+ *                             type: string
+ *                           stats:
+ *                             type: object
+ *                             properties:
+ *                               parts:
+ *                                 type: integer
+ *                               views:
+ *                                 type: integer
+ *                               downloads:
+ *                                 type: integer
+ *                               likes:
+ *                                 type: integer
+ *                     count:
+ *                       type: integer
+ *       401:
+ *         description: Non authentifié
+ */
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import {

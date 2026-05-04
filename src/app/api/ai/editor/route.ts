@@ -1,3 +1,72 @@
+/**
+ * @openapi
+ * /api/ai/editor:
+ *   post:
+ *     tags:
+ *       - AI
+ *     summary: Assistant IA éditeur (Mistral)
+ *     description: Génère des actions structurées (create_structure, write_content, create_exercise) via Mistral avec tool calling.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - messages
+ *             properties:
+ *               messages:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     role:
+ *                       type: string
+ *                       enum: [user, assistant]
+ *                     content:
+ *                       type: string
+ *               context:
+ *                 type: object
+ *                 properties:
+ *                   projectName:
+ *                     type: string
+ *                   partTitle:
+ *                     type: string
+ *                   chapterTitle:
+ *                     type: string
+ *                   paraName:
+ *                     type: string
+ *                   notionName:
+ *                     type: string
+ *                   notionContent:
+ *                     type: string
+ *     responses:
+ *       200:
+ *         description: Réponse de l'IA avec texte et actions à exécuter
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 text:
+ *                   type: string
+ *                 actions:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       type:
+ *                         type: string
+ *                         enum: [create_structure, write_content, create_exercise]
+ *                       data:
+ *                         type: object
+ *                       status:
+ *                         type: string
+ *       400:
+ *         description: MISTRAL_API_KEY manquante
+ *       500:
+ *         description: Erreur interne
+ */
 import { generateText, tool } from 'ai';
 import { mistral } from '@ai-sdk/mistral';
 import { z } from 'zod';

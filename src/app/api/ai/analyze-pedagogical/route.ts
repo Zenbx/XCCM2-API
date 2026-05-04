@@ -1,3 +1,54 @@
+/**
+ * @openapi
+ * /api/ai/analyze-pedagogical:
+ *   post:
+ *     tags:
+ *       - AI
+ *     summary: Analyse pédagogique socratique
+ *     description: Analyse un texte avec SocrateAI (Hugging Face) et retourne feedback pédagogique + score Bloom.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - text
+ *             properties:
+ *               text:
+ *                 type: string
+ *                 description: Contenu à analyser
+ *               notionId:
+ *                 type: string
+ *                 description: ID de la notion (optionnel, renvoyé dans la réponse)
+ *     responses:
+ *       200:
+ *         description: Analyse pédagogique réussie
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     feedback:
+ *                       type: object
+ *                     bloomScore:
+ *                       type: object
+ *                     notionId:
+ *                       type: string
+ *                       nullable: true
+ *                     timestamp:
+ *                       type: string
+ *                       format: date-time
+ *       400:
+ *         description: Texte manquant
+ *       500:
+ *         description: Erreur IA
+ */
 import { NextResponse } from 'next/server';
 import { SocraticReviewer } from '../../../../ai/socraticReviewer';
 

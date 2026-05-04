@@ -1,3 +1,94 @@
+/**
+ * @openapi
+ * /api/classrooms/{classId}/projects:
+ *   get:
+ *     tags:
+ *       - Classrooms
+ *     summary: Cours assignés à une classe (professeur)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Liste des cours
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     projects:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/ClassroomProject'
+ *       403:
+ *         description: Seul le professeur peut accéder
+ *   post:
+ *     tags:
+ *       - Classrooms
+ *     summary: Assigner un cours à une classe (professeur)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - project_id
+ *             properties:
+ *               project_id:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Cours ajouté à la classe
+ *       409:
+ *         description: Ce cours est déjà dans cette classe
+ *   delete:
+ *     tags:
+ *       - Classrooms
+ *     summary: Retirer un cours d'une classe (professeur)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - project_id
+ *             properties:
+ *               project_id:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Cours retiré
+ *       403:
+ *         description: Seul le professeur peut retirer des cours
+ */
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import {

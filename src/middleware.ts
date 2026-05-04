@@ -4,11 +4,53 @@
  * - Protège les routes API avec JWT
  * - Laisse passer les routes publiques
  * - Injecte l'userId dans les headers (x-user-id)
+ * - Applique les headers de sécurité HTTP sur toutes les réponses
  */
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { verifyToken, extractTokenFromHeader } from "@/lib/auth";
+import { isTokenBlacklisted } from "@/lib/tokenBlacklist";
+
+/**
+ * Headers de sécurité HTTP appliqués sur toutes les réponses
+ */
+const SECURITY_HEADERS: Record<string, string> = {
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+    "X-Frame-Options": "DENY",
+    "X-Content-Type-Options": "nosniff",
+    "X-XSS-Protection": "1; mode=block",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "geolocation=(), microphone=(), camera=(), payment=(), usb=()",
+    // CSP sans unsafe-inline — les styles/scripts inline doivent passer par des fichiers externes
+    "Content-Security-Policy": [
+        "default-src 'self'",
+        "script-src 'self'",
+        "style-src 'self'",
+        "img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com",
+        "font-src 'self' data:",
+        "connect-src 'self' https://*.upstash.io wss://*.pusher.com https://*.ably.io wss://*.ably.io",
+        "frame-ancestors 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+    ].join("; "),
+};
+
+function applySecurityHeaders(response: NextResponse): void {
+    // Force HTTPS uniquement en production
+    if (process.env.NODE_ENV === "production") {
+        Object.entries(SECURITY_HEADERS).forEach(([key, value]) => {
+            response.headers.set(key, value);
+        });
+    } else {
+        // En dev on applique tout sauf HSTS (évite de bloquer HTTP local)
+        Object.entries(SECURITY_HEADERS).forEach(([key, value]) => {
+            if (key !== "Strict-Transport-Security") {
+                response.headers.set(key, value);
+            }
+        });
+    }
+}
 
 /**
  * Liste des origines autorisées pour CORS
@@ -65,6 +107,7 @@ const PUBLIC_ROUTES: string[] = [
     "/api/auth/providers",         // NextAuth providers list
     "/api/auth/csrf",              // NextAuth CSRF token
     "/api/auth/signout",           // NextAuth sign out
+    "/api/auth/refresh",           // Refresh token (valide le token en interne)
 
     // Other public routes
     "/auth",
@@ -73,7 +116,7 @@ const PUBLIC_ROUTES: string[] = [
     "/docs",
     "/api/documents",           // Bibliothèque publique (GET liste + GET par ID)
     "/api/invitations/",        // Consultation invitation par token (GET)
-    "/api/users/",              // Profils publics
+    // /api/users/ retiré des routes publiques — protégé par JWT + vérification admin dans la route
     "/api/creators/top",        // Top créateurs
     "/api/community/feed",      // Flux communautaire
     "/api/contact",
@@ -95,10 +138,12 @@ export async function middleware(request: NextRequest) {
      * 1️⃣ Gestion des requêtes OPTIONS (CORS preflight)
      */
     if (request.method === "OPTIONS") {
-        return new NextResponse(null, {
+        const preflightResponse = new NextResponse(null, {
             status: 200,
             headers: corsHeaders,
         });
+        applySecurityHeaders(preflightResponse);
+        return preflightResponse;
     }
 
     /**
@@ -113,7 +158,7 @@ export async function middleware(request: NextRequest) {
     }
 
     /**
-     * 3️⃣ Prépare la réponse avec les headers CORS
+     * 3️⃣ Prépare la réponse avec les headers CORS + sécurité
      * Ces headers doivent être présents sur TOUTES les réponses API
      */
     const response = NextResponse.next();
@@ -121,6 +166,7 @@ export async function middleware(request: NextRequest) {
     Object.entries(corsHeaders).forEach(([key, value]) => {
         response.headers.set(key, value);
     });
+    applySecurityHeaders(response);
 
     /**
      * 4️⃣ Laisse passer les routes publiques sans authentification
@@ -144,26 +190,35 @@ export async function middleware(request: NextRequest) {
         const token = extractTokenFromHeader(authHeader);
 
         if (!token) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    message: "Token manquant. Authentification requise.",
-                },
+            const r = NextResponse.json(
+                { success: false, message: "Token manquant. Authentification requise." },
                 { status: 401, headers: corsHeaders }
             );
+            applySecurityHeaders(r);
+            return r;
         }
 
         // Vérifie le token JWT
         const payload = await verifyToken(token);
 
         if (!payload) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    message: "Token invalide ou expiré.",
-                },
+            const r = NextResponse.json(
+                { success: false, message: "Token invalide ou expiré." },
                 { status: 401, headers: corsHeaders }
             );
+            applySecurityHeaders(r);
+            return r;
+        }
+
+        // Vérifie que le token n'est pas révoqué (blacklist logout)
+        const revoked = await isTokenBlacklisted(token);
+        if (revoked) {
+            const r = NextResponse.json(
+                { success: false, message: "Session expirée. Veuillez vous reconnecter." },
+                { status: 401, headers: corsHeaders }
+            );
+            applySecurityHeaders(r);
+            return r;
         }
 
         /**
@@ -172,7 +227,6 @@ export async function middleware(request: NextRequest) {
          */
         const requestHeaders = new Headers(request.headers);
 
-        // Type assertion pour s'assurer que payload a une propriété userId et role
         const userId = (payload as any).userId;
         const userRole = (payload as any).role || 'user';
 
@@ -180,15 +234,13 @@ export async function middleware(request: NextRequest) {
         requestHeaders.set("x-user-role", String(userRole));
 
         const responseWithHeaders = NextResponse.next({
-            request: {
-                headers: requestHeaders,
-            },
+            request: { headers: requestHeaders },
         });
 
-        // Appliquer CORS à cette nouvelle réponse
         Object.entries(corsHeaders).forEach(([key, value]) => {
             responseWithHeaders.headers.set(key, value);
         });
+        applySecurityHeaders(responseWithHeaders);
 
         return responseWithHeaders;
     }

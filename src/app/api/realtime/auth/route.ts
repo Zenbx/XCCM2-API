@@ -1,4 +1,35 @@
 /**
+ * @openapi
+ * /api/realtime/auth:
+ *   post:
+ *     tags:
+ *       - Realtime
+ *     summary: Obtenir un token Ably
+ *     description: Génère un token temporaire Ably pour que le client se connecte aux channels temps réel.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Token Ably généré
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     tokenRequest:
+ *                       type: object
+ *                       description: Token request Ably à passer au SDK client
+ *       401:
+ *         description: Non authentifié
+ *       500:
+ *         description: Erreur génération token
+ */
+/**
  * @fileoverview Route API pour l'authentification Ably
  * Génère un token temporaire pour que le client se connecte aux channels
  */

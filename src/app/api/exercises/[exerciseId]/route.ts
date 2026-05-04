@@ -1,3 +1,87 @@
+/**
+ * @openapi
+ * /api/exercises/{exerciseId}:
+ *   get:
+ *     tags:
+ *       - Exercises
+ *     summary: Récupérer un exercice
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: exerciseId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Exercice récupéré
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     exercise:
+ *                       $ref: '#/components/schemas/Exercise'
+ *       401:
+ *         description: Non authentifié
+ *       404:
+ *         description: Exercice non trouvé
+ *   put:
+ *     tags:
+ *       - Exercises
+ *     summary: Modifier un exercice (créateur uniquement)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: exerciseId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               parameters:
+ *                 type: object
+ *               settings:
+ *                 type: object
+ *     responses:
+ *       200:
+ *         description: Exercice mis à jour
+ *       403:
+ *         description: Seul le créateur peut modifier
+ *   delete:
+ *     tags:
+ *       - Exercises
+ *     summary: Supprimer un exercice (créateur uniquement)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: exerciseId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Exercice supprimé
+ *       403:
+ *         description: Seul le créateur peut supprimer
+ *       404:
+ *         description: Exercice non trouvé
+ */
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import {

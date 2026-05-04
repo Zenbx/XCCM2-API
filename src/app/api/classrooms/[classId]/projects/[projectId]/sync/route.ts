@@ -1,3 +1,51 @@
+/**
+ * @openapi
+ * /api/classrooms/{classId}/projects/{projectId}/sync:
+ *   post:
+ *     tags:
+ *       - Classrooms
+ *     summary: Synchroniser un cours pour la classe
+ *     description: |
+ *       Crée ou met à jour un snapshot (Document) du projet pour la classe. Le snapshot inclut la structure complète avec les exercices associés.
+ *       Réservé au professeur.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Contenu synchronisé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     doc_id:
+ *                       type: string
+ *                     updated_at:
+ *                       type: string
+ *                       format: date-time
+ *       401:
+ *         description: Non authentifié
+ *       403:
+ *         description: Seul le professeur peut synchroniser
+ *       404:
+ *         description: Classe ou lien projet introuvable
+ */
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import {

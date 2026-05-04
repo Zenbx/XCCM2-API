@@ -1,3 +1,50 @@
+/**
+ * @openapi
+ * /api/creators/top:
+ *   get:
+ *     tags:
+ *       - Community
+ *     summary: Top 10 créateurs
+ *     description: Retourne les 10 meilleurs créateurs classés par score (vues + likes × 5). Pas d'authentification requise.
+ *     security: []
+ *     responses:
+ *       200:
+ *         description: Top créateurs récupérés
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       role:
+ *                         type: string
+ *                       profile_picture:
+ *                         type: string
+ *                         nullable: true
+ *                       stats:
+ *                         type: object
+ *                         properties:
+ *                           views:
+ *                             type: integer
+ *                           likes:
+ *                             type: integer
+ *                           projects:
+ *                             type: integer
+ *                       score:
+ *                         type: integer
+ *       500:
+ *         description: Erreur serveur
+ */
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import {

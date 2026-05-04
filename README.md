@@ -1,280 +1,289 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# XCCM2-API
 
-## Getting Started
+API REST de la plateforme XCCM 2, construite avec Next.js 15, Prisma et MongoDB. Elle expose ~80 routes couvrant l'authentification, la gestion des cours, le LMS, la marketplace et l'IA.
 
-First, run the development server:
+## Table des matières
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- [Stack technique](#stack-technique)
+- [Installation](#installation)
+- [Variables d'environnement](#variables-denvironnement)
+- [Structure du projet](#structure-du-projet)
+- [Routes API](#routes-api)
+- [Authentification](#authentification)
+- [Sécurité](#sécurité)
+- [Tests](#tests)
+- [Documentation interactive](#documentation-interactive)
+- [Serveur Synapse](#serveur-synapse)
+- [Déploiement](#déploiement)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Stack technique
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Outil | Rôle |
+|---|---|
+| Next.js 15 (App Router) | Framework API |
+| Prisma | ORM MongoDB |
+| MongoDB Atlas | Base de données |
+| Upstash Redis | Cache projets + rate-limiting |
+| `jose` (JWT) | Authentification stateless |
+| `bcryptjs` | Hashage des mots de passe |
+| Zod | Validation des entrées |
+| Cloudinary | Stockage fichiers |
+| Vitest | Tests unitaires (90 tests) |
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-.md`
-**Emplacement :** Racine du projet
-
-```markdown
-# XCCM - Cross-Cultural Content Management Platform
-
-API REST moderne construite avec Next.js 15, Prisma, MongoDB et TypeScript.
-
-## 🚀 Fonctionnalités
-
-- ✅ **Authentification JWT sécurisée** avec bcrypt
-- ✅ **Documentation Swagger/OpenAPI 3.0** interactive
-- ✅ **Validation des données** avec Zod
-- ✅ **Base de données MongoDB** avec Prisma ORM
-- ✅ **Architecture professionnelle** avec Next.js 15 App Router
-- ✅ **Type-safety complet** avec TypeScript
-- ✅ **Middleware de protection** des routes API
-
-## 📋 Prérequis
-
-- Node.js 18.17 ou supérieur
-- MongoDB (local ou MongoDB Atlas)
-- npm ou yarn
-
-## 🛠️ Installation
-
-### 1. Cloner le projet
+## Installation
 
 ```bash
-git clone <votre-repo>
-cd my-prisma-app
-```
+# Cloner et accéder au dossier
+git clone <repo-url> && cd IHM/XCCM2-API
 
-### 2. Installer les dépendances
+# Installer les dépendances
+npm install --legacy-peer-deps
 
-```bash
-npm install
-```
-
-### 3. Configurer les variables d'environnement
-
-Copiez le fichier `.env.example` en `.env` et configurez vos variables :
-
-```bash
+# Configurer l'environnement
 cp .env.example .env
-```
+# Éditer .env avec vos vraies valeurs (voir section ci-dessous)
 
-Modifiez le fichier `.env` avec vos informations :
-
-```env
-DATABASE_URL="mongodb+srv://username:password@cluster.mongodb.net/database?retryWrites=true&w=majority"
-JWT_SECRET="votre_secret_jwt_super_securise_32_caracteres_minimum"
-JWT_EXPIRES_IN="7d"
-NODE_ENV="development"
-NEXT_PUBLIC_API_URL="http://localhost:3000"
-```
-
-### 4. Générer le client Prisma
-
-```bash
+# Générer le client Prisma
 npx prisma generate
-```
 
-### 5. (Optionnel) Pousser le schéma vers MongoDB
-
-```bash
-npx prisma db push
-```
-
-### 6. Lancer le serveur de développement
-
-```bash
+# Lancer en développement (port 3001)
 npm run dev
-```
-
-L'application sera accessible sur http://localhost:3000
-
-## 📚 Documentation
-
-- **Page d'accueil** : http://localhost:3000
-- **Documentation Swagger** : http://localhost:3000/docs
-- **Healthcheck** : http://localhost:3000/api/health
-
-## 🔐 Endpoints API
-
-### Authentification
-
-| Méthode | Endpoint | Description | Protection |
-|---------|----------|-------------|------------|
-| POST | `/api/auth/register` | Inscription d'un nouvel utilisateur | Publique |
-| POST | `/api/auth/login` | Connexion et obtention du token JWT | Publique |
-| GET | `/api/auth/me` | Récupérer les informations de l'utilisateur connecté | Protégée |
-| POST | `/api/auth/logout` | Déconnexion de l'utilisateur | Protégée |
-
-### Utilitaires
-
-| Méthode | Endpoint | Description | Protection |
-|---------|----------|-------------|------------|
-| GET | `/api/health` | Vérifier l'état de l'API | Publique |
-| GET | `/api/docs` | Spécification OpenAPI JSON | Publique |
-
-## 🧪 Tester l'API
-
-### Avec curl
-
-```bash
-# Inscription
-curl -X POST http://localhost:3000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "john.doe@example.com",
-    "password": "SecurePass123",
-    "lastname": "Doe",
-    "firstname": "John",
-    "org": "XCCM Inc.",
-    "occupation": "Développeur"
-  }'
-
-# Connexion
-curl -X POST http://localhost:3000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "john.doe@example.com",
-    "password": "SecurePass123"
-  }'
-
-# Récupérer les informations utilisateur (avec token)
-curl -X GET http://localhost:3000/api/auth/me \
-  -H "Authorization: Bearer VOTRE_TOKEN_JWT"
-```
-
-### Avec Swagger UI
-
-1. Accédez à http://localhost:3000/docs
-2. Cliquez sur "Authorize" en haut à droite
-3. Entrez votre token JWT (sans le préfixe "Bearer")
-4. Testez les endpoints directement depuis l'interface
-
-## 📁 Structure du projet
-
-```
-my-prisma-app/
-├── prisma/
-│   └── schema.prisma           # Schéma Prisma
-├── src/
-│   ├── app/
-│   │   ├── api/                # Routes API
-│   │   │   ├── auth/           # Authentification
-│   │   │   ├── docs/           # Spécification OpenAPI
-│   │   │   └── health/         # Healthcheck
-│   │   ├── docs/               # Page Swagger UI
-│   │   ├── layout.tsx          # Layout principal
-│   │   └── page.tsx            # Page d'accueil
-│   ├── lib/                    # Bibliothèques
-│   │   ├── prisma.ts           # Client Prisma
-│   │   ├── auth.ts             # Fonctions d'authentification
-│   │   └── swagger.ts          # Configuration Swagger
-│   ├── middleware.ts           # Middleware de protection
-│   ├── types/                  # Types TypeScript
-│   └── utils/                  # Fonctions utilitaires
-├── .env                        # Variables d'environnement
-├── next.config.ts              # Configuration Next.js
-└── package.json                # Dépendances
-```
-
-## 🔒 Sécurité
-
-- Mots de passe hashés avec **bcrypt** (10 rounds)
-- Tokens JWT avec expiration configurable
-- Validation stricte des entrées avec **Zod**
-- Middleware de protection des routes sensibles
-- Headers CORS configurables
-
-## 🛡️ Modèle de données
-
-Le projet utilise MongoDB avec les modèles suivants :
-
-- **User** : Utilisateurs de la plateforme
-- **Project** : Projets collaboratifs
-- **Document** : Documents générés
-- **Part, Chapter, Paragraph, Notion** : Structure hiérarchique des contenus
-- **Invitation** : Invitations collaboratives
-- **Like** : Système de likes sur les documents
-
-## 📦 Scripts disponibles
-
-```bash
-npm run dev          # Lancer le serveur de développement
-npm run build        # Compiler pour la production
-npm run start        # Lancer le serveur de production
-npm run lint         # Linter le code
-npx prisma studio    # Ouvrir Prisma Studio (GUI pour la DB)
-npx prisma generate  # Générer le client Prisma
-npx prisma db push   # Pousser le schéma vers MongoDB
-```
-
-## 🤝 Contribution
-
-Les contributions sont les bienvenues ! N'hésitez pas à ouvrir une issue ou une pull request.
-
-## 📄 Licence
-
-ENSPY
-
-## 👨‍💻 Auteur
-
-XCCM Team
 ```
 
 ---
 
-## ✅ RÉCAPITULATIF COMPLET
+## Variables d'environnement
 
-Vous avez maintenant **TOUS** les fichiers nécessaires pour votre projet Next.js 15 avec authentification JWT complète !
+Copiez `.env.example` en `.env`. Variables obligatoires :
 
-### 📦 Commandes finales pour tout créer
+| Variable | Description | Où l'obtenir |
+|---|---|---|
+| `DATABASE_URL` | URL MongoDB Atlas | [cloud.mongodb.com](https://cloud.mongodb.com) |
+| `JWT_SECRET` | Secret ≥ 32 caractères | `node -e "require('crypto').randomBytes(32).toString('hex')"` |
+| `JWT_EXPIRES_IN` | Durée du token (ex: `7d`) | — |
+| `UPSTASH_REDIS_REST_URL` | URL REST Redis | [upstash.com](https://upstash.com) |
+| `UPSTASH_REDIS_REST_TOKEN` | Token REST Redis | [upstash.com](https://upstash.com) |
+| `CLOUDINARY_CLOUD_NAME` | Nom du cloud | [cloudinary.com](https://cloudinary.com) |
+| `CLOUDINARY_API_KEY` | Clé API Cloudinary | [cloudinary.com](https://cloudinary.com) |
+| `CLOUDINARY_API_SECRET` | Secret Cloudinary | [cloudinary.com](https://cloudinary.com) |
 
-```bash
-# 1. Créer tous les dossiers
-mkdir -p src/app/api/auth/{register,login,logout,me}
-mkdir -p src/app/api/{docs,health}
-mkdir -p src/app/docs
-mkdir -p src/lib
-mkdir -p src/types
-mkdir -p src/utils
+Variables optionnelles (IA, OAuth, email) : voir [`.env.example`](./.env.example).
 
-# 2. Générer le client Prisma
-npx prisma generate
+---
 
-# 3. Lancer le projet
-npm run dev
+## Structure du projet
+
+```
+XCCM2-API/
+├── src/
+│   ├── app/
+│   │   └── api/                  # Routes API
+│   │       ├── auth/             # Login, register, logout, refresh, me
+│   │       ├── projects/         # CRUD projets + structure hiérarchique
+│   │       ├── classrooms/       # Classes (LMS)
+│   │       ├── exercises/        # Exercices & soumissions
+│   │       ├── marketplace/      # Marketplace de contenus
+│   │       ├── vault/            # Coffre-fort utilisateur
+│   │       ├── ai/               # Routes IA (éditeur, socratique, audit)
+│   │       ├── documents/        # Documents PDF
+│   │       ├── upload/           # Upload Cloudinary
+│   │       ├── admin/            # Routes admin
+│   │       ├── health/           # Healthcheck
+│   │       └── docs/             # Spec OpenAPI
+│   ├── lib/
+│   │   ├── auth.ts               # hashPassword, generateToken, verifyToken
+│   │   ├── prisma.ts             # Client Prisma singleton
+│   │   ├── redis.ts              # Client Upstash Redis
+│   │   ├── rateLimit.ts          # Rate-limiting par IP (fail-open)
+│   │   ├── tokenBlacklist.ts     # Blacklist JWT (logout)
+│   │   └── env-check.ts          # Vérification variables au démarrage
+│   ├── services/
+│   │   └── cache-service.ts      # Wrapper Redis (get/set/del)
+│   ├── middleware.ts             # CORS, JWT, sécurité HTTP, blacklist
+│   ├── utils/
+│   │   ├── api-response.ts       # Helpers successResponse, errorResponse…
+│   │   └── validation.ts         # Schémas Zod
+│   └── synapse/
+│       └── server.ts             # Serveur WebSocket Hocuspocus
+├── prisma/
+│   └── schema.prisma             # Schéma MongoDB
+├── src/test/                     # 90 tests Vitest
+├── .env.example
+├── vitest.config.ts
+└── package.json
 ```
 
-### 🎯 URLs à tester
+---
 
-1. **Page d'accueil** : http://localhost:3000
-2. **Documentation Swagger** : http://localhost:3000/docs
-3. **Healthcheck** : http://localhost:3000/api/health
-4. **Inscription** : POST http://localhost:3000/api/auth/register
-5. **Connexion** : POST http://localhost:3000/api/auth/login
-6. **Profil utilisateur** : GET http://localhost:3000/api/auth/me
+## Routes API
 
-Tout est maintenant complet et fonctionnel ! 🚀
+### Authentification
+
+| Méthode | Route | Description | Auth |
+|---|---|---|---|
+| POST | `/api/auth/register` | Inscription | Publique |
+| POST | `/api/auth/login` | Connexion → JWT | Publique |
+| GET | `/api/auth/me` | Profil courant | JWT |
+| POST | `/api/auth/logout` | Révocation du token | JWT |
+| POST | `/api/auth/refresh` | Renouvellement token (<24h restantes) | JWT |
+| POST | `/api/auth/forgot-password` | Envoi email reset | Publique |
+| POST | `/api/auth/reset-password` | Réinitialisation mot de passe | Publique |
+
+### Projets & structure hiérarchique
+
+| Méthode | Route | Description |
+|---|---|---|
+| GET / POST | `/api/projects` | Liste + création |
+| GET / PUT / DELETE | `/api/projects/[pr_name]` | Détail / mise à jour / suppression |
+| GET / POST | `/api/projects/[pr_name]/parts` | Parties |
+| GET / POST | `…/parts/[part_title]/chapters` | Chapitres |
+| GET / POST | `…/chapters/[chapter_title]/paragraphs` | Paragraphes |
+| GET / POST | `…/paragraphs/[para_name]/notions` | Notions |
+| POST | `/api/projects/[pr_name]/invitations/email` | Inviter un collaborateur |
+| GET / POST | `/api/projects/[pr_name]/revisions` | Historique de révisions |
+| GET | `/api/projects/[pr_name]/structure` | Arbre complet (cache Redis) |
+| POST | `/api/projects/[pr_name]/publish` | Publication |
+| POST | `/api/projects/[pr_name]/export` | Export PDF/JSON |
+
+### LMS — Classes
+
+| Méthode | Route | Description |
+|---|---|---|
+| GET / POST | `/api/classrooms` | Mes classes (teaching + enrolled) |
+| GET / PUT / DELETE | `/api/classrooms/[classId]` | Détail |
+| POST | `/api/enrollments` | Rejoindre une classe (join_code) |
+| GET / POST | `/api/classrooms/[classId]/assignments` | Devoirs |
+| POST | `/api/classrooms/[classId]/assignments/[id]/submit` | Rendu |
+| GET / POST | `/api/exercises` | Exercices (QCU, QCM, QRO, CODE…) |
+
+### IA
+
+| Méthode | Route | Description | Modèle |
+|---|---|---|---|
+| POST | `/api/ai/editor` | Assistant éditeur (outils structurés) | Mistral |
+| POST | `/api/ai/socratic` | Dialogue socratique | Hugging Face |
+| POST | `/api/ai/audit` | Audit pédagogique | Claude / Gemini |
+| POST | `/api/ai/analyze-pedagogical` | Analyse de contenu | Claude / Gemini |
+
+### Autres
+
+| Groupe | Routes |
+|---|---|
+| Documents | `/api/documents`, `/api/documents/[id]/download`, `/api/documents/[id]/like` |
+| Upload | `/api/upload` (Cloudinary, MIME + magic bytes + rate-limit) |
+| Marketplace | `/api/marketplace`, `/api/marketplace/[itemId]` |
+| Vault | `/api/vault`, `/api/vault/[vaultItemId]` |
+| Communauté | `/api/community/feed`, `/api/creators/top` |
+| Admin | `/api/admin/projects`, `/api/admin/stats`, `/api/admin/settings` |
+| Utilitaires | `/api/health`, `/api/docs` |
+
+---
+
+## Authentification
+
+L'API utilise des tokens **JWT signés avec `jose`** (algorithme HS256).
+
+```
+Authorization: Bearer <token>
+```
+
+**Cycle de vie d'un token :**
+1. `POST /api/auth/login` → reçoit `{ token, user }`
+2. Toutes les requêtes protégées → header `Authorization: Bearer <token>`
+3. `POST /api/auth/refresh` → nouveau token si expiry < 24h
+4. `POST /api/auth/logout` → token ajouté à la **blacklist Redis** (TTL = durée restante)
+
+Le middleware vérifie JWT + blacklist sur chaque requête protégée.
+
+---
+
+## Sécurité
+
+| Mécanisme | Implémentation |
+|---|---|
+| Hashage mots de passe | bcrypt (10 rounds) |
+| JWT | jose HS256, expiration configurable |
+| Blacklist logout | Redis avec TTL égal à l'expiration du token |
+| Rate-limiting | 5 tentatives/15 min (login), 3/h (register), 20/h (upload) |
+| CORS | Whitelist stricte via `ALLOWED_ORIGINS` |
+| Headers de sécurité | HSTS, X-Frame-Options DENY, CSP sans unsafe-inline, nosniff |
+| Validation | Zod sur tous les corps de requête |
+| Upload | Vérification MIME + magic bytes (JPEG/PNG/WEBP/PDF) |
+
+---
+
+## Tests
+
+```bash
+npm test                    # 90 tests, vitest run
+npm run test:watch          # Mode watch
+npm run test:coverage       # Couverture (v8)
+```
+
+**Couverture :**
+- `src/lib/` — auth, rateLimit, tokenBlacklist, env-check
+- `src/utils/` — api-response
+- `src/app/api/` — auth (login/register/logout/refresh), projects, classrooms, upload, ai/editor
+- `src/middleware.ts` — CORS, JWT, blacklist, headers de sécurité
+
+---
+
+## Documentation interactive
+
+La spécification OpenAPI 3.0 est disponible à :
+
+- **JSON brut :** `GET /api/docs`
+- **Swagger UI :** `GET /docs` (en développement)
+
+L'interface Swagger permet de tester tous les endpoints directement depuis le navigateur, avec authentification JWT intégrée.
+
+---
+
+## Serveur Synapse
+
+Synapse est le serveur WebSocket de collaboration temps réel (Hocuspocus + Yjs CRDT). Il tourne en processus Node.js séparé et ne peut pas être une route Next.js.
+
+```bash
+# Développement local
+npm run synapse              # ws://localhost:1234
+
+# Production
+# Déployé sur Railway — voir README-SYNAPSE-DEPLOY.md
+```
+
+---
+
+## Déploiement
+
+### Backend API → Vercel
+
+```bash
+# Variables d'environnement à configurer sur Vercel :
+# DATABASE_URL, JWT_SECRET, JWT_EXPIRES_IN,
+# UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN,
+# CLOUDINARY_*, ALLOWED_ORIGINS, ...
+vercel --prod
+```
+
+### Synapse → Railway
+
+Voir le guide complet : [README-SYNAPSE-DEPLOY.md](./README-SYNAPSE-DEPLOY.md)
+
+---
+
+## Scripts disponibles
+
+| Commande | Description |
+|---|---|
+| `npm run dev` | Serveur de développement (port 3001) |
+| `npm run build` | Build production |
+| `npm start` | Serveur production |
+| `npm test` | Tests Vitest |
+| `npm run test:coverage` | Tests + couverture |
+| `npm run synapse` | Serveur WebSocket Hocuspocus |
+| `npx prisma generate` | Régénérer le client Prisma |
+| `npx prisma studio` | Interface GUI base de données |

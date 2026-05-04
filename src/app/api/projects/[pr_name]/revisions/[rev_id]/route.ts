@@ -1,4 +1,70 @@
 /**
+ * @openapi
+ * /api/projects/{pr_name}/revisions/{rev_id}:
+ *   get:
+ *     tags:
+ *       - Projects
+ *     summary: Détail d'une révision
+ *     description: Retourne le snapshot complet d'une révision. Accessible au propriétaire et aux collaborateurs acceptés.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: pr_name
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: rev_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Révision récupérée
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     revision:
+ *                       $ref: '#/components/schemas/Revision'
+ *       401:
+ *         description: Non authentifié
+ *       404:
+ *         description: Projet ou révision non trouvé
+ *   delete:
+ *     tags:
+ *       - Projects
+ *     summary: Supprimer une révision
+ *     description: Seul le propriétaire du projet peut supprimer une révision.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: pr_name
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: rev_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Révision supprimée
+ *       401:
+ *         description: Non authentifié
+ *       404:
+ *         description: Révision non trouvée
+ */
+/**
  * @fileoverview Routes pour une révision spécifique d'un projet
  * - GET    : Détail complet d'une révision (snapshot inclus)
  * - DELETE : Supprime une révision

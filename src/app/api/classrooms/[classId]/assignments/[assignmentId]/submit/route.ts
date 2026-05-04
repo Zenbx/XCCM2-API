@@ -1,3 +1,98 @@
+/**
+ * @openapi
+ * /api/classrooms/{classId}/assignments/{assignmentId}/submit:
+ *   post:
+ *     tags:
+ *       - Classrooms
+ *     summary: Soumettre un devoir (étudiant)
+ *     description: Crée ou met à jour la soumission de l'étudiant connecté pour un devoir donné (upsert).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: assignmentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - content
+ *             properties:
+ *               content:
+ *                 type: string
+ *                 description: Texte de la réponse ou URL Cloudinary (fichier uploadé)
+ *     responses:
+ *       200:
+ *         description: Devoir soumis
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     submission:
+ *                       $ref: '#/components/schemas/AssignmentSubmission'
+ *       401:
+ *         description: Non authentifié
+ *       403:
+ *         description: Étudiant non inscrit
+ *       404:
+ *         description: Devoir introuvable
+ *   patch:
+ *     tags:
+ *       - Classrooms
+ *     summary: Noter une soumission (professeur)
+ *     description: Le professeur attribue un score et un commentaire à une soumission d'étudiant.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: assignmentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - submissionId
+ *             properties:
+ *               submissionId:
+ *                 type: string
+ *               score:
+ *                 type: number
+ *               feedback:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Note enregistrée
+ *       401:
+ *         description: Non authentifié
+ *       403:
+ *         description: Seul le professeur peut noter
+ */
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import {

@@ -1,3 +1,96 @@
+/**
+ * @openapi
+ * /api/classrooms/{classId}/assignments:
+ *   get:
+ *     tags:
+ *       - Classrooms
+ *     summary: Lister les devoirs d'une classe
+ *     description: Professeur — voit toutes les soumissions. Étudiant — voit uniquement les siennes.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Devoirs récupérés
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     assignments:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Assignment'
+ *                     isTeacher:
+ *                       type: boolean
+ *       401:
+ *         description: Non authentifié
+ *       403:
+ *         description: Accès refusé
+ *       404:
+ *         description: Classe introuvable
+ *   post:
+ *     tags:
+ *       - Classrooms
+ *     summary: Créer un devoir (professeur uniquement)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 minLength: 3
+ *               description:
+ *                 type: string
+ *               due_date:
+ *                 type: string
+ *                 format: date-time
+ *               type:
+ *                 type: string
+ *                 enum: [TEXT, FILE]
+ *     responses:
+ *       201:
+ *         description: Devoir créé
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     assignment:
+ *                       $ref: '#/components/schemas/Assignment'
+ *       401:
+ *         description: Non authentifié
+ *       403:
+ *         description: Seul le professeur peut créer des devoirs
+ */
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import {
