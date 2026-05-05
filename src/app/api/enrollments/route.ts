@@ -32,7 +32,7 @@ import { ZodError } from "zod";
  *       201:
  *         description: Inscription réussie
  *       400:
- *         description: Erreur (ex: le professeur ne peut pas rejoindre sa classe)
+ *         description: "Erreur (ex: le professeur ne peut pas rejoindre sa classe)"
  *       404:
  *         description: Code invalide
  *       409:

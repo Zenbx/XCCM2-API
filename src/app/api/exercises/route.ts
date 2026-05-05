@@ -20,11 +20,14 @@ import { ZodError } from "zod";
  *     parameters:
  *       - in: query
  *         name: project_id
- *         schema: { type: string }
+ *         schema:
+ *           type: string
  *       - in: query
  *         name: mode
- *         schema: { type: string, enum: [student, teacher] }
- *         description: 'student' pour masquer les réponses
+ *         schema:
+ *           type: string
+ *           enum: [student, teacher]
+ *         description: "'student' pour masquer les réponses correctes"
  *     responses:
  *       200:
  *         description: Liste des exercices

@@ -22,7 +22,6 @@ const SECURITY_HEADERS: Record<string, string> = {
     "X-XSS-Protection": "1; mode=block",
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Permissions-Policy": "geolocation=(), microphone=(), camera=(), payment=(), usb=()",
-    // CSP sans unsafe-inline — les styles/scripts inline doivent passer par des fichiers externes
     "Content-Security-Policy": [
         "default-src 'self'",
         "script-src 'self'",
@@ -36,15 +35,31 @@ const SECURITY_HEADERS: Record<string, string> = {
     ].join("; "),
 };
 
-function applySecurityHeaders(response: NextResponse): void {
-    // Force HTTPS uniquement en production
+// CSP relaxé pour la page Swagger UI (/docs) — swagger-ui-react utilise des styles et scripts inline
+const SWAGGER_CSP = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com",
+    "font-src 'self' data:",
+    "connect-src 'self' https://*.upstash.io wss://*.pusher.com https://*.ably.io wss://*.ably.io",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+].join("; ");
+
+function applySecurityHeaders(response: NextResponse, isSwaggerPage = false): void {
+    const headers = { ...SECURITY_HEADERS };
+    if (isSwaggerPage) {
+        headers["Content-Security-Policy"] = SWAGGER_CSP;
+    }
+
     if (process.env.NODE_ENV === "production") {
-        Object.entries(SECURITY_HEADERS).forEach(([key, value]) => {
+        Object.entries(headers).forEach(([key, value]) => {
             response.headers.set(key, value);
         });
     } else {
-        // En dev on applique tout sauf HSTS (évite de bloquer HTTP local)
-        Object.entries(SECURITY_HEADERS).forEach(([key, value]) => {
+        Object.entries(headers).forEach(([key, value]) => {
             if (key !== "Strict-Transport-Security") {
                 response.headers.set(key, value);
             }
@@ -133,6 +148,7 @@ export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     const corsHeaders = getCorsHeaders(request);
+    const isSwaggerPage = pathname === "/docs";
 
     /**
      * 1️⃣ Gestion des requêtes OPTIONS (CORS preflight)
@@ -142,7 +158,7 @@ export async function middleware(request: NextRequest) {
             status: 200,
             headers: corsHeaders,
         });
-        applySecurityHeaders(preflightResponse);
+        applySecurityHeaders(preflightResponse, isSwaggerPage);
         return preflightResponse;
     }
 
@@ -166,7 +182,7 @@ export async function middleware(request: NextRequest) {
     Object.entries(corsHeaders).forEach(([key, value]) => {
         response.headers.set(key, value);
     });
-    applySecurityHeaders(response);
+    applySecurityHeaders(response, isSwaggerPage);
 
     /**
      * 4️⃣ Laisse passer les routes publiques sans authentification
@@ -240,7 +256,7 @@ export async function middleware(request: NextRequest) {
         Object.entries(corsHeaders).forEach(([key, value]) => {
             responseWithHeaders.headers.set(key, value);
         });
-        applySecurityHeaders(responseWithHeaders);
+        applySecurityHeaders(responseWithHeaders, isSwaggerPage);
 
         return responseWithHeaders;
     }
