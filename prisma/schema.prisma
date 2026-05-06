@@ -118,6 +118,8 @@ model Project {
   // 3. Contrainte d'unicité composée (name + owner_id)
   @@unique([pr_name, owner_id])
   @@index([owner_id])
+  @@index([is_published])
+  @@index([is_published, updated_at])
   @@map("projects")
 }
 
@@ -391,6 +393,8 @@ model MarketplaceItem {
   seller_id String @db.ObjectId
   seller    User   @relation(fields: [seller_id], references: [user_id], onDelete: Cascade)
   @@index([seller_id])
+  @@index([published_at])
+  @@index([type, published_at])
   @@map("marketplace_items")
 }
 
@@ -538,6 +542,8 @@ model Notification {
 
   @@index([user_id])
   @@index([is_read])
+  @@index([user_id, is_read])
+  @@index([user_id, created_at])
   @@map("notifications")
 }
 

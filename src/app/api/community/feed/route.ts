@@ -19,67 +19,56 @@ import {
 
 export async function GET(request: NextRequest) {
     try {
-        // Fetch published projects for the feed
-        // Sort by updated_at desc for "Recent" or we could implement tabs logic here.
-        // For now, let's return the most recent 20 published projects.
+        const { searchParams } = new URL(request.url);
+        const cursor = searchParams.get('cursor');
+        const limit = Math.min(parseInt(searchParams.get('limit') || '20', 10), 50);
 
         const projects = await prisma.project.findMany({
-            where: {
-                is_published: true
-            },
-            take: 20,
-            orderBy: {
-                updated_at: 'desc'
-            },
+            where: { is_published: true },
+            take: limit + 1,
+            ...(cursor ? { cursor: { pr_id: cursor }, skip: 1 } : {}),
+            orderBy: { updated_at: 'desc' },
             include: {
                 owner: {
-                    select: {
-                        firstname: true,
-                        lastname: true,
-                        occupation: true
-                    }
+                    select: { firstname: true, lastname: true, occupation: true }
                 },
                 documents: {
                     select: {
                         consult: true,
-                        likes: {
-                            select: { id: true }
-                        }
+                        _count: { select: { likes: true } }
                     }
                 },
-                comments: {
-                    select: { comment_id: true }
-                }
+                _count: { select: { comments: true } }
             }
         });
 
-        // Format for frontend
-        const feed = projects.map(p => {
+        const hasMore = projects.length > limit;
+        const page = hasMore ? projects.slice(0, limit) : projects;
+        const nextCursor = hasMore ? page[page.length - 1].pr_id : null;
+
+        const feed = page.map(p => {
             let totalViews = 0;
             let totalLikes = 0;
-
             p.documents.forEach(doc => {
                 totalViews += doc.consult;
-                totalLikes += doc.likes.length;
+                totalLikes += doc._count.likes;
             });
-
             return {
                 id: p.pr_id,
                 title: p.pr_name,
                 author: `${p.owner.firstname} ${p.owner.lastname}`,
                 authorRole: p.owner.occupation || "Auteur",
-                timeAgo: p.updated_at, // Frontend can format this
+                timeAgo: p.updated_at,
                 likes: totalLikes,
-                comments: p.comments.length,
+                comments: p._count.comments,
                 views: totalViews,
                 category: p.category || "Général",
-                // Placeholder image if none exists, or logic to fetch cover
                 image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=800",
                 description: p.description || "Aucune description disponible."
             };
         });
 
-        return successResponse("Community feed retrieved", feed);
+        return successResponse("Community feed retrieved", { feed, nextCursor, hasMore });
 
     } catch (error) {
         console.error("Error retrieving community feed:", error);

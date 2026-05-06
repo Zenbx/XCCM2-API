@@ -100,11 +100,14 @@ export async function GET(request: NextRequest) {
             ];
         }
 
+        const cursor = searchParams.get('cursor');
+        const limit = Math.min(parseInt(searchParams.get('limit') || '20', 10), 100);
+
         const items = await prisma.marketplaceItem.findMany({
             where,
-            orderBy: {
-                published_at: "desc",
-            },
+            orderBy: { published_at: "desc" },
+            take: limit + 1,
+            ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
             include: {
                 seller: {
                     select: {
@@ -116,7 +119,11 @@ export async function GET(request: NextRequest) {
             },
         });
 
-        return successResponse("Items récupérés avec succès", items);
+        const hasMore = items.length > limit;
+        const page = hasMore ? items.slice(0, limit) : items;
+        const nextCursor = hasMore ? page[page.length - 1].id : null;
+
+        return successResponse("Items récupérés avec succès", { items: page, nextCursor, hasMore });
     } catch (error) {
         console.error("Erreur GET Marketplace:", error);
         return serverErrorResponse(

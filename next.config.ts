@@ -6,14 +6,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-    // Active le mode strict de React
     reactStrictMode: true,
+    compress: true,
 
-    serverExternalPackages: ['pdfkit'], // Indique à Next.js de ne pas "bundler" pdfkit
+    serverExternalPackages: ['pdfkit'],
 
-    // Configuration des images
     images: {
         domains: ["localhost"],
+        minimumCacheTTL: 3600,
         remotePatterns: [
             {
                 protocol: "https",
@@ -22,12 +22,19 @@ const nextConfig: NextConfig = {
         ],
     },
 
-    // ⚠️ CRITICAL FOR VERCEL: Ignore Type/Lint errors to allow build
+    experimental: {
+        optimizePackageImports: [
+            'recharts',
+            'lucide-react',
+            '@tiptap/react',
+            '@tiptap/starter-kit',
+        ],
+    },
+
     typescript: {
         ignoreBuildErrors: true,
     },
 
-    // En-têtes HTTP personnalisés (laissés vides car gérés par le middleware)
     async headers() {
         return [];
     },

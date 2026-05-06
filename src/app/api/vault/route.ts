@@ -71,16 +71,22 @@ export async function GET(request: NextRequest) {
             return errorResponse("Utilisateur non authentifié", undefined, 401);
         }
 
+        const { searchParams } = new URL(request.url);
+        const cursor = searchParams.get('cursor');
+        const limit = Math.min(parseInt(searchParams.get('limit') || '20', 10), 100);
+
         const vaultItems = await prisma.vaultItem.findMany({
-            where: {
-                owner_id: userId,
-            },
-            orderBy: {
-                added_at: "desc",
-            },
+            where: { owner_id: userId },
+            orderBy: { added_at: "desc" },
+            take: limit + 1,
+            ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
         });
 
-        return successResponse("Éléments du coffre-fort récupérés", vaultItems);
+        const hasMore = vaultItems.length > limit;
+        const page = hasMore ? vaultItems.slice(0, limit) : vaultItems;
+        const nextCursor = hasMore ? page[page.length - 1].id : null;
+
+        return successResponse("Éléments du coffre-fort récupérés", { items: page, nextCursor, hasMore });
     } catch (error) {
         console.error("Erreur GET Vault:", error);
         return serverErrorResponse(

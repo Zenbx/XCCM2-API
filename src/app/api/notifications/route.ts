@@ -72,15 +72,23 @@ export async function GET(request: NextRequest) {
         const userId = request.headers.get("x-user-id");
         if (!userId) return errorResponse("Utilisateur non authentifié", undefined, 401);
 
+        const { searchParams } = new URL(request.url);
+        const cursor = searchParams.get('cursor');
+        const limit = Math.min(parseInt(searchParams.get('limit') || '20', 10), 50);
+
         const notifications = await prisma.notification.findMany({
             where: { user_id: userId },
             orderBy: [{ is_read: "asc" }, { created_at: "desc" }],
-            take: 50,
+            take: limit + 1,
+            ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
         });
 
-        const unreadCount = notifications.filter((n) => !n.is_read).length;
+        const hasMore = notifications.length > limit;
+        const page = hasMore ? notifications.slice(0, limit) : notifications;
+        const nextCursor = hasMore ? page[page.length - 1].id : null;
+        const unreadCount = page.filter((n) => !n.is_read).length;
 
-        return successResponse("Notifications récupérées", { notifications, unreadCount });
+        return successResponse("Notifications récupérées", { notifications: page, unreadCount, nextCursor, hasMore });
     } catch (error) {
         return serverErrorResponse("Erreur lors de la récupération des notifications", error instanceof Error ? error.message : undefined);
     }

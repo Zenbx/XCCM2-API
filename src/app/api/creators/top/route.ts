@@ -60,29 +60,25 @@ export async function GET(request: NextRequest) {
         // We'll fetch active creators and calculate.
 
         // Get users with their published projects and associated document stats
+        // Cap at 200 to bound memory; top 10 is selected after scoring
         const creators = await prisma.user.findMany({
             where: {
-                projects: {
-                    some: {
-                        is_published: true
-                    }
-                }
+                projects: { some: { is_published: true } }
             },
+            take: 200,
             select: {
                 user_id: true,
                 firstname: true,
                 lastname: true,
-                occupation: true, // e.g. "Professeur CS"
+                occupation: true,
                 profile_picture: true,
                 projects: {
                     where: { is_published: true },
                     select: {
                         documents: {
                             select: {
-                                consult: true, // views
-                                likes: { // count likes
-                                    select: { id: true }
-                                }
+                                consult: true,
+                                _count: { select: { likes: true } }
                             }
                         }
                     }
@@ -90,7 +86,6 @@ export async function GET(request: NextRequest) {
             }
         });
 
-        // Calculate scores
         const rankedCreators = creators.map(creator => {
             let totalViews = 0;
             let totalLikes = 0;
@@ -98,12 +93,10 @@ export async function GET(request: NextRequest) {
             creator.projects.forEach(project => {
                 project.documents.forEach(doc => {
                     totalViews += doc.consult;
-                    totalLikes += doc.likes.length;
+                    totalLikes += doc._count.likes;
                 });
             });
 
-            // Simple scoring algorithm: Views + (Likes * 5)
-            // Adjust weights as needed
             const score = totalViews + (totalLikes * 5);
 
             return {
@@ -120,7 +113,6 @@ export async function GET(request: NextRequest) {
             };
         });
 
-        // Sort by score descending and take top 10
         const topCreators = rankedCreators
             .sort((a, b) => b.score - a.score)
             .slice(0, 10);

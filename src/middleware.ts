@@ -13,6 +13,16 @@ import { verifyToken, extractTokenFromHeader } from "@/lib/auth";
 import { isTokenBlacklisted } from "@/lib/tokenBlacklist";
 
 /**
+ * Routes publiques dont les réponses GET peuvent être mises en cache par le CDN
+ */
+const CACHEABLE_PUBLIC_ROUTES: string[] = [
+    "/api/marketplace",
+    "/api/community/feed",
+    "/api/creators/top",
+    "/api/documents",
+];
+
+/**
  * Headers de sécurité HTTP appliqués sur toutes les réponses
  */
 const SECURITY_HEADERS: Record<string, string> = {
@@ -195,6 +205,11 @@ export async function middleware(request: NextRequest) {
             pathname.includes("/revoke"));
 
     if (isPublicRoute && !isInvitationAction) {
+        const isCacheable = request.method === "GET" &&
+            CACHEABLE_PUBLIC_ROUTES.some(route => pathname.startsWith(route));
+        if (isCacheable) {
+            response.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+        }
         return response;
     }
 
@@ -257,6 +272,7 @@ export async function middleware(request: NextRequest) {
             responseWithHeaders.headers.set(key, value);
         });
         applySecurityHeaders(responseWithHeaders, isSwaggerPage);
+        responseWithHeaders.headers.set("Cache-Control", "private, no-store");
 
         return responseWithHeaders;
     }
