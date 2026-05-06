@@ -34,8 +34,8 @@ const SECURITY_HEADERS: Record<string, string> = {
     "Permissions-Policy": "geolocation=(), microphone=(), camera=(), payment=(), usb=()",
     "Content-Security-Policy": [
         "default-src 'self'",
-        "script-src 'self'",
-        "style-src 'self'",
+        "script-src 'self' 'unsafe-inline'",
+        "style-src 'self' 'unsafe-inline'",
         "img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com",
         "font-src 'self' data:",
         "connect-src 'self' https://*.upstash.io wss://*.pusher.com https://*.ably.io wss://*.ably.io",
