@@ -47,7 +47,7 @@ function ErrorContent() {
 
                         <div className="flex flex-col gap-3 pt-4">
                             <a
-                                href="http://localhost:3000/login"
+                                href={`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/login`}
                                 className="w-full h-12 rounded-xl bg-[#99334C] text-white font-bold hover:bg-[#7a283d] transition-all flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

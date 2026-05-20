@@ -4,6 +4,19 @@ import React, { useEffect, useState, Suspense } from 'react';
 import { signIn } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 
+const OAUTH_ERROR_MESSAGES: Record<string, string> = {
+    google:                'Google a refusé la connexion. Vérifiez que votre compte Google est accessible.',
+    'azure-ad':            'Microsoft a refusé la connexion. Vérifiez votre compte Microsoft.',
+    OAuthSignin:           'Impossible de lancer la connexion OAuth. Réessayez.',
+    OAuthCallback:         'La réponse du fournisseur OAuth est invalide. Réessayez.',
+    OAuthCreateAccount:    'Votre compte n\'a pas pu être créé. Contactez l\'administrateur.',
+    OAuthAccountNotLinked: 'Cet email est déjà lié à un autre mode de connexion.',
+    AccessDenied:          'Accès refusé. Vous n\'avez pas l\'autorisation de vous connecter.',
+    Configuration:         'Erreur de configuration du serveur. Contactez l\'administrateur.',
+    Callback:              'Erreur lors du traitement de la réponse d\'authentification.',
+    Default:               'Une erreur inattendue est survenue. Veuillez réessayer.',
+};
+
 function SignInContent() {
     const searchParams = useSearchParams();
     const callbackUrl = searchParams.get('callbackUrl') || 'http://localhost:3000/edit-home';
@@ -61,7 +74,9 @@ function SignInContent() {
                                     </svg>
                                     <div className="text-sm text-red-800">
                                         <p className="font-semibold">Erreur d'authentification</p>
-                                        <p className="opacity-80">Un problème est survenu : {error}</p>
+                                        <p className="opacity-80">
+                                            {OAUTH_ERROR_MESSAGES[error!] ?? OAUTH_ERROR_MESSAGES.Default}
+                                        </p>
                                     </div>
                                 </div>
                             )}
@@ -110,7 +125,7 @@ function SignInContent() {
                             </div>
 
                             <a
-                                href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/login`}
+                                href={`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/login`}
                                 className="block text-center text-sm font-medium text-[#99334C] hover:text-[#7a283d] transition-colors"
                             >
                                 Retour à la connexion classique
