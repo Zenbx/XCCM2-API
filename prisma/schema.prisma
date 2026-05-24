@@ -69,7 +69,8 @@ model User {
   notifications          Notification[]
 
   // Versioning
-  created_revisions ProjectRevision[] @relation("CreatedRevisions")
+  created_revisions  ProjectRevision[] @relation("CreatedRevisions")
+  granule_revisions  GranuleRevision[] @relation("GranuleRevisionAuthor")
 
   // Préférences et réglages (JSON flexible)
   settings Json?
@@ -113,7 +114,8 @@ model Project {
   classroom_links ClassroomProject[]
 
   // Versioning
-  revisions ProjectRevision[]
+  revisions         ProjectRevision[]
+  granule_revisions GranuleRevision[]
 
   // 3. Contrainte d'unicité composée (name + owner_id)
   @@unique([pr_name, owner_id])
@@ -248,6 +250,9 @@ model Notion {
 
   owner_id String @db.ObjectId
   owner    User   @relation(fields: [owner_id], references: [user_id])
+
+  // Historique collaboratif
+  revisions GranuleRevision[]
 
   //Contraintes d'unicité
   @@unique([parent_para, notion_name])
@@ -607,6 +612,29 @@ model Submission {
 }
 
 // --- VERSIONING / REVISIONS ---
+
+// Suivi collaboratif des modifications par notion (git blame / git diff)
+model GranuleRevision {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  content_before String   // HTML avant la modification
+  content_after  String   // HTML après la modification
+  created_at     DateTime @default(now())
+
+  notion_id String @db.ObjectId
+  notion    Notion @relation(fields: [notion_id], references: [notion_id], onDelete: Cascade)
+
+  project_id String  @db.ObjectId
+  project    Project @relation(fields: [project_id], references: [pr_id], onDelete: Cascade)
+
+  author_id String @db.ObjectId
+  author    User   @relation("GranuleRevisionAuthor", fields: [author_id], references: [user_id])
+
+  @@index([notion_id])
+  @@index([project_id])
+  @@index([author_id])
+  @@index([notion_id, created_at])
+  @@map("granule_revisions")
+}
 
 model ProjectRevision {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId

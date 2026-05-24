@@ -133,14 +133,47 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
                 break;
 
             case 'notion':
+                // Capturer le contenu AVANT pour l'historique collaboratif
+                const contentBefore = granule.data.notion_content;
+                const newContent    = body.notion_content;
+
                 updated = await prisma.notion.update({
                     where: { notion_id: id },
                     data: {
                         ...(body.notion_name && { notion_name: body.notion_name }),
-                        ...(body.notion_content !== undefined && { notion_content: body.notion_content }),
+                        ...(newContent !== undefined && { notion_content: newContent }),
                         ...(body.notion_number && { notion_number: body.notion_number }),
                     },
                 });
+
+                // Enregistrer la révision si le contenu a changé (fire-and-forget)
+                if (newContent !== undefined && newContent !== contentBefore) {
+                    prisma.granuleRevision.create({
+                        data: {
+                            notion_id:      id,
+                            project_id:     project.pr_id,
+                            author_id:      userId,
+                            content_before: contentBefore,
+                            content_after:  newContent,
+                        },
+                    }).then(async () => {
+                        // Plafond à 30 révisions par notion
+                        const count = await prisma.granuleRevision.count({ where: { notion_id: id } });
+                        if (count > 30) {
+                            const oldest = await prisma.granuleRevision.findMany({
+                                where: { notion_id: id },
+                                orderBy: { created_at: "asc" },
+                                take: count - 30,
+                                select: { id: true },
+                            });
+                            await prisma.granuleRevision.deleteMany({
+                                where: { id: { in: oldest.map((r) => r.id) } },
+                            });
+                        }
+                    }).catch((err: unknown) => {
+                        console.error("[granule/PATCH] Révision non enregistrée :", err);
+                    });
+                }
                 break;
         }
 
