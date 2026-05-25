@@ -5,8 +5,6 @@ import { signIn } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 
 const OAUTH_ERROR_MESSAGES: Record<string, string> = {
-    google:                'Google a refusé la connexion. Vérifiez que votre compte Google est accessible.',
-    'azure-ad':            'Microsoft a refusé la connexion. Vérifiez votre compte Microsoft.',
     OAuthSignin:           'Impossible de lancer la connexion OAuth. Réessayez.',
     OAuthCallback:         'La réponse du fournisseur OAuth est invalide. Réessayez.',
     OAuthCreateAccount:    'Votre compte n\'a pas pu être créé. Contactez l\'administrateur.',
@@ -15,6 +13,13 @@ const OAUTH_ERROR_MESSAGES: Record<string, string> = {
     Configuration:         'Erreur de configuration du serveur. Contactez l\'administrateur.',
     Callback:              'Erreur lors du traitement de la réponse d\'authentification.',
     Default:               'Une erreur inattendue est survenue. Veuillez réessayer.',
+};
+
+// Ces codes signalent un échec d'initiation cross-origin, pas une vraie erreur utilisateur.
+// NextAuth utilise l'ID du provider comme code quand le CSRF cookie est absent.
+const CROSS_ORIGIN_PROVIDERS: Record<string, 'google' | 'azure-ad'> = {
+    google:     'google',
+    'azure-ad': 'azure-ad',
 };
 
 function SignInContent() {
@@ -27,13 +32,23 @@ function SignInContent() {
     const mode = searchParams.get('mode') || urlParams.get('mode') || 'login';
     const provider = searchParams.get('provider') || urlParams.get('provider');
 
+    // Si l'erreur est un nom de provider, c'est un relance cross-origin — on re-déclenche silencieusement.
+    const crossOriginProvider = error ? CROSS_ORIGIN_PROVIDERS[error] : null;
+
     const [loading, setLoading] = useState(true);
     const [signingIn, setSigningIn] = useState<'google' | 'azure-ad' | null>(null);
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setLoading(false);
-        }, 1200);
+        if (crossOriginProvider) {
+            // Garder le spinner, relancer l'OAuth depuis le bon domaine cette fois
+            setSigningIn(crossOriginProvider);
+            signIn(crossOriginProvider, { callbackUrl });
+            // Fallback : si la redirection échoue après 6s, afficher les boutons
+            const fallback = setTimeout(() => setLoading(false), 6000);
+            return () => clearTimeout(fallback);
+        }
+
+        const timer = setTimeout(() => setLoading(false), 1200);
         return () => clearTimeout(timer);
     }, []);
 
@@ -73,7 +88,7 @@ function SignInContent() {
                         </div>
                     ) : (
                         <div className="space-y-6">
-                            {error && error !== 'undefined' && error !== 'null' && (
+                            {error && error !== 'undefined' && error !== 'null' && !crossOriginProvider && (
                                 <div className="p-4 rounded-xl bg-red-50 border border-red-100 flex items-start gap-3">
                                     <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
