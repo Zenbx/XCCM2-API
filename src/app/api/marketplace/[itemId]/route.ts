@@ -59,6 +59,39 @@ import {
     serverErrorResponse,
 } from "@/utils/api-response";
 
+async function notifyMarketplaceSeller(
+    sellerId: string,
+    itemTitle: string,
+    downloads: number,
+    buyerUserId: string | null,
+) {
+    if (buyerUserId === sellerId) return;
+
+    let message: string;
+
+    if (buyerUserId) {
+        const buyer = await prisma.user.findUnique({
+            where: { user_id: buyerUserId },
+            select: { firstname: true, lastname: true },
+        });
+        const name = buyer ? `${buyer.firstname} ${buyer.lastname}`.trim() : null;
+        message = name
+            ? `${name} a téléchargé votre granule "${itemTitle}" depuis la marketplace. (${downloads} téléchargement${downloads > 1 ? "s" : ""} au total)`
+            : `Votre granule "${itemTitle}" vient d'être téléchargé depuis la marketplace. (${downloads} au total)`;
+    } else {
+        message = `Votre granule "${itemTitle}" vient d'être téléchargé depuis la marketplace. (${downloads} téléchargement${downloads > 1 ? "s" : ""} au total)`;
+    }
+
+    await prisma.notification.create({
+        data: {
+            user_id: sellerId,
+            type: "MARKETPLACE_DOWNLOAD",
+            message,
+            link: "/marketplace",
+        },
+    });
+}
+
 /**
  * Handler DELETE pour supprimer un item de la marketplace
  */
@@ -113,6 +146,7 @@ export async function PATCH(
 ) {
     try {
         const { itemId } = await context.params;
+        const buyerUserId = request.headers.get("x-user-id");
 
         const item = await prisma.marketplaceItem.update({
             where: { id: itemId },
@@ -122,6 +156,9 @@ export async function PATCH(
                 },
             },
         });
+
+        // Fire-and-forget: notify the seller
+        notifyMarketplaceSeller(item.seller_id, item.title, item.downloads, buyerUserId).catch(() => {});
 
         return successResponse("Téléchargement enregistré", item);
     } catch (error) {

@@ -11,6 +11,53 @@ import {
     serverErrorResponse,
 } from "@/utils/api-response";
 
+async function notifyGranuleOwner(
+    saverUserId: string,
+    type: string,
+    originalId: string,
+    sourceDocId: string | undefined,
+    title: string,
+) {
+    let ownerId: string | null = null;
+    let projectName: string | null = null;
+
+    if (type === "notion") {
+        const notion = await prisma.notion.findUnique({
+            where: { notion_id: originalId },
+            select: { owner_id: true },
+        });
+        ownerId = notion?.owner_id ?? null;
+    }
+
+    if (!ownerId && sourceDocId) {
+        const project = await prisma.project.findUnique({
+            where: { pr_id: sourceDocId },
+            select: { owner_id: true, pr_name: true },
+        });
+        ownerId = project?.owner_id ?? null;
+        projectName = project?.pr_name ?? null;
+    }
+
+    if (!ownerId || ownerId === saverUserId) return;
+
+    const saver = await prisma.user.findUnique({
+        where: { user_id: saverUserId },
+        select: { firstname: true, lastname: true },
+    });
+    if (!saver) return;
+
+    const saverName = `${saver.firstname} ${saver.lastname}`.trim();
+
+    await prisma.notification.create({
+        data: {
+            user_id: ownerId,
+            type: "VAULT_SAVE",
+            message: `${saverName} a ajouté votre granule "${title}" à son coffre-fort.`,
+            link: projectName ? `/edit?project=${projectName}` : null,
+        },
+    });
+}
+
 /**
  * @openapi
  * /api/vault:
@@ -138,6 +185,9 @@ export async function POST(request: NextRequest) {
                 owner_id: userId,
             },
         });
+
+        // Fire-and-forget: notify the original content owner
+        notifyGranuleOwner(userId, type, original_id, source_doc_id, title).catch(() => {});
 
         return successResponse("Élément ajouté au coffre-fort", vaultItem, 201);
     } catch (error) {
