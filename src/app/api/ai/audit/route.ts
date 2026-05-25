@@ -54,8 +54,18 @@ export async function POST(request: NextRequest) {
         const payload = await verifyToken(token);
         if (!payload) return errorResponse("Token invalide", undefined, 401);
 
-        const { content } = await request.json();
+        const body = await request.json();
+        const { content, context } = body;
         if (!content?.trim()) return errorResponse("Le contenu est vide", undefined, 400);
+
+        const contextBlock = context ? `
+CONTEXTE DU COURS :
+- Projet : ${context.projectName || '—'}
+- Partie : ${context.partTitle || '—'}
+- Chapitre : ${context.chapterTitle || '—'}
+- Paragraphe : ${context.paraName || '—'}
+- Notion actuelle : ${context.notionName || '—'}
+` : '';
 
         // ✅ Vérification de la clé API Mistral
         if (!process.env.MISTRAL_API_KEY) {
@@ -65,44 +75,55 @@ export async function POST(request: NextRequest) {
                 engagementScore: 75,
                 bloomLevel: "Comprendre",
                 suggestions: [
-                    "🚧 Fonctionnalité en développement : Socrate AI n'est pas encore complètement opérationnel.",
-                    "💡 Cette fonctionnalité analyse votre contenu selon la taxonomie de Bloom et propose des améliorations pédagogiques.",
-                    "📊 Scores affichés ci-dessus sont des exemples pour démonstration.",
-                    "🔧 Pour activer la vraie analyse IA, configurez MISTRAL_API_KEY dans votre .env backend."
+                    "Comment pourriez-vous illustrer ce concept avec un exemple concret ?",
+                    "Quelles questions un apprenant débutant se poserait-il en lisant ce contenu ?",
+                    "Comment relieriez-vous ce sujet à une situation réelle ?"
                 ],
                 recommendedBlocks: ["Quiz", "Exemple", "Définition"],
+                improvedContent: content,
+                suggestedGranules: [
+                    { type: "notion", title: "Exercices pratiques", description: "Mise en application des concepts vus", rationale: "Renforcer la compréhension par la pratique" },
+                    { type: "paragraph", title: "Cas d'usage concrets", description: "Exemples réels liés au thème", rationale: "Ancrer l'apprentissage dans la réalité" },
+                    { type: "notion", title: "Synthèse et points clés", description: "Résumé des notions essentielles", rationale: "Consolider les acquis avant de passer à la suite" }
+                ],
                 isDemoMode: true
             });
         }
 
         const systemPrompt = `Tu es SocrateAI, un expert mondial en ingénierie pédagogique et design d'apprentissage.
-Ton objectif est d'aider l'auteur à transformer un contenu brut en une expérience d'apprentissage exceptionnelle et engageante.
-
+Ton objectif est d'aider l'auteur à transformer un contenu brut en une expérience d'apprentissage exceptionnelle.
+${contextBlock}
 ANALYSE REQUISE :
 1. BLOOM : Identifie le niveau cognitif actuel (Mémoriser, Comprendre, Appliquer, Analyser, Évaluer, Créer).
-2. CLARTÉ : Évalue la simplicité et la structure du texte (Score 0-100).
-3. ENGAGEMENT : Évalue la capacité à captiver l'apprenant (Score 0-100).
-4. QUESTIONS SOCRATIQUES : Propose 3 questions qui poussent l'élève à réfléchir plus loin au lieu de simplement lire.
-5. BLOCS SUGGÉRÉS : Recommande 3 types de composants (Quiz, Code, Math, Note, Exemple) pour dynamiser la notion.
+2. CLARTÉ : Score 0-100 sur la simplicité et la structure du texte.
+3. ENGAGEMENT : Score 0-100 sur la capacité à captiver l'apprenant.
+4. QUESTIONS SOCRATIQUES : 3 questions qui poussent l'élève à réfléchir plutôt que lire passivement.
+5. BLOCS SUGGÉRÉS : 2-3 types de composants parmi (Quiz, Code, Math, Note, Exemple, Définition).
+6. VERSION AMÉLIORÉE : Réécris le contenu HTML en le rendant plus clair, structuré et engageant. Utilise uniquement des balises HTML simples (p, strong, em, ul, li, h3). Ne dépasse pas 800 mots.
+7. GRANULES SUGGÉRÉS : Propose 3 à 5 granules pédagogiques pertinents pour enrichir la suite de ce cours dans le même thème. Chacun doit être logique et complémentaire au contenu analysé.
 
-TON : Professionnel, encourageant, mais exigeant sur la qualité didactique.
+TON : Professionnel, encourageant, exigeant sur la qualité didactique.
 
-FORMAT JSON STRICT EXIGÉ (sans markdown, sans backticks, juste le JSON brut) :
+FORMAT JSON STRICT (sans markdown, sans backticks) :
 {
   "clarityScore": number,
   "engagementScore": number,
   "bloomLevel": "Mémoriser" | "Comprendre" | "Appliquer" | "Analyser" | "Évaluer" | "Créer",
   "suggestions": ["Question 1", "Question 2", "Question 3"],
-  "recommendedBlocks": ["Quiz" | "Code" | "Math" | "Note" | "Exemple"]
+  "recommendedBlocks": ["Quiz", "Exemple"],
+  "improvedContent": "<p>Contenu HTML amélioré ici...</p>",
+  "suggestedGranules": [
+    { "type": "notion" | "paragraph" | "chapter" | "part", "title": "Titre du granule", "description": "Ce que ce granule couvrira", "rationale": "Pourquoi ce granule est pertinent ici" }
+  ]
 }`;
 
-        console.log("[Audit AI] Calling Gemini API...");
+        console.log("[Audit AI] Calling Mistral API...");
 
         const { text: rawContent } = await generateText({
             model: mistral('mistral-medium-latest'),
             system: systemPrompt,
-            prompt: `Voici le contenu pédagogique à auditer :\n---\n${content.substring(0, 8000)}\n---\nGénère l'audit JSON maintenant.`,
-            temperature: 0.1,
+            prompt: `Voici le contenu pédagogique à auditer :\n---\n${content.substring(0, 8000)}\n---\nGénère l'audit JSON complet maintenant.`,
+            temperature: 0.2,
         });
 
         console.log("[Audit AI] Response received");
