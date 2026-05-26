@@ -111,9 +111,12 @@ export async function GET(request: NextRequest) {
         // Construction du filtre
         const filter: any = {};
 
-        // En mode enseignant (par défaut), on filtre par créateur
-        // En mode étudiant, on ne filtre PAS par créateur (on voit les exercices de tout le monde)
-        if (mode !== 'student') {
+        const hasGranuleFilter = !!(projectId || partId || chapterId || paraId || notionId);
+
+        // En mode enseignant sans filtre de granule → "mes exercices" global → filtrer par créateur
+        // En mode enseignant AVEC filtre de granule → tous les exercices du projet (collaborateurs inclus)
+        // En mode étudiant → jamais de filtre créateur
+        if (mode !== 'student' && !hasGranuleFilter) {
             filter.creator_id = userId;
         }
 
