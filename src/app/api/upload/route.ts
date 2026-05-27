@@ -117,7 +117,11 @@ export async function POST(request: NextRequest) {
                 {
                     folder: `xccm2/assignments/${userId}`,
                     resource_type: isPdf ? "raw" : "auto",
-                    use_filename: false,
+                    // For PDFs: preserve the original filename (including .pdf extension) in
+                    // the Cloudinary public_id so the URL ends in .pdf. Without this,
+                    // Cloudinary generates a random ID with no extension and browsers
+                    // can't identify the file as PDF (wrong Content-Type served).
+                    use_filename: isPdf,
                     unique_filename: true,
                 },
                 (error, result) => {
