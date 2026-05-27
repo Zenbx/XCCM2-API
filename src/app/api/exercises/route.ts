@@ -8,6 +8,7 @@ import {
     serverErrorResponse,
 } from "@/utils/api-response";
 import { ZodError } from "zod";
+import { realtimeService } from "@/services/realtime-service";
 
 /**
  * @openapi
@@ -272,6 +273,22 @@ export async function POST(request: NextRequest) {
                 order: nextOrder
             }
         });
+
+        // Broadcast real-time event so collaborators refresh their ExercisePanel
+        const projectIdForBroadcast = validatedData.project_id;
+        if (projectIdForBroadcast) {
+            const project = await prisma.project.findUnique({
+                where: { pr_id: projectIdForBroadcast },
+                select: { pr_name: true },
+            });
+            if (project) {
+                realtimeService.broadcastStructureChange(project.pr_name, 'EXERCISE_CHANGED', {
+                    action: 'created',
+                    exerciseId: exercise.id,
+                    notionId: validatedData.notion_id || null,
+                }).catch(() => {}); // fire-and-forget, don't block the response
+            }
+        }
 
         return successResponse("Exercice créé avec succès", { exercise }, 201);
 

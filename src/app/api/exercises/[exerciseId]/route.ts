@@ -90,6 +90,24 @@ import {
     notFoundResponse,
     serverErrorResponse,
 } from "@/utils/api-response";
+import { realtimeService } from "@/services/realtime-service";
+
+async function broadcastExerciseChange(exercise: any, action: string) {
+    if (!exercise.project_id) return;
+    try {
+        const project = await prisma.project.findUnique({
+            where: { pr_id: exercise.project_id },
+            select: { pr_name: true },
+        });
+        if (project) {
+            realtimeService.broadcastStructureChange(project.pr_name, 'EXERCISE_CHANGED', {
+                action,
+                exerciseId: exercise.id,
+                notionId: exercise.notion_id || null,
+            }).catch(() => {});
+        }
+    } catch { /* fire-and-forget */ }
+}
 
 type RouteParams = {
     params: Promise<{
@@ -154,6 +172,7 @@ export async function PUT(request: NextRequest, context: RouteParams) {
             data: dataToUpdate
         });
 
+        broadcastExerciseChange(updatedExercise, 'updated');
         return successResponse("Exercice mis à jour avec succès", { exercise: updatedExercise });
 
     } catch (error) {
@@ -190,6 +209,7 @@ export async function DELETE(request: NextRequest, context: RouteParams) {
             where: { id: exerciseId }
         });
 
+        broadcastExerciseChange(exercise, 'deleted');
         return successResponse("Exercice supprimé avec succès");
 
     } catch (error) {

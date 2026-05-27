@@ -463,13 +463,15 @@ model ClassroomProject {
 // --- NOUVEAUX MODELES DEVOIRS ET ANNONCES ---
 
 model Assignment {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  title        String
-  description  String?
-  due_date     DateTime?
-  type         String   @default("TEXT") // TEXT, FILE
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  title           String
+  description     String?
+  due_date        DateTime?
+  type            String    @default("TEXT") // TEXT, FILE
+  attachment_url  String?
+  attachment_name String?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
 
   classroom_id String    @db.ObjectId
   classroom    Classroom @relation(fields: [classroom_id], references: [id], onDelete: Cascade)

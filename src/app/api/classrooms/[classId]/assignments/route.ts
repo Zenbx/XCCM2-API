@@ -173,7 +173,7 @@ export async function POST(
             return forbiddenResponse("Seul le professeur peut créer des devoirs");
 
         const body = await request.json();
-        const { title, description, due_date, type } = body;
+        const { title, description, due_date, type, attachment_url, attachment_name } = body;
 
         if (!title || title.trim().length < 3) {
             return errorResponse("Le titre du devoir doit contenir au moins 3 caractères");
@@ -185,6 +185,8 @@ export async function POST(
                 description: description?.trim() || null,
                 due_date: due_date ? new Date(due_date) : null,
                 type: type === "FILE" ? "FILE" : "TEXT",
+                attachment_url: attachment_url || null,
+                attachment_name: attachment_name || null,
                 classroom_id: classId,
             },
             include: {
