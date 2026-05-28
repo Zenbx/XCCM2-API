@@ -2,13 +2,7 @@ import fs from "fs";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
 
-// Configure storage path
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "profile_pictures");
-
-// Ensure directory exists
-if (!fs.existsSync(UPLOAD_DIR)) {
-    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-}
 
 /**
  * Save a profile picture to local storage
@@ -16,6 +10,10 @@ if (!fs.existsSync(UPLOAD_DIR)) {
  * @returns Relative path to the saved image (e.g., "/uploads/profile_pictures/abc.jpg")
  */
 export async function saveProfilePicture(file: File): Promise<string> {
+    if (!fs.existsSync(UPLOAD_DIR)) {
+        fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+    }
+
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 

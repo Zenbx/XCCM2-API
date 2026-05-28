@@ -33,6 +33,7 @@
 
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { hashPassword, generateToken, toPublicUser } from "@/lib/auth";
 import { registerSchema } from "@/utils/validation";
 import {
@@ -50,14 +51,13 @@ import { ZodError } from "zod";
  * @returns Réponse JSON avec l'utilisateur créé et le token JWT
  */
 export async function POST(request: NextRequest) {
-    // 3 inscriptions max par IP par heure
-    const ip = getClientIp(request);
-    const rl = await rateLimit(`register:${ip}`, 3, 60 * 60);
-    if (!rl.allowed) {
-        return errorResponse("Trop d'inscriptions depuis cette adresse. Réessayez dans 1 heure.", undefined, 429);
-    }
-
     try {
+        // 3 inscriptions max par IP par heure
+        const ip = getClientIp(request);
+        const rl = await rateLimit(`register:${ip}`, 3, 60 * 60);
+        if (!rl.allowed) {
+            return errorResponse("Trop d'inscriptions depuis cette adresse. Réessayez dans 1 heure.", undefined, 429);
+        }
         // Détection du type de contenu (JSON ou FormData)
         const contentType = request.headers.get("content-type") || "";
         const isFormData = contentType.includes("multipart/form-data");
@@ -151,9 +151,21 @@ export async function POST(request: NextRequest) {
             return validationErrorResponse(errors);
         }
         console.error("Erreur lors de l'inscription:", error);
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            return serverErrorResponse(
+                "Erreur base de données lors de l'inscription",
+                `Prisma ${error.code}: ${error.message}`
+            );
+        }
+        if (error instanceof Prisma.PrismaClientInitializationError) {
+            return serverErrorResponse(
+                "Impossible de se connecter à la base de données",
+                error.message
+            );
+        }
         return serverErrorResponse(
             "Une erreur est survenue lors de l'inscription",
-            error instanceof Error ? error.message : undefined
+            error instanceof Error ? error.message : String(error)
         );
     }
 }
