@@ -146,33 +146,49 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
                     },
                 });
 
-                // Enregistrer la révision si le contenu a changé (fire-and-forget)
-                if (newContent !== undefined && newContent !== contentBefore) {
-                    prisma.granuleRevision.create({
-                        data: {
-                            notion_id:      id,
-                            project_id:     project.pr_id,
-                            author_id:      userId,
-                            content_before: contentBefore,
-                            content_after:  newContent,
-                        },
-                    }).then(async () => {
-                        // Plafond à 30 révisions par notion
-                        const count = await prisma.granuleRevision.count({ where: { notion_id: id } });
-                        if (count > 30) {
-                            const oldest = await prisma.granuleRevision.findMany({
-                                where: { notion_id: id },
-                                orderBy: { created_at: "asc" },
-                                take: count - 30,
-                                select: { id: true },
-                            });
-                            await prisma.granuleRevision.deleteMany({
-                                where: { id: { in: oldest.map((r) => r.id) } },
-                            });
-                        }
-                    }).catch((err: unknown) => {
-                        console.error("[granule/PATCH] Révision non enregistrée :", err);
+                // En mode CRDT collaboratif, deux utilisateurs peuvent sauvegarder le même
+                // contenu (synchronisé via Y.js). On crée quand même une révision si :
+                //   - le contenu a réellement changé (cas normal), OU
+                //   - le dernier auteur connu est différent de l'auteur actuel
+                //     (trace de participation collaborative même à contenu identique)
+                if (newContent !== undefined) {
+                    const lastRevision = await prisma.granuleRevision.findFirst({
+                        where: { notion_id: id },
+                        orderBy: { created_at: "desc" },
+                        select: { author_id: true, content_after: true },
                     });
+
+                    const contentChanged  = newContent !== contentBefore;
+                    const authorChanged   = !lastRevision || lastRevision.author_id !== userId;
+                    const shouldRecord    = contentChanged || (authorChanged && newContent !== (lastRevision?.content_after ?? null));
+
+                    if (shouldRecord) {
+                        prisma.granuleRevision.create({
+                            data: {
+                                notion_id:      id,
+                                project_id:     project.pr_id,
+                                author_id:      userId,
+                                content_before: contentBefore,
+                                content_after:  newContent,
+                            },
+                        }).then(async () => {
+                            // Plafond à 30 révisions par notion
+                            const count = await prisma.granuleRevision.count({ where: { notion_id: id } });
+                            if (count > 30) {
+                                const oldest = await prisma.granuleRevision.findMany({
+                                    where: { notion_id: id },
+                                    orderBy: { created_at: "asc" },
+                                    take: count - 30,
+                                    select: { id: true },
+                                });
+                                await prisma.granuleRevision.deleteMany({
+                                    where: { id: { in: oldest.map((r) => r.id) } },
+                                });
+                            }
+                        }).catch((err: unknown) => {
+                            console.error("[granule/PATCH] Révision non enregistrée :", err);
+                        });
+                    }
                 }
                 break;
         }
