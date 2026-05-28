@@ -169,6 +169,7 @@ model Part {
   part_id     String  @id @default(auto()) @map("_id") @db.ObjectId
   part_title  String
   part_intro  String?
+  part_ydoc   Bytes?
   part_number Int
 
   // Clé étrangère
@@ -194,6 +195,7 @@ model Chapter {
   chapter_id     String  @id @default(auto()) @map("_id") @db.ObjectId
   chapter_title  String
   chapter_intro  String?
+  chapter_ydoc   Bytes?
   chapter_number Int
 
   //Clé étrangère
@@ -218,6 +220,7 @@ model Paragraph {
   para_id     String  @id @default(auto()) @map("_id") @db.ObjectId
   para_name   String
   para_intro  String?
+  para_ydoc   Bytes?
   para_number Int
 
   //Clé étrangère
@@ -243,6 +246,7 @@ model Notion {
   notion_name    String
   notion_number  Int
   notion_content String
+  notion_ydoc    Bytes?
 
   //Clé étrangère
   parent_para String    @db.ObjectId

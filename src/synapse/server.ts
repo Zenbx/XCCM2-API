@@ -1,5 +1,4 @@
 import { Server } from '@hocuspocus/server';
-import { TiptapTransformer } from '@hocuspocus/transformer';
 import prisma from '../lib/prisma.js';
 import 'dotenv/config';
 import * as Y from 'yjs';
@@ -13,12 +12,33 @@ import { jwtVerify } from 'jose';
  *   part-{id}      → Part intro
  *   chapter-{id}   → Chapter intro (future)
  *   paragraph-{id} → Paragraph intro (future)
+ *
+ * Storage: binary Y.Doc state (Y.encodeStateAsUpdate / Y.applyUpdate).
+ * This avoids TiptapTransformer which requires every custom extension to be
+ * registered server-side — impossible with React-based NodeViews.
  */
 const PORT = process.env.PORT || process.env.SYNAPSE_PORT || 1234;
+
+// Startup env check
+console.log('[Synapse] ENV check:', {
+    JWT_SECRET: process.env.JWT_SECRET ? `SET (${process.env.JWT_SECRET.length} chars)` : 'MISSING',
+    DATABASE_URL: process.env.DATABASE_URL ? 'SET' : 'MISSING',
+    NODE_ENV: process.env.NODE_ENV ?? 'undefined',
+    PORT: process.env.PORT ?? 'undefined (using fallback)',
+});
 
 // Debounce map to avoid excessive DB writes
 const storeTimers = new Map<string, NodeJS.Timeout>();
 const STORE_DEBOUNCE_MS = 2000; // 2 seconds
+
+/** Restore a Y.Doc from a stored binary update buffer, or return a new empty doc. */
+function ydocFromBuffer(buf: Buffer | null | undefined): Y.Doc {
+    const doc = new Y.Doc();
+    if (buf && buf.length > 0) {
+        Y.applyUpdate(doc, buf);
+    }
+    return doc;
+}
 
 const server = new Server({
     port: Number(PORT),
@@ -27,14 +47,12 @@ const server = new Server({
     async onAuthenticate(data) {
         const { token } = data;
 
-        // Si pas de token, rejeter la connexion
         if (!token) {
             console.warn('[Synapse] ❌ Connexion refusée: pas de token');
             throw new Error('Authentication requise');
         }
 
         try {
-            // Vérifier le JWT
             const JWT_SECRET = process.env.JWT_SECRET;
             if (!JWT_SECRET) {
                 console.error('[Synapse] ❌ JWT_SECRET non configuré');
@@ -45,13 +63,11 @@ const server = new Server({
             const { payload } = await jwtVerify(token, secret);
 
             const userId = payload.userId as string;
-            const email = payload.email as string;
 
             if (!userId) {
                 throw new Error('Token invalide: userId manquant');
             }
 
-            // Récupérer les infos utilisateur depuis la DB pour avoir le nom complet
             const user = await prisma.user.findUnique({
                 where: { user_id: userId },
                 select: {
@@ -91,38 +107,33 @@ const server = new Server({
                 const notionId = documentName.replace('notion-', '');
                 const notion = await prisma.notion.findUnique({
                     where: { notion_id: notionId },
+                    select: { notion_ydoc: true },
                 });
+                return ydocFromBuffer(notion?.notion_ydoc as Buffer | null);
 
-                if (notion) {
-                    return TiptapTransformer.toYdoc(notion.notion_content || '', 'prosemirror');
-                }
             } else if (documentName.startsWith('part-')) {
                 const partId = documentName.replace('part-', '');
                 const part = await prisma.part.findUnique({
                     where: { part_id: partId },
+                    select: { part_ydoc: true },
                 });
+                return ydocFromBuffer((part as any)?.part_ydoc as Buffer | null);
 
-                if (part) {
-                    return TiptapTransformer.toYdoc(part.part_intro || '', 'prosemirror');
-                }
             } else if (documentName.startsWith('chapter-')) {
                 const chapterId = documentName.replace('chapter-', '');
                 const chapter = await prisma.chapter.findUnique({
                     where: { chapter_id: chapterId },
+                    select: { chapter_ydoc: true } as any,
                 });
+                return ydocFromBuffer((chapter as any)?.chapter_ydoc as Buffer | null);
 
-                if (chapter) {
-                    return TiptapTransformer.toYdoc((chapter as any).chapter_intro || '', 'prosemirror');
-                }
             } else if (documentName.startsWith('paragraph-')) {
                 const paragraphId = documentName.replace('paragraph-', '');
                 const paragraph = await prisma.paragraph.findUnique({
                     where: { para_id: paragraphId },
+                    select: { para_ydoc: true } as any,
                 });
-
-                if (paragraph) {
-                    return TiptapTransformer.toYdoc((paragraph as any).para_intro || '', 'prosemirror');
-                }
+                return ydocFromBuffer((paragraph as any)?.para_ydoc as Buffer | null);
             }
         } catch (error) {
             console.error(`[Synapse] Error loading document ${documentName}:`, error);
@@ -134,7 +145,6 @@ const server = new Server({
     async onStoreDocument(data) {
         const { documentName, document } = data;
 
-        // Debounced store: avoid excessive DB writes during fast typing
         if (storeTimers.has(documentName)) {
             clearTimeout(storeTimers.get(documentName)!);
         }
@@ -145,31 +155,31 @@ const server = new Server({
             console.log(`[Synapse] Storing document: ${documentName}`);
 
             try {
-                const html = TiptapTransformer.fromYdoc(document, 'prosemirror');
+                const ydocBinary = Buffer.from(Y.encodeStateAsUpdate(document));
 
                 if (documentName.startsWith('notion-')) {
                     const notionId = documentName.replace('notion-', '');
                     await prisma.notion.update({
                         where: { notion_id: notionId },
-                        data: { notion_content: html },
+                        data: { notion_ydoc: ydocBinary } as any,
                     });
                 } else if (documentName.startsWith('part-')) {
                     const partId = documentName.replace('part-', '');
                     await prisma.part.update({
                         where: { part_id: partId },
-                        data: { part_intro: html },
+                        data: { part_ydoc: ydocBinary } as any,
                     });
                 } else if (documentName.startsWith('chapter-')) {
                     const chapterId = documentName.replace('chapter-', '');
                     await prisma.chapter.update({
                         where: { chapter_id: chapterId },
-                        data: { chapter_intro: html } as any,
+                        data: { chapter_ydoc: ydocBinary } as any,
                     });
                 } else if (documentName.startsWith('paragraph-')) {
                     const paragraphId = documentName.replace('paragraph-', '');
                     await prisma.paragraph.update({
                         where: { para_id: paragraphId },
-                        data: { para_intro: html } as any,
+                        data: { para_ydoc: ydocBinary } as any,
                     });
                 }
 
