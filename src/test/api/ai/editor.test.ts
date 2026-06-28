@@ -70,7 +70,7 @@ describe("POST /api/ai/editor", () => {
             steps: [
                 {
                     toolCalls: [
-                        { toolName: "create_structure", args: { parts: [{ title: "Intro" }] } },
+                        { toolName: "create_structure", input: { parts: [{ title: "Introduction" }] } },
                     ],
                 },
             ],
@@ -87,11 +87,12 @@ describe("POST /api/ai/editor", () => {
         expect(data.actions).toHaveLength(1);
         expect(data.actions[0].type).toBe("create_structure");
         expect(data.actions[0].status).toBe("pending");
+        expect(data.actions[0].data).toEqual({ parts: [{ title: "Introduction" }] });
     });
 
     it("déduplique les tool calls entre steps et toolCalls racine", async () => {
         process.env.MISTRAL_API_KEY = "test-key";
-        const tc = { toolName: "write_content", args: { content: "text", target: "current" } };
+        const tc = { toolName: "write_content", input: { content: "text", target: "current" } };
         mockGenerateText.mockResolvedValue({
             text: "OK",
             toolCalls: [tc],

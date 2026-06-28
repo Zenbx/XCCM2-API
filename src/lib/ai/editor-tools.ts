@@ -116,16 +116,19 @@ export function getEditorTools() {
 
 export function extractActionsFromResult(result: {
   text?: string;
-  toolCalls?: Array<{ toolName: string; args: unknown }>;
-  steps?: Array<{ toolCalls?: Array<{ toolName: string; args: unknown }> }>;
+  toolCalls?: Array<{ toolName: string; input?: unknown; args?: unknown }>;
+  steps?: Array<{ toolCalls?: Array<{ toolName: string; input?: unknown; args?: unknown }> }>;
 }) {
   const actions: Array<{ type: string; data: unknown; status: string }> = [];
+
+  const toolCallData = (tc: { input?: unknown; args?: unknown }) =>
+    tc.input !== undefined ? tc.input : tc.args;
 
   if (result.steps) {
     for (const step of result.steps) {
       if (step.toolCalls) {
         for (const tc of step.toolCalls) {
-          actions.push({ type: tc.toolName, data: tc.args, status: 'pending' });
+          actions.push({ type: tc.toolName, data: toolCallData(tc), status: 'pending' });
         }
       }
     }
@@ -133,11 +136,12 @@ export function extractActionsFromResult(result: {
 
   if (result.toolCalls?.length) {
     for (const tc of result.toolCalls) {
+      const data = toolCallData(tc);
       const exists = actions.some(
-        (a) => a.type === tc.toolName && JSON.stringify(a.data) === JSON.stringify(tc.args)
+        (a) => a.type === tc.toolName && JSON.stringify(a.data) === JSON.stringify(data)
       );
       if (!exists) {
-        actions.push({ type: tc.toolName, data: tc.args, status: 'pending' });
+        actions.push({ type: tc.toolName, data, status: 'pending' });
       }
     }
   }

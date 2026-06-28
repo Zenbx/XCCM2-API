@@ -48,7 +48,7 @@ describe('POST /api/ai/agent', () => {
       toolCalls: [],
       steps: [{
         toolCalls: [
-          { toolName: 'create_structure', args: { parts: [{ title: 'Intro' }] } },
+          { toolName: 'create_structure', input: { parts: [{ title: 'Introduction' }] } },
         ],
       }],
     });
