@@ -5,7 +5,6 @@
  *     tags:
  *       - AI
  *     summary: Assistant IA éditeur (Mistral)
- *     description: Génère des actions structurées (create_structure, write_content, create_exercise) via Mistral avec tool calling.
  */
 import { generateText } from 'ai';
 import { mistral } from '@ai-sdk/mistral';
@@ -14,6 +13,7 @@ import {
   buildContextBlock,
   extractActionsFromResult,
   getEditorTools,
+  stepCountIs,
 } from '@/lib/ai/editor-tools';
 
 export const maxDuration = 60;
@@ -36,7 +36,8 @@ export async function POST(req: Request) {
       system: EDITOR_CHAT_PROMPT + buildContextBlock(context),
       messages: coreMessages,
       tools: getEditorTools(),
-      maxSteps: 3,
+      stopWhen: stepCountIs(3),
+      maxOutputTokens: 4096,
     });
 
     const actions = extractActionsFromResult(result);

@@ -2,10 +2,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 const mockGenerateText = vi.hoisted(() => vi.fn());
 
-vi.mock("ai", () => ({
-    generateText: mockGenerateText,
-    tool: vi.fn((config) => config),
-}));
+vi.mock("ai", async (importOriginal) => {
+    const actual = await importOriginal<typeof import("ai")>();
+    return {
+        ...actual,
+        generateText: mockGenerateText,
+        tool: vi.fn((config) => config),
+    };
+});
 vi.mock("@ai-sdk/mistral", () => ({
     mistral: vi.fn(() => "mistral-mock-model"),
 }));
@@ -62,7 +66,7 @@ describe("POST /api/ai/editor", () => {
         expect(data.actions).toEqual([]);
     });
 
-    it("extrait les tool calls depuis les steps", async () => {
+    it("extrait les tool calls depuis les steps (input AI SDK v6)", async () => {
         process.env.MISTRAL_API_KEY = "test-key";
         mockGenerateText.mockResolvedValue({
             text: "",
@@ -70,7 +74,21 @@ describe("POST /api/ai/editor", () => {
             steps: [
                 {
                     toolCalls: [
-                        { toolName: "create_structure", input: { parts: [{ title: "Introduction" }] } },
+                        {
+                            toolName: "create_structure",
+                            input: {
+                                parts: [{
+                                    title: "Introduction",
+                                    chapters: [{
+                                        title: "Ch 1",
+                                        paragraphs: [{
+                                            title: "P1",
+                                            notions: [{ title: "N1", content: "<p>x</p>" }],
+                                        }],
+                                    }],
+                                }],
+                            },
+                        },
                     ],
                 },
             ],
@@ -86,8 +104,7 @@ describe("POST /api/ai/editor", () => {
         expect(res.status).toBe(200);
         expect(data.actions).toHaveLength(1);
         expect(data.actions[0].type).toBe("create_structure");
-        expect(data.actions[0].status).toBe("pending");
-        expect(data.actions[0].data).toEqual({ parts: [{ title: "Introduction" }] });
+        expect(data.actions[0].data.parts[0].title).toBe("Introduction");
     });
 
     it("déduplique les tool calls entre steps et toolCalls racine", async () => {

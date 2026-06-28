@@ -2,10 +2,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const mockGenerateText = vi.hoisted(() => vi.fn());
 
-vi.mock('ai', () => ({
-  generateText: mockGenerateText,
-  tool: vi.fn((config) => config),
-}));
+vi.mock('ai', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('ai')>();
+  return {
+    ...actual,
+    generateText: mockGenerateText,
+    tool: vi.fn((config) => config),
+  };
+});
 vi.mock('@ai-sdk/mistral', () => ({
   mistral: vi.fn(() => 'mistral-mock-model'),
 }));
@@ -44,11 +48,25 @@ describe('POST /api/ai/agent', () => {
   it('retourne plan, actions et agentMode', async () => {
     process.env.MISTRAL_API_KEY = 'test-key';
     mockGenerateText.mockResolvedValue({
-      text: 'Plan:\n1. Partie intro\n2. Partie avancée',
+      text: 'Plan:\n1. Partie intro',
       toolCalls: [],
       steps: [{
         toolCalls: [
-          { toolName: 'create_structure', input: { parts: [{ title: 'Introduction' }] } },
+          {
+            toolName: 'create_structure',
+            input: {
+              parts: [{
+                title: 'Introduction',
+                chapters: [{
+                  title: 'Chapitre 1',
+                  paragraphs: [{
+                    title: 'Para 1',
+                    notions: [{ title: 'Notion 1', content: '<p>Contenu</p>' }],
+                  }],
+                }],
+              }],
+            },
+          },
         ],
       }],
     });
@@ -64,8 +82,46 @@ describe('POST /api/ai/agent', () => {
     expect(data.plan).toBeTruthy();
     expect(data.actions).toHaveLength(1);
     expect(data.actions[0].type).toBe('create_structure');
-    expect(mockGenerateText).toHaveBeenCalledWith(
-      expect.objectContaining({ maxSteps: 8 })
-    );
+    expect(data.actions[0].data.parts).toHaveLength(1);
+  });
+
+  it('retry si première réponse sans structure valide', async () => {
+    process.env.MISTRAL_API_KEY = 'test-key';
+    mockGenerateText
+      .mockResolvedValueOnce({
+        text: 'Plan seulement sans outil',
+        toolCalls: [{ toolName: 'create_structure', input: { parts: [] } }],
+        steps: [],
+      })
+      .mockResolvedValueOnce({
+        text: '',
+        toolCalls: [],
+        steps: [{
+          toolCalls: [{
+            toolName: 'create_structure',
+            input: {
+              parts: [{
+                title: 'Partie A',
+                chapters: [{
+                  title: 'Ch 1',
+                  paragraphs: [{
+                    title: 'P1',
+                    notions: [{ title: 'N1', content: '<p>OK</p>' }],
+                  }],
+                }],
+              }],
+            },
+          }],
+        }],
+      });
+
+    const res = await POST(makeRequest({
+      messages: [{ role: 'user', content: 'Cours quantique' }],
+      context: {},
+    }));
+    const data = await res.json();
+
+    expect(mockGenerateText).toHaveBeenCalledTimes(2);
+    expect(data.actions[0].data.parts[0].title).toBe('Partie A');
   });
 });
