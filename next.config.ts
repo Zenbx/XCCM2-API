@@ -9,7 +9,14 @@ const nextConfig: NextConfig = {
     reactStrictMode: true,
     compress: true,
 
-    serverExternalPackages: ['pdfkit'],
+    serverExternalPackages: [
+        'pdfkit',
+        '@hocuspocus/transformer',
+        '@hocuspocus/server',
+        'yjs',
+        'y-prosemirror',
+        'y-protocols',
+    ],
 
     images: {
         domains: ["localhost"],

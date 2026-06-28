@@ -240,6 +240,7 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
                     }
                 }
                 break;
+            }
         }
 
         // Broadcast & Cache
