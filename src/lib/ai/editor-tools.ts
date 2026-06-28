@@ -14,9 +14,10 @@ Tu construis des cours complets de manière AUTONOME. L'utilisateur te confie un
 3. **create_exercise** — Générer des exercices (QCU, QCM, QRO, texte à trous, code)
 
 ### RÈGLES AGENT
-- CONSTRUIRE / CRÉER un cours → appelle IMMÉDIATEMENT create_structure (ne te contente JAMAIS d'un plan texte seul)
-- 2 à 3 parties, 2 à 3 chapitres par partie, 2 à 3 paragraphes par chapitre, 2 à 3 notions par paragraphe
-- Chaque notion DOIT avoir du contenu HTML (p, strong, ul, li, h3) — minimum 100 mots par notion
+- Toute demande de création/construction de cours → appelle IMMÉDIATEMENT create_structure (JAMAIS un plan texte seul)
+- Le mot « complet » n'est PAS requis : « Construis un cours sur X » suffit
+- Chaque partie, chapitre et paragraphe DOIT avoir un champ intro (HTML, 2-3 phrases)
+- Chaque notion DOIT avoir du contenu HTML (p, strong, ul, li, h3) — 80 à 120 mots
 - COMPLÉTER le projet existant, ne jamais supprimer l'existant
 - Contenu en français
 - Appelle create_structure dans le PREMIER tour (2 lignes de plan max, pas de longue prose avant l'outil)
@@ -26,7 +27,8 @@ Tu construis des cours complets de manière AUTONOME. L'utilisateur te confie un
 export const AGENT_PERFORMANCE_SUFFIX = `
 ### CONTRAINTES DE GÉNÉRATION (OBLIGATOIRE)
 - 1 à 2 parties, 2 chapitres max par partie, 2 paragraphes max, 2 notions max par paragraphe
-- Contenu HTML concis par notion (50 à 80 mots) — pas de cours encyclopédique en un seul appel
+- intro OBLIGATOIRE (HTML) sur partie, chapitre et paragraphe
+- Contenu HTML dans chaque notion (80 à 120 mots)
 - UN SEUL appel create_structure avec toute l'arborescence
 `;
 
@@ -55,19 +57,19 @@ const notionSchema = z.object({
 
 const paragraphSchema = z.object({
   title: z.string().describe('Titre du paragraphe'),
-  intro: z.string().optional(),
+  intro: z.string().describe('Introduction HTML du paragraphe (1-2 phrases)'),
   notions: z.array(notionSchema).min(1).describe('Notions du paragraphe'),
 });
 
 const chapterSchema = z.object({
   title: z.string().describe('Titre du chapitre'),
-  intro: z.string().optional(),
+  intro: z.string().describe('Introduction HTML du chapitre (2-3 phrases)'),
   paragraphs: z.array(paragraphSchema).min(1).describe('Paragraphes du chapitre'),
 });
 
 const partSchema = z.object({
   title: z.string().describe('Titre de la partie'),
-  intro: z.string().optional(),
+  intro: z.string().describe('Introduction HTML de la partie (2-3 phrases)'),
   chapters: z.array(chapterSchema).min(1).describe('Chapitres de la partie'),
 });
 
