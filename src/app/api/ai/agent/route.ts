@@ -1,22 +1,16 @@
 /**
- * @openapi
- * /api/ai/editor:
- *   post:
- *     tags:
- *       - AI
- *     summary: Assistant IA éditeur (Mistral)
- *     description: Génère des actions structurées (create_structure, write_content, create_exercise) via Mistral avec tool calling.
+ * Agent IA — construction autonome de cours (mode Cursor-like)
  */
 import { generateText } from 'ai';
 import { mistral } from '@ai-sdk/mistral';
 import {
-  EDITOR_CHAT_PROMPT,
+  AGENT_SYSTEM_PROMPT,
   buildContextBlock,
   extractActionsFromResult,
   getEditorTools,
 } from '@/lib/ai/editor-tools';
 
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 export async function POST(req: Request) {
   try {
@@ -33,21 +27,30 @@ export async function POST(req: Request) {
 
     const result = await generateText({
       model: mistral('mistral-medium-latest'),
-      system: EDITOR_CHAT_PROMPT + buildContextBlock(context),
+      system: AGENT_SYSTEM_PROMPT + buildContextBlock(context),
       messages: coreMessages,
       tools: getEditorTools(),
-      maxSteps: 3,
+      maxSteps: 8,
     });
 
     const actions = extractActionsFromResult(result);
-    const text = result.text || (actions.length > 0
-      ? "J'ai préparé les actions suivantes. Cliquez sur les boutons pour les exécuter :"
-      : '');
+    const text = result.text || '';
+    const planMatch = text.match(/^([\s\S]*?)(?=\n\n|$)/);
+    const plan = planMatch?.[1]?.trim() || text.slice(0, 300);
 
-    return Response.json({ text, actions });
+    const defaultText = actions.length > 0
+      ? "J'ai préparé le plan et les actions. L'agent va les exécuter automatiquement."
+      : text;
+
+    return Response.json({
+      text: text || defaultText,
+      plan,
+      actions,
+      agentMode: true,
+    });
   } catch (error: unknown) {
-    console.error('Editor AI Error:', error);
-    const message = error instanceof Error ? error.message : 'Erreur IA Éditeur';
+    console.error('Agent AI Error:', error);
+    const message = error instanceof Error ? error.message : 'Erreur Agent IA';
     return Response.json({ error: message }, { status: 500 });
   }
 }

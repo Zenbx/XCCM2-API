@@ -1,6 +1,6 @@
 import { streamText } from 'ai';
 import { mistral } from '@ai-sdk/mistral';
-import { SOCRATIC_SYSTEM_PROMPT } from '@/lib/ai/prompts';
+import { SOCRATIC_SYSTEM_PROMPT, EDITOR_SECURITY_SUFFIX, sanitizeContextContent } from '@/lib/ai/prompts';
 
 export const maxDuration = 60;
 
@@ -59,14 +59,12 @@ export async function POST(req: Request) {
       content: msg.content || (msg.parts ? msg.parts.map((p: any) => p.text).join('\n') : ''),
     }));
 
-    const systemPrompt = `
-${SOCRATIC_SYSTEM_PROMPT(role)}
-
-### CONTEXTE PÉDAGOGIQUE ACTUEL :
-${context?.notionContent || "Aucun contenu spécifique fourni."}
-${context?.paraName ? `Paragraphe : ${context.paraName}` : ""}
-${context?.notionName ? `Notion : ${context.notionName}` : ""}
-`;
+    const systemPrompt =
+        SOCRATIC_SYSTEM_PROMPT(role) +
+        `Paragraphe : ${sanitizeContextContent(context?.paraName || '', 200)}\n` +
+        `Notion : ${sanitizeContextContent(context?.notionName || '', 200)}\n\n` +
+        sanitizeContextContent(context?.notionContent || 'Aucun contenu spécifique fourni.') +
+        EDITOR_SECURITY_SUFFIX;
 
     if (!process.env.MISTRAL_API_KEY) {
       return Response.json(

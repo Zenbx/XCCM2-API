@@ -49,6 +49,8 @@
 
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
+
+export const maxDuration = 60;
 import { getProjectForExport, publishDocument } from "@/lib/document-service";
 import { cacheService } from "@/services/cache-service";
 import {
