@@ -36,6 +36,20 @@ const bulkStructureSchema = z.object({
   })).min(1),
 });
 
+function hasText(value: string | null | undefined): boolean {
+  if (!value) return false;
+  const stripped = value.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  return stripped.length >= 10;
+}
+
+function isPlaceholderContent(value: string | null | undefined): boolean {
+  if (!value) return true;
+  const stripped = value.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+  return stripped.length < 10
+    || stripped.includes('contenu à compléter')
+    || stripped.includes('contenu a completer');
+}
+
 async function resolveProject(pr_name: string, userId: string) {
   const projects = await prisma.project.findMany({
     where: {
@@ -76,6 +90,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
       chapters: 0,
       paragraphs: 0,
       notions: 0,
+      updated: 0,
       skipped: 0,
     };
 
@@ -103,6 +118,12 @@ export async function POST(request: NextRequest, context: RouteParams) {
           },
         });
         stats.parts += 1;
+      } else if (partData.intro && !hasText(part.part_intro)) {
+        await prisma.part.update({
+          where: { part_id: part.part_id },
+          data: { part_intro: partData.intro },
+        });
+        stats.updated += 1;
       } else {
         stats.skipped += 1;
       }
@@ -131,6 +152,12 @@ export async function POST(request: NextRequest, context: RouteParams) {
             },
           });
           stats.chapters += 1;
+        } else if (chapterData.intro && !hasText(chapter.chapter_intro)) {
+          await prisma.chapter.update({
+            where: { chapter_id: chapter.chapter_id },
+            data: { chapter_intro: chapterData.intro },
+          });
+          stats.updated += 1;
         } else {
           stats.skipped += 1;
         }
@@ -157,6 +184,12 @@ export async function POST(request: NextRequest, context: RouteParams) {
               },
             });
             stats.paragraphs += 1;
+          } else if (paraData.intro && !hasText(paragraph.para_intro)) {
+            await prisma.paragraph.update({
+              where: { para_id: paragraph.para_id },
+              data: { para_intro: paraData.intro },
+            });
+            stats.updated += 1;
           } else {
             stats.skipped += 1;
           }
@@ -174,7 +207,15 @@ export async function POST(request: NextRequest, context: RouteParams) {
             });
 
             if (existingNotion) {
-              stats.skipped += 1;
+              if (notionData.content && isPlaceholderContent(existingNotion.notion_content)) {
+                await prisma.notion.update({
+                  where: { notion_id: existingNotion.notion_id },
+                  data: { notion_content: notionData.content },
+                });
+                stats.updated += 1;
+              } else {
+                stats.skipped += 1;
+              }
               continue;
             }
 

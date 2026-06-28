@@ -9,6 +9,7 @@ import {
   buildContextBlock,
   extractActionsFromResult,
   getEditorTools,
+  hasRichStructureContent,
   hasValidStructureActions,
   stepCountIs,
 } from '@/lib/ai/editor-tools';
@@ -65,9 +66,12 @@ export async function POST(req: Request) {
     });
     let actions = extractActionsFromResult(result);
 
-    // Retry uniquement s'il reste assez de budget Vercel
-    if (!hasValidStructureActions(actions) && remainingBudgetMs(startedAt) >= RETRY_MIN_REMAINING_MS) {
-      console.warn('[Agent] Structure vide — retry avec toolChoice forcé create_structure');
+    // Retry si structure vide ou sans intros/contenus
+    const needsRetry = !hasValidStructureActions(actions)
+      || !hasRichStructureContent(actions);
+
+    if (needsRetry && remainingBudgetMs(startedAt) >= RETRY_MIN_REMAINING_MS) {
+      console.warn('[Agent] Structure incomplète — retry avec contenus obligatoires');
       const lastUser = coreMessages.filter(m => m.role === 'user').pop()?.content || '';
 
       result = await runAgentGeneration(
@@ -76,9 +80,10 @@ export async function POST(req: Request) {
           ...(result.text ? [{ role: 'assistant' as const, content: result.text }] : []),
           {
             role: 'user' as const,
-            content: `Exécute create_structure MAINTENANT pour : "${lastUser}". `
-              + 'Génère 1 à 2 parties compactes avec chapitres, paragraphes et notions (HTML concis). '
-              + 'Appelle l\'outil create_structure, ne réponds pas uniquement en texte.',
+            content: `create_structure OBLIGATOIRE pour : "${lastUser}". `
+              + 'Chaque partie, chapitre ET paragraphe DOIT avoir un champ intro (HTML, 2-3 phrases). '
+              + 'Chaque notion DOIT avoir un champ content (HTML, minimum 80 mots). '
+              + 'Ne laisse AUCUN champ intro ou content vide.',
           },
         ],
         context || {},

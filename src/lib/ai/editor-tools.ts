@@ -52,24 +52,24 @@ Tu aides les auteurs à construire leurs cours en proposant des ACTIONS concrèt
 
 const notionSchema = z.object({
   title: z.string().describe('Titre de la notion'),
-  content: z.string().describe('Contenu pédagogique HTML (p, strong, ul, li, h3)'),
+  content: z.string().min(50).describe('Contenu pédagogique HTML obligatoire (p, strong, ul, li, h3) — minimum 80 mots'),
 });
 
 const paragraphSchema = z.object({
   title: z.string().describe('Titre du paragraphe'),
-  intro: z.string().describe('Introduction HTML du paragraphe (1-2 phrases)'),
+  intro: z.string().min(20).describe('Introduction HTML obligatoire du paragraphe (1-2 phrases)'),
   notions: z.array(notionSchema).min(1).describe('Notions du paragraphe'),
 });
 
 const chapterSchema = z.object({
   title: z.string().describe('Titre du chapitre'),
-  intro: z.string().describe('Introduction HTML du chapitre (2-3 phrases)'),
+  intro: z.string().min(20).describe('Introduction HTML obligatoire du chapitre (2-3 phrases)'),
   paragraphs: z.array(paragraphSchema).min(1).describe('Paragraphes du chapitre'),
 });
 
 const partSchema = z.object({
   title: z.string().describe('Titre de la partie'),
-  intro: z.string().describe('Introduction HTML de la partie (2-3 phrases)'),
+  intro: z.string().min(20).describe('Introduction HTML obligatoire de la partie (2-3 phrases)'),
   chapters: z.array(chapterSchema).min(1).describe('Chapitres de la partie'),
 });
 
@@ -191,4 +191,44 @@ export function hasValidStructureActions(
     const data = a.data as { parts?: unknown[] } | null;
     return Array.isArray(data?.parts) && data!.parts.length > 0;
   });
+}
+
+/** Vérifie que la structure contient intros et contenus réels (pas des squelettes) */
+export function hasRichStructureContent(
+  actions: Array<{ type: string; data: unknown }>
+): boolean {
+  const structure = actions.find((a) => a.type === 'create_structure');
+  if (!structure) return false;
+
+  const data = structure.data as { parts?: Array<Record<string, unknown>> } | null;
+  const parts = data?.parts;
+  if (!Array.isArray(parts) || parts.length === 0) return false;
+
+  const strip = (s: string) => s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const wordCount = (s: string) => (strip(s) ? strip(s).split(/\s+/).length : 0);
+
+  for (const part of parts) {
+    const partIntro = String(part.intro || part.part_intro || '');
+    if (strip(partIntro).length < 15) return false;
+
+    const chapters = (part.chapters as Array<Record<string, unknown>>) || [];
+    for (const ch of chapters) {
+      const chIntro = String(ch.intro || ch.chapter_intro || '');
+      if (strip(chIntro).length < 15) return false;
+
+      const paragraphs = (ch.paragraphs as Array<Record<string, unknown>>) || [];
+      for (const para of paragraphs) {
+        const paraIntro = String(para.intro || para.para_intro || '');
+        if (strip(paraIntro).length < 10) return false;
+
+        const notions = (para.notions as Array<Record<string, unknown>>) || [];
+        for (const n of notions) {
+          const content = String(n.content || n.notion_content || n.body || '');
+          if (wordCount(content) < 30) return false;
+        }
+      }
+    }
+  }
+
+  return true;
 }
