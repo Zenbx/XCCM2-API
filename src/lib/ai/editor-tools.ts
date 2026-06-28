@@ -19,7 +19,15 @@ Tu construis des cours complets de manière AUTONOME. L'utilisateur te confie un
 - Chaque notion DOIT avoir du contenu HTML (p, strong, ul, li, h3) — minimum 100 mots par notion
 - COMPLÉTER le projet existant, ne jamais supprimer l'existant
 - Contenu en français
-- Tu peux résumer le plan en 2-3 lignes PUIS appelle create_structure dans le même tour
+- Appelle create_structure dans le PREMIER tour (2 lignes de plan max, pas de longue prose avant l'outil)
+`;
+
+/** Contraintes supplémentaires pour l'endpoint agent (limites Vercel / latence Mistral) */
+export const AGENT_PERFORMANCE_SUFFIX = `
+### CONTRAINTES DE GÉNÉRATION (OBLIGATOIRE)
+- 1 à 2 parties, 2 chapitres max par partie, 2 paragraphes max, 2 notions max par paragraphe
+- Contenu HTML concis par notion (50 à 80 mots) — pas de cours encyclopédique en un seul appel
+- UN SEUL appel create_structure avec toute l'arborescence
 `;
 
 export const EDITOR_CHAT_PROMPT = `Tu es l'Assistant IA Éditeur d'XCCM (eXtended Content Composition Module).
