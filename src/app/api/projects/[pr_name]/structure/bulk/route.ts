@@ -14,6 +14,7 @@ import {
   validationErrorResponse,
   serverErrorResponse,
 } from '@/utils/api-response';
+import { htmlToYdocBuffer, isEmptyEditorHtml, isYdocBufferEmpty } from '@/lib/ydoc-seed';
 
 type RouteParams = { params: Promise<{ pr_name: string }> };
 
@@ -43,11 +44,7 @@ function hasText(value: string | null | undefined): boolean {
 }
 
 function isPlaceholderContent(value: string | null | undefined): boolean {
-  if (!value) return true;
-  const stripped = value.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
-  return stripped.length < 10
-    || stripped.includes('contenu à compléter')
-    || stripped.includes('contenu a completer');
+  return isEmptyEditorHtml(value);
 }
 
 async function resolveProject(pr_name: string, userId: string) {
@@ -108,10 +105,12 @@ export async function POST(request: NextRequest, context: RouteParams) {
 
       if (!part) {
         partCount += 1;
+        const partYdoc = htmlToYdocBuffer(partData.intro);
         part = await prisma.part.create({
           data: {
             part_title: partData.title,
             part_intro: partData.intro || null,
+            ...(partYdoc ? { part_ydoc: partYdoc } : {}),
             part_number: partCount,
             parent_pr: project.pr_id,
             owner_id: userId,
@@ -119,9 +118,13 @@ export async function POST(request: NextRequest, context: RouteParams) {
         });
         stats.parts += 1;
       } else if (partData.intro && !hasText(part.part_intro)) {
+        const partYdoc = htmlToYdocBuffer(partData.intro);
         await prisma.part.update({
           where: { part_id: part.part_id },
-          data: { part_intro: partData.intro },
+          data: {
+            part_intro: partData.intro,
+            ...(partYdoc && isYdocBufferEmpty(part.part_ydoc as Buffer | null) ? { part_ydoc: partYdoc } : {}),
+          },
         });
         stats.updated += 1;
       } else {
@@ -142,10 +145,12 @@ export async function POST(request: NextRequest, context: RouteParams) {
 
         if (!chapter) {
           chapterCount += 1;
+          const chapterYdoc = htmlToYdocBuffer(chapterData.intro);
           chapter = await prisma.chapter.create({
             data: {
               chapter_title: chapterData.title,
               chapter_intro: chapterData.intro || null,
+              ...(chapterYdoc ? { chapter_ydoc: chapterYdoc } : {}),
               chapter_number: chapterCount,
               parent_part: part.part_id,
               owner_id: userId,
@@ -153,9 +158,15 @@ export async function POST(request: NextRequest, context: RouteParams) {
           });
           stats.chapters += 1;
         } else if (chapterData.intro && !hasText(chapter.chapter_intro)) {
+          const chapterYdoc = htmlToYdocBuffer(chapterData.intro);
           await prisma.chapter.update({
             where: { chapter_id: chapter.chapter_id },
-            data: { chapter_intro: chapterData.intro },
+            data: {
+              chapter_intro: chapterData.intro,
+              ...(chapterYdoc && isYdocBufferEmpty(chapter.chapter_ydoc as Buffer | null)
+                ? { chapter_ydoc: chapterYdoc }
+                : {}),
+            },
           });
           stats.updated += 1;
         } else {
@@ -174,10 +185,12 @@ export async function POST(request: NextRequest, context: RouteParams) {
 
           if (!paragraph) {
             paraCount += 1;
+            const paraYdoc = htmlToYdocBuffer(paraData.intro);
             paragraph = await prisma.paragraph.create({
               data: {
                 para_name: paraData.title,
                 para_intro: paraData.intro || null,
+                ...(paraYdoc ? { para_ydoc: paraYdoc } : {}),
                 para_number: paraCount,
                 parent_chapter: chapter.chapter_id,
                 owner_id: userId,
@@ -185,9 +198,15 @@ export async function POST(request: NextRequest, context: RouteParams) {
             });
             stats.paragraphs += 1;
           } else if (paraData.intro && !hasText(paragraph.para_intro)) {
+            const paraYdoc = htmlToYdocBuffer(paraData.intro);
             await prisma.paragraph.update({
               where: { para_id: paragraph.para_id },
-              data: { para_intro: paraData.intro },
+              data: {
+                para_intro: paraData.intro,
+                ...(paraYdoc && isYdocBufferEmpty(paragraph.para_ydoc as Buffer | null)
+                  ? { para_ydoc: paraYdoc }
+                  : {}),
+              },
             });
             stats.updated += 1;
           } else {
@@ -208,9 +227,15 @@ export async function POST(request: NextRequest, context: RouteParams) {
 
             if (existingNotion) {
               if (notionData.content && isPlaceholderContent(existingNotion.notion_content)) {
+                const notionYdoc = htmlToYdocBuffer(notionData.content);
                 await prisma.notion.update({
                   where: { notion_id: existingNotion.notion_id },
-                  data: { notion_content: notionData.content },
+                  data: {
+                    notion_content: notionData.content,
+                    ...(notionYdoc && isYdocBufferEmpty(existingNotion.notion_ydoc as Buffer | null)
+                      ? { notion_ydoc: notionYdoc }
+                      : {}),
+                  },
                 });
                 stats.updated += 1;
               } else {
@@ -220,10 +245,12 @@ export async function POST(request: NextRequest, context: RouteParams) {
             }
 
             notionCount += 1;
+            const notionYdoc = htmlToYdocBuffer(notionData.content);
             await prisma.notion.create({
               data: {
                 notion_name: notionData.title,
                 notion_content: notionData.content,
+                ...(notionYdoc ? { notion_ydoc: notionYdoc } : {}),
                 notion_number: notionCount,
                 parent_para: paragraph.para_id,
                 owner_id: userId,

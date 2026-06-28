@@ -3,6 +3,7 @@ import prisma from '../lib/prisma.js';
 import 'dotenv/config';
 import * as Y from 'yjs';
 import { jwtVerify } from 'jose';
+import { loadYdocFromGranule } from '../lib/ydoc-seed.js';
 
 /**
  * Synapse Server - Hocuspocus implementation for real-time collaboration
@@ -31,13 +32,9 @@ console.log('[Synapse] ENV check:', {
 const storeTimers = new Map<string, NodeJS.Timeout>();
 const STORE_DEBOUNCE_MS = 2000; // 2 seconds
 
-/** Restore a Y.Doc from a stored binary update buffer, or return a new empty doc. */
-function ydocFromBuffer(buf: Buffer | null | undefined): Y.Doc {
-    const doc = new Y.Doc();
-    if (buf && buf.length > 0) {
-        Y.applyUpdate(doc, buf);
-    }
-    return doc;
+/** Restore a Y.Doc from buffer + optional HTML fallback (see ydoc-seed). */
+function ydocFromBuffer(buf: Buffer | null | undefined, html?: string | null): Y.Doc {
+    return loadYdocFromGranule(buf, html ?? null);
 }
 
 const server = new Server({
@@ -107,33 +104,45 @@ const server = new Server({
                 const notionId = documentName.replace('notion-', '');
                 const notion = await prisma.notion.findUnique({
                     where: { notion_id: notionId },
-                    select: { notion_ydoc: true },
+                    select: { notion_ydoc: true, notion_content: true },
                 });
-                return ydocFromBuffer(notion?.notion_ydoc as Buffer | null);
+                return ydocFromBuffer(
+                    notion?.notion_ydoc as Buffer | null,
+                    notion?.notion_content
+                );
 
             } else if (documentName.startsWith('part-')) {
                 const partId = documentName.replace('part-', '');
                 const part = await prisma.part.findUnique({
                     where: { part_id: partId },
-                    select: { part_ydoc: true },
+                    select: { part_ydoc: true, part_intro: true },
                 });
-                return ydocFromBuffer((part as any)?.part_ydoc as Buffer | null);
+                return ydocFromBuffer(
+                    (part as { part_ydoc?: Buffer | null })?.part_ydoc as Buffer | null,
+                    part?.part_intro
+                );
 
             } else if (documentName.startsWith('chapter-')) {
                 const chapterId = documentName.replace('chapter-', '');
                 const chapter = await prisma.chapter.findUnique({
                     where: { chapter_id: chapterId },
-                    select: { chapter_ydoc: true } as any,
+                    select: { chapter_ydoc: true, chapter_intro: true } as { chapter_ydoc: true; chapter_intro: true },
                 });
-                return ydocFromBuffer((chapter as any)?.chapter_ydoc as Buffer | null);
+                return ydocFromBuffer(
+                    (chapter as { chapter_ydoc?: Buffer | null })?.chapter_ydoc as Buffer | null,
+                    (chapter as { chapter_intro?: string | null })?.chapter_intro
+                );
 
             } else if (documentName.startsWith('paragraph-')) {
                 const paragraphId = documentName.replace('paragraph-', '');
                 const paragraph = await prisma.paragraph.findUnique({
                     where: { para_id: paragraphId },
-                    select: { para_ydoc: true } as any,
+                    select: { para_ydoc: true, para_intro: true } as { para_ydoc: true; para_intro: true },
                 });
-                return ydocFromBuffer((paragraph as any)?.para_ydoc as Buffer | null);
+                return ydocFromBuffer(
+                    (paragraph as { para_ydoc?: Buffer | null })?.para_ydoc as Buffer | null,
+                    (paragraph as { para_intro?: string | null })?.para_intro
+                );
             }
         } catch (error) {
             console.error(`[Synapse] Error loading document ${documentName}:`, error);

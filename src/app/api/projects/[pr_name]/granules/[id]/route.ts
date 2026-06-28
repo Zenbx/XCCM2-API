@@ -21,6 +21,12 @@ import {
     renumberParagraphsAfterDelete,
     renumberNotionsAfterDelete,
 } from "@/utils/granule-helpers";
+import {
+    htmlToYdocBuffer,
+    isEmptyEditorHtml,
+    isYdocBufferEmpty,
+    hasSubstantialHtml,
+} from "@/lib/ydoc-seed";
 
 type RouteParams = {
     params: Promise<{ pr_name: string; id: string }>;
@@ -99,51 +105,94 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
 
         let updated;
         switch (granule.type) {
-            case 'part':
+            case 'part': {
+                const introBefore = granule.data.part_intro;
+                const newIntro = body.part_intro;
+                const partData: Record<string, unknown> = {
+                    ...(body.part_title && { part_title: body.part_title }),
+                    ...(newIntro !== undefined && { part_intro: newIntro }),
+                    ...(body.part_number && { part_number: body.part_number }),
+                };
+                if (newIntro !== undefined && hasSubstantialHtml(newIntro)) {
+                    const ydoc = granule.data.part_ydoc as Buffer | null;
+                    if (isYdocBufferEmpty(ydoc) || !hasSubstantialHtml(introBefore)) {
+                        const buf = htmlToYdocBuffer(newIntro);
+                        if (buf) partData.part_ydoc = buf;
+                    }
+                }
                 updated = await prisma.part.update({
                     where: { part_id: id },
-                    data: {
-                        ...(body.part_title && { part_title: body.part_title }),
-                        ...(body.part_intro !== undefined && { part_intro: body.part_intro }),
-                        ...(body.part_number && { part_number: body.part_number }),
-                    },
+                    data: partData,
                 });
                 break;
+            }
 
-            case 'chapter':
+            case 'chapter': {
+                const introBefore = granule.data.chapter_intro;
+                const newIntro = body.chapter_intro;
+                const chapterData: Record<string, unknown> = {
+                    ...(body.chapter_title && { chapter_title: body.chapter_title }),
+                    ...(newIntro !== undefined && { chapter_intro: newIntro }),
+                    ...(body.chapter_number && { chapter_number: body.chapter_number }),
+                };
+                if (newIntro !== undefined && hasSubstantialHtml(newIntro)) {
+                    const ydoc = (granule.data as { chapter_ydoc?: Buffer | null }).chapter_ydoc;
+                    if (isYdocBufferEmpty(ydoc) || !hasSubstantialHtml(introBefore)) {
+                        const buf = htmlToYdocBuffer(newIntro);
+                        if (buf) chapterData.chapter_ydoc = buf;
+                    }
+                }
                 updated = await prisma.chapter.update({
                     where: { chapter_id: id },
-                    data: {
-                        ...(body.chapter_title && { chapter_title: body.chapter_title }),
-                        ...(body.chapter_intro !== undefined && { chapter_intro: body.chapter_intro }),
-                        ...(body.chapter_number && { chapter_number: body.chapter_number }),
-                    },
+                    data: chapterData,
                 });
                 break;
+            }
 
-            case 'paragraph':
+            case 'paragraph': {
+                const introBefore = granule.data.para_intro;
+                const newIntro = body.para_intro;
+                const paraData: Record<string, unknown> = {
+                    ...(body.para_name && { para_name: body.para_name }),
+                    ...(newIntro !== undefined && { para_intro: newIntro }),
+                    ...(body.para_number && { para_number: body.para_number }),
+                };
+                if (newIntro !== undefined && hasSubstantialHtml(newIntro)) {
+                    const ydoc = (granule.data as { para_ydoc?: Buffer | null }).para_ydoc;
+                    if (isYdocBufferEmpty(ydoc) || !hasSubstantialHtml(introBefore)) {
+                        const buf = htmlToYdocBuffer(newIntro);
+                        if (buf) paraData.para_ydoc = buf;
+                    }
+                }
                 updated = await prisma.paragraph.update({
                     where: { para_id: id },
-                    data: {
-                        ...(body.para_name && { para_name: body.para_name }),
-                        ...(body.para_intro !== undefined && { para_intro: body.para_intro }),
-                        ...(body.para_number && { para_number: body.para_number }),
-                    },
+                    data: paraData,
                 });
                 break;
+            }
 
-            case 'notion':
+            case 'notion': {
                 // Capturer le contenu AVANT pour l'historique collaboratif
                 const contentBefore = granule.data.notion_content;
                 const newContent    = body.notion_content;
 
+                const notionUpdate: Record<string, unknown> = {
+                    ...(body.notion_name && { notion_name: body.notion_name }),
+                    ...(newContent !== undefined && { notion_content: newContent }),
+                    ...(body.notion_number && { notion_number: body.notion_number }),
+                };
+
+                if (newContent !== undefined && hasSubstantialHtml(newContent)) {
+                    const ydoc = granule.data.notion_ydoc as Buffer | null;
+                    if (isYdocBufferEmpty(ydoc) || isEmptyEditorHtml(contentBefore)) {
+                        const buf = htmlToYdocBuffer(newContent);
+                        if (buf) notionUpdate.notion_ydoc = buf;
+                    }
+                }
+
                 updated = await prisma.notion.update({
                     where: { notion_id: id },
-                    data: {
-                        ...(body.notion_name && { notion_name: body.notion_name }),
-                        ...(newContent !== undefined && { notion_content: newContent }),
-                        ...(body.notion_number && { notion_number: body.notion_number }),
-                    },
+                    data: notionUpdate,
                 });
 
                 // En mode CRDT collaboratif, deux utilisateurs peuvent sauvegarder le même
