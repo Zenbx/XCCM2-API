@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
         const publicUser = toPublicUser(user);
         const token = await generateToken(publicUser);
 
-        return successResponse({ token, user: publicUser });
+        return successResponse("Authentification réussie", { token, user: publicUser });
     } catch (err: any) {
         console.error("[/api/auth/external] Erreur :", err);
         return serverErrorResponse(err.message || "Erreur interne");
