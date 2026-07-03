@@ -9,8 +9,7 @@
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { verifyToken, extractTokenFromHeader } from "@/lib/auth";
-import { isTokenBlacklisted } from "@/lib/tokenBlacklist";
+import { verifyToken, extractTokenFromHeader } from "@/lib/jwt-edge";
 
 /**
  * Routes publiques dont les réponses GET peuvent être mises en cache par le CDN
@@ -23,47 +22,61 @@ const CACHEABLE_PUBLIC_ROUTES: string[] = [
 ];
 
 /**
- * Headers de sécurité HTTP appliqués sur toutes les réponses
+ * Construit la CSP à partir des variables d'environnement (MinIO, Ably, origines app).
  */
-const SECURITY_HEADERS: Record<string, string> = {
-    "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
-    "X-Frame-Options": "DENY",
-    "X-Content-Type-Options": "nosniff",
-    "X-XSS-Protection": "1; mode=block",
-    "Referrer-Policy": "strict-origin-when-cross-origin",
-    "Permissions-Policy": "geolocation=(), microphone=(), camera=(), payment=(), usb=()",
-    "Content-Security-Policy": [
+function buildContentSecurityPolicy(isSwagger = false): string {
+    const imgSrc = ["'self'", "data:"];
+    if (process.env.MINIO_PUBLIC_URL) {
+        imgSrc.push(process.env.MINIO_PUBLIC_URL);
+    }
+
+    const connectSrc = new Set<string>(["'self'", "https://*.ably.io", "wss://*.ably.io"]);
+    const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",").map((o) => o.trim()).filter(Boolean) ?? [];
+    for (const origin of allowedOrigins) {
+        connectSrc.add(origin);
+        if (origin.startsWith("https://")) {
+            connectSrc.add(origin.replace("https://", "wss://"));
+        }
+        if (origin.startsWith("http://")) {
+            connectSrc.add(origin.replace("http://", "ws://"));
+        }
+    }
+    if (process.env.SYNAPSE_PUBLIC_URL) {
+        connectSrc.add(process.env.SYNAPSE_PUBLIC_URL);
+    }
+
+    return [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline'",
+        isSwagger
+            ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+            : "script-src 'self' 'unsafe-inline'",
         "style-src 'self' 'unsafe-inline'",
-        "img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com",
+        `img-src ${imgSrc.join(" ")}`,
         "font-src 'self' data:",
-        "connect-src 'self' https://*.upstash.io wss://*.pusher.com https://*.ably.io wss://*.ably.io https://xccm-2.vercel.app https://xccm-2-api.vercel.app",
+        `connect-src ${[...connectSrc].join(" ")}`,
         "frame-ancestors 'none'",
         "base-uri 'self'",
         "form-action 'self'",
-    ].join("; "),
-};
+    ].join("; ");
+}
 
-// CSP relaxé pour la page Swagger UI (/docs) — swagger-ui-react utilise des styles et scripts inline
-const SWAGGER_CSP = [
-    "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com",
-    "font-src 'self' data:",
-    "connect-src 'self' https://*.upstash.io wss://*.pusher.com https://*.ably.io wss://*.ably.io https://xccm-2.vercel.app https://xccm-2-api.vercel.app",
-    "frame-ancestors 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-].join("; ");
+/**
+ * Headers de sécurité HTTP appliqués sur toutes les réponses
+ */
+function getSecurityHeaders(isSwaggerPage = false): Record<string, string> {
+    return {
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+        "X-Frame-Options": "DENY",
+        "X-Content-Type-Options": "nosniff",
+        "X-XSS-Protection": "1; mode=block",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "Permissions-Policy": "geolocation=(), microphone=(), camera=(), payment=(), usb=()",
+        "Content-Security-Policy": buildContentSecurityPolicy(isSwaggerPage),
+    };
+}
 
 function applySecurityHeaders(response: NextResponse, isSwaggerPage = false): void {
-    const headers = { ...SECURITY_HEADERS };
-    if (isSwaggerPage) {
-        headers["Content-Security-Policy"] = SWAGGER_CSP;
-    }
-
+    const headers = getSecurityHeaders(isSwaggerPage);
     if (process.env.NODE_ENV === "production") {
         Object.entries(headers).forEach(([key, value]) => {
             response.headers.set(key, value);
@@ -78,19 +91,24 @@ function applySecurityHeaders(response: NextResponse, isSwaggerPage = false): vo
 }
 
 /**
- * Liste des origines autorisées pour CORS
- * Configure via ALLOWED_ORIGINS dans .env (séparées par des virgules)
+ * Liste des origines autorisées pour CORS (lue à chaque requête — pas au build).
+ * Configure via ALLOWED_ORIGINS dans .env (séparées par des virgules).
+ * Accès dynamique via process.env["…"] pour éviter l'inlining au `next build`.
  */
-const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(",").map(origin => origin.trim())
-    : [
-        "http://localhost:3001",      // Frontend dev
-        "http://localhost:3000",      // Backend dev
-        "http://127.0.0.1:3001",
-        "http://127.0.0.1:3000",
-        "https://xccm-2-api.vercel.app",
-        "https://xccm-2.vercel.app",
-    ];
+const DEFAULT_ALLOWED_ORIGINS = [
+    "http://localhost:3001",      // Frontend dev
+    "http://localhost:3000",      // Backend dev
+    "http://127.0.0.1:3001",
+    "http://127.0.0.1:3000",
+    "https://xccm-2-api.vercel.app",
+    "https://xccm-2.vercel.app",
+];
+
+function getAllowedOrigins(): string[] {
+    const raw = process.env["ALLOWED_ORIGINS"];
+    if (!raw) return DEFAULT_ALLOWED_ORIGINS;
+    return raw.split(",").map((origin) => origin.trim()).filter(Boolean);
+}
 
 /**
  * Récupère les headers CORS en vérifiant que l'origine est autorisée
@@ -98,21 +116,26 @@ const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
  */
 function getCorsHeaders(request: NextRequest) {
     const requestOrigin = request.headers.get("origin");
+    const allowedOrigins = getAllowedOrigins();
 
     // Vérification de l'origine
-    const isAllowedOrigin = requestOrigin && ALLOWED_ORIGINS.includes(requestOrigin);
-    const origin = isAllowedOrigin ? requestOrigin : ALLOWED_ORIGINS[0];
+    const isAllowedOrigin = requestOrigin && allowedOrigins.includes(requestOrigin);
 
     if (requestOrigin && !isAllowedOrigin) {
         console.warn(`⚠️ Origine CORS non autorisée: ${requestOrigin}`);
     }
 
-    return {
-        "Access-Control-Allow-Origin": origin,
+    const headers: Record<string, string> = {
         "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type, Authorization, X-User-Id, X-Requested-With, Accept",
-        "Access-Control-Allow-Credentials": "true",
     };
+
+    if (isAllowedOrigin && requestOrigin) {
+        headers["Access-Control-Allow-Origin"] = requestOrigin;
+        headers["Access-Control-Allow-Credentials"] = "true";
+    }
+
+    return headers;
 }
 
 /**
@@ -122,6 +145,7 @@ const PUBLIC_ROUTES: string[] = [
     // Auth routes (excluding /api/auth/me which requires protection)
     "/api/auth/login",
     "/api/auth/register",
+    "/api/auth/external",          // Plugin Moodle / LMS (auth via PLUGIN_API_SECRET)
     "/api/auth/oauth",             // Covers all oauth sub-routes
     "/api/auth/callback",          // Covers all callback sub-routes
     "/api/auth/signin",            // NextAuth sign in routes (Google, Microsoft, etc.)
@@ -241,16 +265,8 @@ export async function middleware(request: NextRequest) {
             return r;
         }
 
-        // Vérifie que le token n'est pas révoqué (blacklist logout)
-        const revoked = await isTokenBlacklisted(token);
-        if (revoked) {
-            const r = NextResponse.json(
-                { success: false, message: "Session expirée. Veuillez vous reconnecter." },
-                { status: 401, headers: corsHeaders }
-            );
-            applySecurityHeaders(r);
-            return r;
-        }
+        // La blacklist JWT (Redis/ioredis) est vérifiée dans les routes API —
+        // pas ici : ioredis est incompatible avec le Edge Runtime du middleware.
 
         /**
          * 6️⃣ Ajoute l'userId dans les headers
