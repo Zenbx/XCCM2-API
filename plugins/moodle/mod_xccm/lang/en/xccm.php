@@ -24,3 +24,13 @@ $string['xccm_api_secret_desc'] = 'Shared secret between Moodle and XCCM2 (must 
 $string['error_no_baseurl']  = 'XCCM2 base URL is not configured. Contact your administrator.';
 $string['error_no_secret']   = 'XCCM2 API secret is not configured. Contact your administrator.';
 $string['error_auth_failed'] = 'Could not authenticate with XCCM2. Please try again or contact your administrator.';
+$string['error_no_project']  = 'No project name is configured for this activity.';
+$string['error_export_failed'] = 'Could not generate the course file. Make sure the project has content, then try again.';
+$string['error_store_failed']  = 'The file was generated but could not be stored in Moodle.';
+
+$string['exports_title']   = 'Copies saved in Moodle';
+$string['exports_intro']   = 'Save a PDF copy of your course here so you can find and download it from Moodle, even outside the editor.';
+$string['exports_empty']   = 'No saved copies yet.';
+$string['save_to_moodle']  = 'Save a copy in Moodle (PDF)';
+$string['export_saving']   = 'Generating and saving…';
+$string['export_saved']    = 'Copy saved in Moodle. You can download it below.';

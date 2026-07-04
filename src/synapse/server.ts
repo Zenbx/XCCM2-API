@@ -3,7 +3,12 @@ import prisma from '../lib/prisma.js';
 import 'dotenv/config';
 import * as Y from 'yjs';
 import { jwtVerify } from 'jose';
-import { loadYdocFromGranule } from '../lib/ydoc-seed.js';
+import {
+    loadYdocFromGranule,
+    ydocToHtml,
+    isYDocEffectivelyEmpty,
+    hasSubstantialHtml,
+} from '../lib/ydoc-seed.js';
 
 /**
  * Synapse Server - Hocuspocus implementation for real-time collaboration
@@ -11,12 +16,12 @@ import { loadYdocFromGranule } from '../lib/ydoc-seed.js';
  * Supported document types:
  *   notion-{id}    → Notion content
  *   part-{id}      → Part intro
- *   chapter-{id}   → Chapter intro (future)
- *   paragraph-{id} → Paragraph intro (future)
+ *   chapter-{id}   → Chapter intro
+ *   paragraph-{id} → Paragraph intro
  *
- * Storage: binary Y.Doc state (Y.encodeStateAsUpdate / Y.applyUpdate).
- * This avoids TiptapTransformer which requires every custom extension to be
- * registered server-side — impossible with React-based NodeViews.
+ * Storage: binary Y.Doc state (Y.encodeStateAsUpdate / Y.applyUpdate)
+ * + HTML miroir (notion_content / part_intro / …) pour que la Mind Map
+ * et le rechargement après déconnexion restent cohérents.
  */
 const PORT = process.env.PORT || process.env.SYNAPSE_PORT || 1234;
 
@@ -28,18 +33,13 @@ console.log('[Synapse] ENV check:', {
     PORT: process.env.PORT ?? 'undefined (using fallback)',
 });
 
-// Debounce map to avoid excessive DB writes
-const storeTimers = new Map<string, NodeJS.Timeout>();
-const STORE_DEBOUNCE_MS = 2000; // 2 seconds
-
-/** Restore a Y.Doc from buffer + optional HTML fallback (see ydoc-seed). */
-function ydocFromBuffer(buf: Buffer | null | undefined, html?: string | null): Y.Doc {
-    return loadYdocFromGranule(buf, html ?? null);
-}
-
 const server = new Server({
     port: Number(PORT),
     address: '0.0.0.0',
+
+    // Debounce géré par Hocuspocus (on attend la fin du store avant unload)
+    debounce: 2000,
+    maxDebounce: 10000,
 
     async onAuthenticate(data) {
         const { token } = data;
@@ -106,7 +106,7 @@ const server = new Server({
                     where: { notion_id: notionId },
                     select: { notion_ydoc: true, notion_content: true },
                 });
-                return ydocFromBuffer(
+                return loadYdocFromGranule(
                     notion?.notion_ydoc as Buffer | null,
                     notion?.notion_content
                 );
@@ -117,7 +117,7 @@ const server = new Server({
                     where: { part_id: partId },
                     select: { part_ydoc: true, part_intro: true },
                 });
-                return ydocFromBuffer(
+                return loadYdocFromGranule(
                     (part as { part_ydoc?: Buffer | null })?.part_ydoc as Buffer | null,
                     part?.part_intro
                 );
@@ -128,7 +128,7 @@ const server = new Server({
                     where: { chapter_id: chapterId },
                     select: { chapter_ydoc: true, chapter_intro: true } as { chapter_ydoc: true; chapter_intro: true },
                 });
-                return ydocFromBuffer(
+                return loadYdocFromGranule(
                     (chapter as { chapter_ydoc?: Buffer | null })?.chapter_ydoc as Buffer | null,
                     (chapter as { chapter_intro?: string | null })?.chapter_intro
                 );
@@ -139,7 +139,7 @@ const server = new Server({
                     where: { para_id: paragraphId },
                     select: { para_ydoc: true, para_intro: true } as { para_ydoc: true; para_intro: true },
                 });
-                return ydocFromBuffer(
+                return loadYdocFromGranule(
                     (paragraph as { para_ydoc?: Buffer | null })?.para_ydoc as Buffer | null,
                     (paragraph as { para_intro?: string | null })?.para_intro
                 );
@@ -153,50 +153,79 @@ const server = new Server({
 
     async onStoreDocument(data) {
         const { documentName, document } = data;
+        console.log(`[Synapse] Storing document: ${documentName}`);
 
-        if (storeTimers.has(documentName)) {
-            clearTimeout(storeTimers.get(documentName)!);
-        }
+        try {
+            const ydocBinary = Buffer.from(Y.encodeStateAsUpdate(document));
+            // Miroir HTML : même source que la Mind Map / auto-save REST
+            const html = ydocToHtml(document);
+            const ydocEmpty = isYDocEffectivelyEmpty(document);
 
-        storeTimers.set(documentName, setTimeout(async () => {
-            storeTimers.delete(documentName);
-
-            console.log(`[Synapse] Storing document: ${documentName}`);
-
-            try {
-                const ydocBinary = Buffer.from(Y.encodeStateAsUpdate(document));
-
-                if (documentName.startsWith('notion-')) {
-                    const notionId = documentName.replace('notion-', '');
-                    await prisma.notion.update({
+            if (documentName.startsWith('notion-')) {
+                const notionId = documentName.replace('notion-', '');
+                // Ne pas écraser un HTML/restore substantiel avec un CRDT vide
+                // (race déconnexion après restore, ou éditeur monté avant sync).
+                if (ydocEmpty) {
+                    const existing = await prisma.notion.findUnique({
                         where: { notion_id: notionId },
-                        data: { notion_ydoc: ydocBinary } as any,
+                        select: { notion_content: true },
                     });
-                } else if (documentName.startsWith('part-')) {
-                    const partId = documentName.replace('part-', '');
-                    await prisma.part.update({
-                        where: { part_id: partId },
-                        data: { part_ydoc: ydocBinary } as any,
-                    });
-                } else if (documentName.startsWith('chapter-')) {
-                    const chapterId = documentName.replace('chapter-', '');
-                    await prisma.chapter.update({
-                        where: { chapter_id: chapterId },
-                        data: { chapter_ydoc: ydocBinary } as any,
-                    });
-                } else if (documentName.startsWith('paragraph-')) {
-                    const paragraphId = documentName.replace('paragraph-', '');
-                    await prisma.paragraph.update({
-                        where: { para_id: paragraphId },
-                        data: { para_ydoc: ydocBinary } as any,
-                    });
+                    if (hasSubstantialHtml(existing?.notion_content)) {
+                        console.log(`[Synapse] Skip empty ydoc over substantial HTML: ${documentName}`);
+                        return;
+                    }
                 }
-
-                console.log(`[Synapse] ✅ Stored ${documentName}`);
-            } catch (error) {
-                console.error(`[Synapse] Error storing document ${documentName}:`, error);
+                await prisma.notion.update({
+                    where: { notion_id: notionId },
+                    data: {
+                        notion_ydoc: ydocBinary,
+                        ...(html != null ? { notion_content: html } : {}),
+                    } as any,
+                });
+            } else if (documentName.startsWith('part-')) {
+                const partId = documentName.replace('part-', '');
+                if (ydocEmpty) {
+                    const existing = await prisma.part.findUnique({
+                        where: { part_id: partId },
+                        select: { part_intro: true },
+                    });
+                    if (hasSubstantialHtml(existing?.part_intro)) {
+                        console.log(`[Synapse] Skip empty ydoc over substantial HTML: ${documentName}`);
+                        return;
+                    }
+                }
+                await prisma.part.update({
+                    where: { part_id: partId },
+                    data: {
+                        part_ydoc: ydocBinary,
+                        ...(html != null ? { part_intro: html } : {}),
+                    } as any,
+                });
+            } else if (documentName.startsWith('chapter-')) {
+                const chapterId = documentName.replace('chapter-', '');
+                await prisma.chapter.update({
+                    where: { chapter_id: chapterId },
+                    data: {
+                        chapter_ydoc: ydocBinary,
+                        ...(html != null ? { chapter_intro: html } : {}),
+                    } as any,
+                });
+            } else if (documentName.startsWith('paragraph-')) {
+                const paragraphId = documentName.replace('paragraph-', '');
+                await prisma.paragraph.update({
+                    where: { para_id: paragraphId },
+                    data: {
+                        para_ydoc: ydocBinary,
+                        ...(html != null ? { para_intro: html } : {}),
+                    } as any,
+                });
             }
-        }, STORE_DEBOUNCE_MS));
+
+            console.log(`[Synapse] ✅ Stored ${documentName}`);
+        } catch (error) {
+            console.error(`[Synapse] Error storing document ${documentName}:`, error);
+            throw error;
+        }
     },
 
     async onConnect() {

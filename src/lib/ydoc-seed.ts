@@ -31,11 +31,29 @@ export function isYDocEmpty(doc: Y.Doc): boolean {
   }
 }
 
-/** Convertit du HTML TipTap en buffer Y.Doc pour Synapse (création / seed initial uniquement) */
-export function htmlToYdocBuffer(html: string | null | undefined): Buffer | null {
-  if (!hasSubstantialHtml(html)) return null;
+/** HTML extrait d'un Y.Doc (texte de base ; les NodeViews custom peuvent être simplifiés). */
+export function ydocToHtml(doc: Y.Doc): string | null {
   try {
-    const ydoc = TiptapTransformer.toYdoc(html!, 'prosemirror');
+    const html = TiptapTransformer.fromYdoc(doc, 'prosemirror');
+    return typeof html === 'string' ? html : null;
+  } catch (error) {
+    console.warn('[ydoc-seed] ydocToHtml failed:', error);
+    return null;
+  }
+}
+
+/** True si le CRDT n'a pas de texte utile (ex. seul un <p></p> vide stocké). */
+export function isYDocEffectivelyEmpty(doc: Y.Doc): boolean {
+  if (isYDocEmpty(doc)) return true;
+  const html = ydocToHtml(doc);
+  return isEmptyEditorHtml(html);
+}
+
+/** Convertit du HTML TipTap en buffer Y.Doc (seed initial, restore, sync forcée). */
+export function htmlToYdocBuffer(html: string | null | undefined): Buffer | null {
+  if (html == null) return null;
+  try {
+    const ydoc = TiptapTransformer.toYdoc(html.length > 0 ? html : '<p></p>', 'prosemirror');
     return Buffer.from(Y.encodeStateAsUpdate(ydoc));
   } catch (error) {
     console.warn('[ydoc-seed] htmlToYdocBuffer failed:', error);
@@ -43,26 +61,50 @@ export function htmlToYdocBuffer(html: string | null | undefined): Buffer | null
   }
 }
 
-/** Charge un Y.Doc : buffer existant, sinon seed depuis HTML si le CRDT est vide */
+/**
+ * Charge un Y.Doc pour la collab.
+ * Si le buffer CRDT est absent / vide / sans texte utile, on reseed depuis le HTML
+ * (celui que la Mind Map affiche correctement).
+ */
 export function loadYdocFromGranule(
   ydocBuffer: Buffer | null | undefined,
   html: string | null | undefined
 ): Y.Doc {
   if (ydocBuffer && ydocBuffer.length > 0) {
     const doc = new Y.Doc();
-    Y.applyUpdate(doc, ydocBuffer);
-    if (!isYDocEmpty(doc) || !hasSubstantialHtml(html)) {
+    try {
+      Y.applyUpdate(doc, ydocBuffer);
+    } catch (error) {
+      console.warn('[ydoc-seed] applyUpdate failed, falling back to HTML:', error);
+      doc.destroy();
+      return seedFromHtml(html);
+    }
+
+    // CRDT non vide en structure mais sans texte → préférer le HTML (cas typique
+    // après déconnexion avant le store Synapse, ou ydoc "fantôme" <p></p>).
+    if (!isYDocEffectivelyEmpty(doc)) {
       return doc;
     }
+
+    if (hasSubstantialHtml(html)) {
+      console.log('[ydoc-seed] ydoc effectively empty, reseeding from HTML');
+      doc.destroy();
+      return seedFromHtml(html);
+    }
+
+    return doc;
   }
 
-  if (hasSubstantialHtml(html)) {
+  return seedFromHtml(html);
+}
+
+function seedFromHtml(html: string | null | undefined): Y.Doc {
+  if (html != null && html.length > 0) {
     try {
-      return TiptapTransformer.toYdoc(html!, 'prosemirror');
+      return TiptapTransformer.toYdoc(html, 'prosemirror');
     } catch (error) {
-      console.warn('[ydoc-seed] loadYdocFromGranule HTML fallback failed:', error);
+      console.warn('[ydoc-seed] seedFromHtml failed:', error);
     }
   }
-
   return new Y.Doc();
 }

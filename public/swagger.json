@@ -7024,7 +7024,7 @@
         "tags": [
           "Upload"
         ],
-        "summary": "Uploader un fichier vers Cloudinary",
+        "summary": "Uploader un fichier vers MinIO",
         "description": "Upload d'un fichier (PDF, JPEG, PNG, WEBP). Valide le MIME type, les magic bytes et la taille (max 10 Mo).\nRate-limitée à 20 uploads/heure par utilisateur.\n",
         "security": [
           {
@@ -7043,8 +7043,7 @@
                 "properties": {
                   "file": {
                     "type": "string",
-                    "format": "binary",
-                    "description": "Fichier à uploader (PDF, JPEG, PNG, WEBP — max 10 Mo)"
+                    "format": "binary"
                   }
                 }
               }
@@ -7053,25 +7052,10 @@
         },
         "responses": {
           "200": {
-            "description": "Fichier uploadé avec succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/UploadResult"
-                    }
-                  }
-                }
-              }
-            }
+            "description": "Fichier uploadé avec succès"
           },
           "400": {
-            "description": "Format non supporté, taille dépassée ou magic bytes invalides"
+            "description": "Format non supporté ou taille dépassée"
           },
           "401": {
             "description": "Non authentifié"
@@ -7080,7 +7064,7 @@
             "description": "Limite d'upload atteinte (20/h)"
           },
           "500": {
-            "description": "Erreur Cloudinary"
+            "description": "Erreur stockage"
           }
         }
       }

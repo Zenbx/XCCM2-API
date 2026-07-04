@@ -85,8 +85,8 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
         const { pr_name: encodedPrName, id } = await context.params;
         const pr_name = decodeURIComponent(encodedPrName).trim();
 
-        // Vérifier l'accès au projet
-        const project = await prisma.project.findFirst({
+        // Vérifier l'accès au projet (même résolution que /structure)
+        const projects = await prisma.project.findMany({
             where: {
                 pr_name,
                 OR: [
@@ -95,6 +95,7 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
                 ]
             },
         });
+        const project = projects.find((p) => p.owner_id === userId) || projects[0];
         if (!project) return notFoundResponse("Projet non trouvé");
 
         // Trouver le granule
@@ -102,6 +103,9 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
         if (!granule) return notFoundResponse("Granule non trouvé");
 
         const body = await request.json();
+        // force_ydoc: true → réécrit le CRDT depuis le HTML (restauration de version).
+        // Sans ce flag on ne touche au ydoc que s'il est vide (évite d'écraser la collab live).
+        const forceYdoc = body.force_ydoc === true;
 
         let updated;
         switch (granule.type) {
@@ -113,9 +117,9 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
                     ...(newIntro !== undefined && { part_intro: newIntro }),
                     ...(body.part_number && { part_number: body.part_number }),
                 };
-                if (newIntro !== undefined && hasSubstantialHtml(newIntro)) {
+                if (newIntro !== undefined) {
                     const ydoc = granule.data.part_ydoc as Buffer | null;
-                    if (isYdocBufferEmpty(ydoc) || !hasSubstantialHtml(introBefore)) {
+                    if (forceYdoc || isYdocBufferEmpty(ydoc) || !hasSubstantialHtml(introBefore)) {
                         const buf = htmlToYdocBuffer(newIntro);
                         if (buf) partData.part_ydoc = buf;
                     }
@@ -135,9 +139,9 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
                     ...(newIntro !== undefined && { chapter_intro: newIntro }),
                     ...(body.chapter_number && { chapter_number: body.chapter_number }),
                 };
-                if (newIntro !== undefined && hasSubstantialHtml(newIntro)) {
+                if (newIntro !== undefined) {
                     const ydoc = (granule.data as { chapter_ydoc?: Buffer | null }).chapter_ydoc;
-                    if (isYdocBufferEmpty(ydoc) || !hasSubstantialHtml(introBefore)) {
+                    if (forceYdoc || isYdocBufferEmpty(ydoc) || !hasSubstantialHtml(introBefore)) {
                         const buf = htmlToYdocBuffer(newIntro);
                         if (buf) chapterData.chapter_ydoc = buf;
                     }
@@ -157,9 +161,9 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
                     ...(newIntro !== undefined && { para_intro: newIntro }),
                     ...(body.para_number && { para_number: body.para_number }),
                 };
-                if (newIntro !== undefined && hasSubstantialHtml(newIntro)) {
+                if (newIntro !== undefined) {
                     const ydoc = (granule.data as { para_ydoc?: Buffer | null }).para_ydoc;
-                    if (isYdocBufferEmpty(ydoc) || !hasSubstantialHtml(introBefore)) {
+                    if (forceYdoc || isYdocBufferEmpty(ydoc) || !hasSubstantialHtml(introBefore)) {
                         const buf = htmlToYdocBuffer(newIntro);
                         if (buf) paraData.para_ydoc = buf;
                     }
@@ -182,9 +186,10 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
                     ...(body.notion_number && { notion_number: body.notion_number }),
                 };
 
-                if (newContent !== undefined && hasSubstantialHtml(newContent)) {
+                // force_ydoc (restore) ou seed initial uniquement — sinon Synapse possède le CRDT
+                if (newContent !== undefined) {
                     const ydoc = granule.data.notion_ydoc as Buffer | null;
-                    if (isYdocBufferEmpty(ydoc) || isEmptyEditorHtml(contentBefore)) {
+                    if (forceYdoc || isYdocBufferEmpty(ydoc) || isEmptyEditorHtml(contentBefore)) {
                         const buf = htmlToYdocBuffer(newContent);
                         if (buf) notionUpdate.notion_ydoc = buf;
                     }
@@ -195,11 +200,7 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
                     data: notionUpdate,
                 });
 
-                // En mode CRDT collaboratif, deux utilisateurs peuvent sauvegarder le même
-                // contenu (synchronisé via Y.js). On crée quand même une révision si :
-                //   - le contenu a réellement changé (cas normal), OU
-                //   - le dernier auteur connu est différent de l'auteur actuel
-                //     (trace de participation collaborative même à contenu identique)
+                // Historique partagé : project_id = projet réel de la notion (pas un homonyme)
                 if (newContent !== undefined) {
                     const lastRevision = await prisma.granuleRevision.findFirst({
                         where: { notion_id: id },
@@ -207,21 +208,37 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
                         select: { author_id: true, content_after: true },
                     });
 
-                    const contentChanged  = newContent !== contentBefore;
-                    const authorChanged   = !lastRevision || lastRevision.author_id !== userId;
-                    const shouldRecord    = contentChanged || (authorChanged && newContent !== (lastRevision?.content_after ?? null));
+                    const contentChanged = newContent !== contentBefore;
+                    const authorChanged  = !lastRevision || lastRevision.author_id !== userId;
+                    // Enregistrer tout changement de contenu, quel que soit l'auteur
+                    const shouldRecord = contentChanged
+                        || (authorChanged && newContent !== (lastRevision?.content_after ?? null));
 
                     if (shouldRecord) {
+                        const notionProject = await prisma.notion.findUnique({
+                            where: { notion_id: id },
+                            select: {
+                                paragraph: {
+                                    select: {
+                                        chapter: {
+                                            select: { part: { select: { parent_pr: true } } },
+                                        },
+                                    },
+                                },
+                            },
+                        });
+                        const realProjectId =
+                            notionProject?.paragraph?.chapter?.part?.parent_pr ?? project.pr_id;
+
                         prisma.granuleRevision.create({
                             data: {
                                 notion_id:      id,
-                                project_id:     project.pr_id,
+                                project_id:     realProjectId,
                                 author_id:      userId,
-                                content_before: contentBefore,
+                                content_before: contentBefore ?? '',
                                 content_after:  newContent,
                             },
                         }).then(async () => {
-                            // Plafond à 30 révisions par notion
                             const count = await prisma.granuleRevision.count({ where: { notion_id: id } });
                             if (count > 30) {
                                 const oldest = await prisma.granuleRevision.findMany({

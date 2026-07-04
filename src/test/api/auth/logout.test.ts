@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll } from "vitest";
+import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
 beforeAll(() => {
@@ -20,6 +20,10 @@ const mockPublicUser = {
 };
 
 describe("POST /api/auth/logout", () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
     it("blackliste le token et retourne 200", async () => {
         const token = await generateToken(mockPublicUser);
         const req = new NextRequest("http://localhost/api/auth/logout", {

@@ -11,6 +11,7 @@ vi.mock("@/lib/redis", () => ({
 import redis from "@/lib/redis";
 
 beforeEach(() => {
+    vi.clearAllMocks();
     vi.mocked(redis.get).mockResolvedValue(null);
     vi.mocked(redis.set).mockResolvedValue("OK");
 });

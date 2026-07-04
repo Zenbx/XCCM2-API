@@ -1,10 +1,10 @@
 /**
  * @fileoverview Service de génération et publication de documents
- * Gère l'export direct et la publication sur Supabase Storage
+ * Gère l'export direct et la publication sur MinIO (S3-compatible)
  */
 
 import prisma from "./prisma";
-import { supabase, DOCUMENTS_BUCKET } from "./supabase";
+import { uploadObject, DOCUMENTS_BUCKET } from "./object-storage";
 import { generatePDF } from "@/utils/pdf-generator";
 import { generateDOCX } from "@/utils/docx-generator";
 import type {
@@ -17,9 +17,6 @@ import { PassThrough } from "stream";
 
 /**
  * Récupère la structure complète d'un projet pour l'export
- * @param projectId - ID du projet
- * @param userId - ID de l'utilisateur (vérification de propriété)
- * @returns Projet complet avec toute sa hiérarchie
  */
 export async function getProjectForExport(
     projectId: string,
@@ -79,7 +76,6 @@ export async function getProjectForExport(
 
     if (!project) return null;
 
-    // Transformation explicite avec typage strict
     const projectForExport: ProjectForExport = {
         pr_name: project.pr_name,
         owner: project.owner,
@@ -108,76 +104,50 @@ export async function getProjectForExport(
     return projectForExport;
 }
 
-/**
- * Génère un document dans le format spécifié
- * @param project - Projet à exporter
- * @param format - Format du document (pdf ou docx)
- * @returns Stream ou Buffer du document généré
- */
 export async function generateDocument(
     project: ProjectForExport,
     format: DocumentFormat
 ): Promise<PassThrough | Buffer> {
     if (format === "pdf") {
         return await generatePDF(project);
-    } else {
-        return await generateDOCX(project);
     }
+    return await generateDOCX(project);
 }
 
 /**
- * Publie un document sur Supabase Storage
- * @param project - Projet à publier
- * @param format - Format du document
- * @returns Résultat de la publication avec l'URL publique
+ * Publie un document sur MinIO
  */
 export async function publishDocument(
     project: ProjectForExport,
     format: DocumentFormat
 ): Promise<PublishResult> {
-    // Générer le document
     const documentData = await generateDocument(project, format);
 
-    // Préparer le nom du fichier
     const timestamp = Date.now();
     const fileName = `${project.pr_name.replace(/[^a-z0-9]/gi, "_")}_${timestamp}.${format}`;
     const filePath = `documents/${fileName}`;
 
-    // Convertir en Buffer si nécessaire
     let buffer: Buffer;
     if (documentData instanceof PassThrough) {
-        // Pour PDF (stream)
         const chunks: Buffer[] = [];
         for await (const chunk of documentData) {
             chunks.push(chunk);
         }
         buffer = Buffer.concat(chunks);
     } else {
-        // Pour DOCX (déjà un buffer)
         buffer = documentData;
     }
 
-    // Upload vers Supabase Storage
-    const { data, error } = await supabase.storage
-        .from(DOCUMENTS_BUCKET)
-        .upload(filePath, buffer, {
-            contentType:
-                format === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            upsert: false,
-        });
+    const contentType =
+        format === "pdf"
+            ? "application/pdf"
+            : "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
-    if (error) {
-        throw new Error(`Erreur lors de l'upload sur Supabase: ${error.message}`);
-    }
-
-    // Obtenir l'URL publique
-    const { data: publicUrlData } = supabase.storage
-        .from(DOCUMENTS_BUCKET)
-        .getPublicUrl(filePath);
+    const uploaded = await uploadObject(DOCUMENTS_BUCKET, filePath, buffer, contentType);
 
     return {
         success: true,
-        url: publicUrlData.publicUrl,
+        url: uploaded.url,
         fileName,
         size: buffer.length,
         format,

@@ -1,28 +1,27 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 const REQUIRED = [
     "JWT_SECRET",
     "DATABASE_URL",
-    "UPSTASH_REDIS_REST_URL",
-    "UPSTASH_REDIS_REST_TOKEN",
-    "CLOUDINARY_CLOUD_NAME",
-    "CLOUDINARY_API_KEY",
-    "CLOUDINARY_API_SECRET",
+    "MINIO_ENDPOINT",
+    "MINIO_ACCESS_KEY",
+    "MINIO_SECRET_KEY",
+    "MINIO_PUBLIC_URL",
 ];
 
 describe("checkEnv", () => {
     const original: Record<string, string | undefined> = {};
 
     beforeEach(() => {
-        // Sauvegarder les valeurs originales
+        vi.resetModules();
         REQUIRED.forEach((key) => {
             original[key] = process.env[key];
             process.env[key] = "test-value";
         });
+        process.env.NODE_ENV = "test";
     });
 
     afterEach(() => {
-        // Restaurer les valeurs originales
         REQUIRED.forEach((key) => {
             if (original[key] === undefined) {
                 delete process.env[key];
@@ -34,7 +33,6 @@ describe("checkEnv", () => {
 
     it("ne lance pas d'erreur quand toutes les vars sont présentes", async () => {
         const { checkEnv } = await import("@/lib/env-check");
-        // Reset le flag interne (module fresh via resetModules dans setup)
         expect(() => checkEnv()).not.toThrow();
     });
 

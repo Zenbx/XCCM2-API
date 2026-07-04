@@ -2,6 +2,7 @@ import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
 import { PassThrough } from "stream";
 import type { ProjectForExport } from "@/types/document.types";
+import { getEmbeddedPoppinsCss } from "@/lib/local-fonts";
 
 /**
  * Génère le contenu HTML complet d'un projet, en s'inspirant du style de la page de prévisualisation.
@@ -25,7 +26,7 @@ function generatePrintableHTML(project: ProjectForExport): string {
 
     const css = `
         <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+            ${getEmbeddedPoppinsCss()}
             @import url('https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css');
 
             @media print {
@@ -46,7 +47,7 @@ function generatePrintableHTML(project: ProjectForExport): string {
             }
 
             body {
-                font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+                font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif;
                 background-color: #ffffff;
                 color: #111827;
                 line-height: 1.6;

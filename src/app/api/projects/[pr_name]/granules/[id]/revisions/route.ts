@@ -31,7 +31,7 @@ export async function GET(request: NextRequest, context: RouteParams) {
         const pr_name = decodeURIComponent(encodedPrName).trim();
 
         // Vérifier accès au projet (propriétaire ou collaborateur accepté)
-        const project = await prisma.project.findFirst({
+        const projects = await prisma.project.findMany({
             where: {
                 pr_name,
                 OR: [
@@ -40,10 +40,23 @@ export async function GET(request: NextRequest, context: RouteParams) {
                 ],
             },
         });
+        const project = projects.find((p) => p.owner_id === userId) || projects[0];
         if (!project) return notFoundResponse("Projet non trouvé");
 
+        // Vérifier que la notion appartient bien à un projet accessible
+        const notion = await prisma.notion.findFirst({
+            where: {
+                notion_id: notionId,
+                paragraph: { chapter: { part: { parent_pr: project.pr_id } } },
+            },
+            select: { notion_id: true },
+        });
+        if (!notion) return notFoundResponse("Notion non trouvée");
+
+        // Historique partagé : filtrer uniquement par notion_id (pas project_id),
+        // pour que tous les coauteurs voient les mêmes versions.
         const revisions = await prisma.granuleRevision.findMany({
-            where: { notion_id: notionId, project_id: project.pr_id },
+            where: { notion_id: notionId },
             orderBy: { created_at: "desc" },
             take: MAX_REVISIONS_PER_NOTION,
             include: {
@@ -80,7 +93,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
             return successResponse("Aucun changement détecté", { revision: null });
         }
 
-        const project = await prisma.project.findFirst({
+        const projects = await prisma.project.findMany({
             where: {
                 pr_name,
                 OR: [
@@ -89,6 +102,7 @@ export async function POST(request: NextRequest, context: RouteParams) {
                 ],
             },
         });
+        const project = projects.find((p) => p.owner_id === userId) || projects[0];
         if (!project) return notFoundResponse("Projet non trouvé");
 
         // Vérifier que la notion appartient bien à ce projet
@@ -97,14 +111,22 @@ export async function POST(request: NextRequest, context: RouteParams) {
                 notion_id: notionId,
                 paragraph: { chapter: { part: { parent_pr: project.pr_id } } },
             },
+            select: {
+                notion_id: true,
+                paragraph: {
+                    select: { chapter: { select: { part: { select: { parent_pr: true } } } } },
+                },
+            },
         });
         if (!notion) return notFoundResponse("Notion non trouvée");
+
+        const realProjectId = notion.paragraph?.chapter?.part?.parent_pr ?? project.pr_id;
 
         // Créer la révision
         const revision = await prisma.granuleRevision.create({
             data: {
                 notion_id:      notionId,
-                project_id:     project.pr_id,
+                project_id:     realProjectId,
                 author_id:      userId,
                 content_before,
                 content_after,
