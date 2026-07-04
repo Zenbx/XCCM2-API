@@ -227,14 +227,13 @@ export async function POST(request: NextRequest, context: RouteParams) {
 
             if (existingNotion) {
               if (notionData.content && isPlaceholderContent(existingNotion.notion_content)) {
+                // Toujours réécrire le ydoc : l'éditeur collab lit le CRDT, pas seulement le HTML
                 const notionYdoc = htmlToYdocBuffer(notionData.content);
                 await prisma.notion.update({
                   where: { notion_id: existingNotion.notion_id },
                   data: {
                     notion_content: notionData.content,
-                    ...(notionYdoc && isYdocBufferEmpty(existingNotion.notion_ydoc as Buffer | null)
-                      ? { notion_ydoc: notionYdoc }
-                      : {}),
+                    ...(notionYdoc ? { notion_ydoc: notionYdoc } : {}),
                   },
                 });
                 stats.updated += 1;

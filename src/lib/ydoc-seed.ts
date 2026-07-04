@@ -31,6 +31,33 @@ export function isYDocEmpty(doc: Y.Doc): boolean {
   }
 }
 
+/** Normalise les Bytes Prisma/Mongo (Buffer, Uint8Array, { type, data }, base64). */
+export function toUint8Array(buf: unknown): Uint8Array | null {
+  if (!buf) return null;
+  if (buf instanceof Uint8Array) return buf.length > 0 ? buf : null;
+  if (typeof Buffer !== 'undefined' && Buffer.isBuffer(buf)) {
+    return buf.length > 0 ? new Uint8Array(buf) : null;
+  }
+  if (typeof buf === 'object' && buf !== null && Array.isArray((buf as { data?: unknown }).data)) {
+    const data = (buf as { data: number[] }).data;
+    return data.length > 0 ? new Uint8Array(data) : null;
+  }
+  if (typeof buf === 'string' && buf.length > 0) {
+    try {
+      const decoded = Buffer.from(buf, 'base64');
+      return decoded.length > 0 ? new Uint8Array(decoded) : null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function textLength(html: string | null | undefined): number {
+  if (!html) return 0;
+  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().length;
+}
+
 /** HTML extrait d'un Y.Doc (texte de base ; les NodeViews custom peuvent être simplifiés). */
 export function ydocToHtml(doc: Y.Doc): string | null {
   try {
@@ -63,33 +90,37 @@ export function htmlToYdocBuffer(html: string | null | undefined): Buffer | null
 
 /**
  * Charge un Y.Doc pour la collab.
- * Si le buffer CRDT est absent / vide / sans texte utile, on reseed depuis le HTML
- * (celui que la Mind Map affiche correctement).
+ * Priorité au HTML (Mind Map / agent) si le CRDT est vide ou nettement plus pauvre.
  */
 export function loadYdocFromGranule(
-  ydocBuffer: Buffer | null | undefined,
+  ydocBuffer: Buffer | Uint8Array | null | undefined | unknown,
   html: string | null | undefined
 ): Y.Doc {
-  if (ydocBuffer && ydocBuffer.length > 0) {
+  const bytes = toUint8Array(ydocBuffer);
+
+  if (bytes) {
     const doc = new Y.Doc();
     try {
-      Y.applyUpdate(doc, ydocBuffer);
+      Y.applyUpdate(doc, bytes);
     } catch (error) {
       console.warn('[ydoc-seed] applyUpdate failed, falling back to HTML:', error);
       doc.destroy();
       return seedFromHtml(html);
     }
 
-    // CRDT non vide en structure mais sans texte → préférer le HTML (cas typique
-    // après déconnexion avant le store Synapse, ou ydoc "fantôme" <p></p>).
-    if (!isYDocEffectivelyEmpty(doc)) {
-      return doc;
-    }
+    const ydocHtml = ydocToHtml(doc);
+    const htmlRicher =
+      hasSubstantialHtml(html) &&
+      (isEmptyEditorHtml(ydocHtml) || textLength(html) > textLength(ydocHtml) + 20);
 
-    if (hasSubstantialHtml(html)) {
-      console.log('[ydoc-seed] ydoc effectively empty, reseeding from HTML');
+    if (htmlRicher) {
+      console.log('[ydoc-seed] reseeding from HTML (ydoc empty or poorer than notion_content)');
       doc.destroy();
       return seedFromHtml(html);
+    }
+
+    if (!isYDocEffectivelyEmpty(doc)) {
+      return doc;
     }
 
     return doc;
