@@ -6,22 +6,103 @@ export { stepCountIs };
 export const AGENT_SYSTEM_PROMPT = `Tu es l'Agent IA de production d'XCCM (eXtended Content Composition Module).
 
 ### TA MISSION
-Tu construis des cours complets de manière AUTONOME. L'utilisateur te confie une mission ; tu exécutes via tes outils sans demander de confirmation intermédiaire.
+Tu construis des cours et des exercices de manière AUTONOME. L'utilisateur te confie une mission ; tu exécutes via tes outils sans demander de confirmation intermédiaire.
 
 ### TES OUTILS
-1. **create_structure** — OBLIGATOIRE pour construire un cours. Arborescence complète (Parties → Chapitres → Paragraphes → Notions) avec contenu pédagogique RICHE dans chaque notion
+1. **create_structure** — Construire un cours. Arborescence (Parties → Chapitres → Paragraphes → Notions) avec contenu pédagogique RICHE
 2. **write_content** — Rédiger ou réécrire le contenu d'une notion
-3. **create_exercise** — Générer des exercices (QCU, QCM, QRO, texte à trous, code)
+3. **create_exercise** — Générer un exercice rattaché à une notion (QCU, QCM, QRO, FILL_BLANKS, CODE)
+
+### MOTS-CLÉS EXERCICES (déclenche create_exercise)
+exercice(s), quiz, QCM, QCU, QRO, texte(s) à trous, évaluation, évaluation formative
+
+### TYPES D'EXERCICES
+- **QCU** — une seule bonne réponse (options avec un seul isCorrect: true)
+- **QCM** — plusieurs bonnes réponses possibles
+- **QRO** — réponse ouverte courte (expectedAnswer)
+- **FILL_BLANKS** — texte à trous (parameters.text avec des ___ pour les trous)
+- **CODE** — exercice de code (si demandé explicitement)
 
 ### RÈGLES AGENT
-- Toute demande de création/construction de cours → appelle IMMÉDIATEMENT create_structure (JAMAIS un plan texte seul)
-- Le mot « complet » n'est PAS requis : « Construis un cours sur X » suffit
+- Demande de COURS → create_structure immédiatement (JAMAIS un plan texte seul)
+- Demande d'EXERCICES → create_exercise (un appel par exercice), avec notionPath obligatoire
+- Demande COURS + EXERCICES → d'abord create_structure, puis create_exercise pour les notions créées
+- Le mot « complet » n'est PAS requis
 - Chaque partie, chapitre et paragraphe DOIT avoir un champ intro (HTML, 2-3 phrases)
 - Chaque notion DOIT avoir du contenu HTML (p, strong, ul, li, h3) — 80 à 120 mots
+- Pour chaque exercice : title clair, type exact, parameters complets, notionPath (partTitle, chapterTitle, paraName, notionName)
 - COMPLÉTER le projet existant, ne jamais supprimer l'existant
 - Contenu en français
-- Appelle create_structure dans le PREMIER tour (2 lignes de plan max, pas de longue prose avant l'outil)
+- 2 lignes de plan max, pas de longue prose avant les outils
 `;
+
+export type AgentIntent = {
+  wantsCourse: boolean;
+  wantsExercises: boolean;
+  exerciseTypes: Array<'QCU' | 'QCM' | 'QRO' | 'QROA' | 'CODE' | 'FILL_BLANKS'>;
+};
+
+/** Détecte si l'utilisateur demande un cours, des exercices, ou les deux. */
+export function detectAgentIntent(prompt: string): AgentIntent {
+  const lower = (prompt || '').toLowerCase();
+
+  const wantsExercises = /exercice|exercices|quiz|qcm|qcu|qro|texte[s]?\s*à\s*trous|texte[s]?\s*a\s*trous|fill[\s_-]?blank|évaluation|evaluation formative|auto[\s-]?évaluation/i.test(lower);
+
+  const wantsCourse = /cours|structure|partie|chapitre|paragraphe|notion|construis|construire|génère un cours|genere un cours|créer un cours|cree un cours|module|leçon|lecon|contenu pédagogique|contenu pedagogique/i.test(lower)
+    || (!wantsExercises);
+
+  const exerciseTypes: AgentIntent['exerciseTypes'] = [];
+  if (/\bqcu\b/i.test(lower)) exerciseTypes.push('QCU');
+  if (/\bqcm\b/i.test(lower)) exerciseTypes.push('QCM');
+  if (/\bqro\b/i.test(lower)) exerciseTypes.push('QRO');
+  if (/texte[s]?\s*à\s*trous|texte[s]?\s*a\s*trous|fill[\s_-]?blank/i.test(lower)) {
+    exerciseTypes.push('FILL_BLANKS');
+  }
+  if (/\bcode\b/i.test(lower) && wantsExercises) exerciseTypes.push('CODE');
+
+  if (wantsExercises && exerciseTypes.length === 0) {
+    exerciseTypes.push('QCM', 'QRO', 'FILL_BLANKS');
+  }
+
+  return {
+    wantsCourse: wantsCourse || !wantsExercises,
+    wantsExercises,
+    exerciseTypes,
+  };
+}
+
+export function hasExerciseActions(
+  actions: Array<{ type: string; data: unknown }>
+): boolean {
+  return actions.some((a) => a.type === 'create_exercise');
+}
+
+/** Liste les notions d'une action create_structure pour le 2e passage exercices. */
+export function listNotionsFromStructureActions(
+  actions: Array<{ type: string; data: unknown }>
+): Array<{ partTitle: string; chapterTitle: string; paraName: string; notionName: string }> {
+  const out: Array<{ partTitle: string; chapterTitle: string; paraName: string; notionName: string }> = [];
+  for (const action of actions) {
+    if (action.type !== 'create_structure') continue;
+    const parts = (action.data as { parts?: Array<Record<string, unknown>> })?.parts || [];
+    for (const part of parts) {
+      const partTitle = String(part.title || part.part_title || '').trim();
+      for (const ch of (part.chapters as Array<Record<string, unknown>>) || []) {
+        const chapterTitle = String(ch.title || ch.chapter_title || '').trim();
+        for (const para of (ch.paragraphs as Array<Record<string, unknown>>) || []) {
+          const paraName = String(para.title || para.para_name || '').trim();
+          for (const n of (para.notions as Array<Record<string, unknown>>) || []) {
+            const notionName = String(n.title || n.notion_name || '').trim();
+            if (partTitle && chapterTitle && paraName && notionName) {
+              out.push({ partTitle, chapterTitle, paraName, notionName });
+            }
+          }
+        }
+      }
+    }
+  }
+  return out;
+}
 
 /** Contraintes supplémentaires pour l'endpoint agent (limites Vercel / latence Mistral) */
 export const AGENT_PERFORMANCE_SUFFIX = `
@@ -30,6 +111,7 @@ export const AGENT_PERFORMANCE_SUFFIX = `
 - intro OBLIGATOIRE (HTML) sur partie, chapitre et paragraphe
 - Contenu HTML dans chaque notion (80 à 120 mots)
 - UN SEUL appel create_structure avec toute l'arborescence
+- Exercices : 2 à 6 max, un create_exercise par exercice, notionPath obligatoire
 `;
 
 export const EDITOR_CHAT_PROMPT = `Tu es l'Assistant IA Éditeur d'XCCM (eXtended Content Composition Module).
@@ -89,18 +171,29 @@ const writeContentSchema = z.object({
 });
 
 const createExerciseSchema = z.object({
-  type: z.enum(['QCU', 'QCM', 'QRO', 'QROA', 'CODE', 'FILL_BLANKS']),
-  title: z.string(),
+  type: z.enum(['QCU', 'QCM', 'QRO', 'QROA', 'CODE', 'FILL_BLANKS'])
+    .describe('QCU = une bonne réponse, QCM = plusieurs, QRO = ouverte, FILL_BLANKS = texte à trous'),
+  title: z.string().describe('Titre court de l\'exercice'),
+  notionPath: z.object({
+    partTitle: z.string(),
+    chapterTitle: z.string(),
+    paraName: z.string(),
+    notionName: z.string(),
+  }).describe('Notion cible — OBLIGATOIRE pour afficher l\'exercice dans le panneau'),
   parameters: z.object({
-    question: z.string().optional(),
+    question: z.string().optional().describe('Énoncé (QCU/QCM/QRO)'),
     options: z.array(z.object({
       id: z.string(),
       text: z.string(),
       isCorrect: z.boolean(),
-    })).optional(),
-    expectedAnswer: z.string().optional(),
+    })).optional().describe('Options pour QCU/QCM'),
+    expectedAnswer: z.string().optional().describe('Réponse attendue (QRO)'),
     evaluationPrompt: z.string().optional(),
-    text: z.string().optional(),
+    text: z.string().optional().describe('Texte avec ___ pour FILL_BLANKS'),
+    blanks: z.array(z.object({
+      id: z.string(),
+      answer: z.string(),
+    })).optional().describe('Réponses des trous (FILL_BLANKS)'),
   }),
   settings: z.object({
     isBlocking: z.boolean().optional(),
@@ -133,7 +226,9 @@ export function getEditorTools() {
       inputSchema: zodSchema(writeContentSchema),
     }),
     create_exercise: tool({
-      description: 'Crée un exercice pédagogique.',
+      description:
+        'Crée un exercice (QCU, QCM, QRO, FILL_BLANKS, CODE) rattaché à une notion via notionPath. '
+        + 'Un appel = un exercice. Types : QCU (1 bonne réponse), QCM (plusieurs), QRO (ouverte), FILL_BLANKS (texte à trous).',
       inputSchema: zodSchema(createExerciseSchema),
     }),
   };
