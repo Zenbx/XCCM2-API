@@ -542,7 +542,7 @@ model AnnouncementComment {
 
 model Notification {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  type       String   // NEW_ASSIGNMENT, COURSE_UPDATE, NEW_ANNOUNCEMENT
+  type       String   // NEW_ASSIGNMENT, COURSE_UPDATE, NEW_ANNOUNCEMENT, PROJECT_INVITATION
   message    String
   link       String?
   is_read    Boolean  @default(false)
