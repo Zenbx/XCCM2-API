@@ -1,6 +1,6 @@
 /**
  * @fileoverview Service de génération et publication de documents
- * Gère l'export direct et la publication sur MinIO (S3-compatible)
+ * Publication via object-storage (Supabase Storage ou MinIO)
  */
 
 import prisma from "./prisma";
@@ -115,7 +115,7 @@ export async function generateDocument(
 }
 
 /**
- * Publie un document sur MinIO
+ * Publie un document (Supabase Storage ou MinIO)
  */
 export async function publishDocument(
     project: ProjectForExport,
