@@ -4,8 +4,8 @@
  *   post:
  *     tags:
  *       - Projects
- *     summary: Liker un projet
- *     description: Enregistre un like sur un projet (stub — fonctionnalité en développement).
+ *     summary: Liker / unliker un projet
+ *     description: Alterne le like de l'utilisateur authentifié sur le projet.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -16,34 +16,15 @@
  *           type: string
  *     responses:
  *       200:
- *         description: Like enregistré
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: object
- *                   properties:
- *                     likes:
- *                       type: integer
- *                     isLiked:
- *                       type: boolean
+ *         description: État du like
  *       401:
  *         description: Non authentifié
- */
-/**
- * @fileoverview Route API pour liker un projet
- * POST /api/projects/[pr_name]/like
- *
- * NOTE: Cette fonctionnalité est temporairement désactivée.
- * Le modèle de données actuel ne supporte que les likes sur les documents,
- * pas sur les projets. Retourne un succès dummy pour éviter les erreurs frontend.
+ *       404:
+ *         description: Projet introuvable
  */
 
 import { NextRequest } from "next/server";
+import prisma from "@/lib/prisma";
 import { successResponse, errorResponse } from "@/utils/api-response";
 
 export async function POST(
@@ -51,28 +32,59 @@ export async function POST(
     { params }: { params: Promise<{ pr_name: string }> }
 ) {
     try {
-        // Récupérer l'userId depuis le header (injecté par le middleware)
         const userId = request.headers.get("x-user-id");
         if (!userId) {
             return errorResponse("Non authentifié", undefined, 401);
         }
 
         const { pr_name } = await params;
+        const decodedName = decodeURIComponent(pr_name);
 
-        // TODO: Implémenter la vraie fonctionnalité de like sur les projets
-        // Nécessite une migration Prisma pour ajouter un modèle ProjectLike
-        // ou modifier le modèle Like existant
+        const candidates = await prisma.project.findMany({
+            where: { pr_name: decodedName },
+            select: { pr_id: true, is_published: true, owner_id: true },
+        });
 
-        // Pour l'instant, retourner un succès dummy
-        return successResponse(
-            "Like enregistré (fonctionnalité en développement)",
-            {
-                likes: 0,
-                isLiked: true
+        if (candidates.length === 0) {
+            return errorResponse("Projet introuvable", undefined, 404);
+        }
+
+        // Un seul match, sinon : projet de l'utilisateur, sinon publié, sinon premier
+        const project =
+            candidates.length === 1
+                ? candidates[0]
+                : candidates.find((p) => p.owner_id === userId) ||
+                  candidates.find((p) => p.is_published) ||
+                  candidates[0];
+
+        const existing = await prisma.projectLike.findUnique({
+            where: {
+                liker_id_project_id: {
+                    liker_id: userId,
+                    project_id: project.pr_id,
+                },
             },
-            200
-        );
+        });
 
+        let isLiked: boolean;
+        if (existing) {
+            await prisma.projectLike.delete({ where: { id: existing.id } });
+            isLiked = false;
+        } else {
+            await prisma.projectLike.create({
+                data: {
+                    liker_id: userId,
+                    project_id: project.pr_id,
+                },
+            });
+            isLiked = true;
+        }
+
+        const likes = await prisma.projectLike.count({
+            where: { project_id: project.pr_id },
+        });
+
+        return successResponse("Like mis à jour", { likes, isLiked }, 200);
     } catch (error) {
         console.error("Erreur lors du like du projet:", error);
         return errorResponse(

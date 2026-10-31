@@ -138,7 +138,10 @@ export async function PATCH(
             );
         }
 
-        if (existingTemplate.creator_id !== payload.userId) {
+        const canEdit =
+            existingTemplate.creator_id === payload.userId ||
+            payload.role === "admin";
+        if (!canEdit) {
             return NextResponse.json(
                 { success: false, message: 'Non autorisé' },
                 { status: 403 }
@@ -213,7 +216,9 @@ export async function DELETE(
             );
         }
 
-        if (existingTemplate.creator_id !== payload.userId) {
+        const isOwner = existingTemplate.creator_id === payload.userId;
+        const isAdmin = payload.role === "admin";
+        if (!isOwner && !isAdmin) {
             return NextResponse.json(
                 { success: false, message: 'Non autorisé' },
                 { status: 403 }

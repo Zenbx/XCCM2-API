@@ -25,10 +25,19 @@ const CACHEABLE_PUBLIC_ROUTES: string[] = [
  * Construit la CSP à partir des variables d'environnement (MinIO, Ably, origines app).
  */
 function buildContentSecurityPolicy(isSwagger = false): string {
-    const imgSrc = ["'self'", "data:"];
+    const imgSrc = ["'self'", "data:", "blob:"];
     if (process.env.MINIO_PUBLIC_URL) {
         imgSrc.push(process.env.MINIO_PUBLIC_URL);
     }
+    // Supabase Storage (publication cloud)
+    if (process.env.SUPABASE_URL) {
+        try {
+            imgSrc.push(new URL(process.env.SUPABASE_URL).origin);
+        } catch {
+            /* ignore URL invalide */
+        }
+    }
+    imgSrc.push("https://*.supabase.co");
 
     const connectSrc = new Set<string>(["'self'", "https://*.ably.io", "wss://*.ably.io"]);
     const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",").map((o) => o.trim()).filter(Boolean) ?? [];
@@ -96,12 +105,13 @@ function applySecurityHeaders(response: NextResponse, isSwaggerPage = false): vo
  * Accès dynamique via process.env["…"] pour éviter l'inlining au `next build`.
  */
 const DEFAULT_ALLOWED_ORIGINS = [
-    "http://localhost:3001",      // Frontend dev
-    "http://localhost:3000",      // Backend dev
-    "http://127.0.0.1:3001",
+    "http://localhost:3000",
+    "http://localhost:3001",
     "http://127.0.0.1:3000",
-    "https://xccm-2-api.vercel.app",
-    "https://xccm-2.vercel.app",
+    "http://127.0.0.1:3001",
+    // Moodle (docker-compose)
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
 ];
 
 function getAllowedOrigins(): string[] {
@@ -157,6 +167,8 @@ const PUBLIC_ROUTES: string[] = [
     "/api/auth/csrf",              // NextAuth CSRF token
     "/api/auth/signout",           // NextAuth sign out
     "/api/auth/refresh",           // Refresh token (valide le token en interne)
+    "/api/auth/forgot-password",   // Reset MDP (pas de JWT)
+    "/api/auth/reset-password",
 
     // Other public routes
     "/auth",

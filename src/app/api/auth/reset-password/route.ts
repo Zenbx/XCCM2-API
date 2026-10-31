@@ -7,6 +7,7 @@ import {
     serverErrorResponse,
     forbiddenResponse,
 } from "@/utils/api-response";
+import { rateLimit, getClientIp } from "@/lib/rateLimit";
 
 /**
  * @openapi
@@ -31,8 +32,20 @@ import {
  *         description: Mot de passe réinitialisé
  *       403:
  *         description: Token invalide ou expiré
+ *       429:
+ *         description: Trop de tentatives
  */
 export async function POST(request: NextRequest) {
+    const ip = getClientIp(request);
+    const rl = await rateLimit(`reset-password:${ip}`, 10, 15 * 60);
+    if (!rl.allowed) {
+        return errorResponse(
+            "Trop de tentatives. Réessayez dans 15 minutes.",
+            undefined,
+            429
+        );
+    }
+
     try {
         const { token, password } = await request.json();
 
@@ -40,7 +53,12 @@ export async function POST(request: NextRequest) {
             return errorResponse("Token et mot de passe sont requis");
         }
 
-        // Trouve l'utilisateur avec ce token non expiré
+        if (typeof password !== "string" || password.length < 8) {
+            return errorResponse(
+                "Le mot de passe doit contenir au moins 8 caractères"
+            );
+        }
+
         const user = await prisma.user.findFirst({
             where: {
                 reset_token: token,
@@ -54,10 +72,8 @@ export async function POST(request: NextRequest) {
             return forbiddenResponse("Token invalide ou expiré");
         }
 
-        // Hache le nouveau mot de passe
         const hashedPassword = await hashPassword(password);
 
-        // Met à jour l'utilisateur et efface le token
         await prisma.user.update({
             where: { user_id: user.user_id },
             data: {

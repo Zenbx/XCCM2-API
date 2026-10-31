@@ -11,7 +11,11 @@ import type { Transporter } from "nodemailer";
 /**
  * Configuration des emails
  */
-const FROM_EMAIL = process.env.FROM_EMAIL || "noreply@example.com";
+/** FROM_EMAIL (canon) avec fallback legacy SMTP_FROM */
+const FROM_EMAIL =
+    process.env.FROM_EMAIL ||
+    process.env.SMTP_FROM ||
+    "noreply@example.com";
 
 /**
  * Instance du transporteur Nodemailer (créée à la première utilisation)
@@ -26,11 +30,11 @@ function getTransporter(): Transporter {
         const host = process.env.SMTP_HOST;
         const port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587;
         const user = process.env.SMTP_USER;
-        const pass = process.env.SMTP_PASSWORD;
+        const pass = process.env.SMTP_PASSWORD || process.env.SMTP_PASS;
 
         if (!host || !user || !pass) {
             throw new Error(
-                "SMTP configuration is incomplete. Please set SMTP_HOST, SMTP_USER, and SMTP_PASSWORD in your environment variables."
+                "SMTP configuration incomplete. Set SMTP_HOST, SMTP_USER, and SMTP_PASSWORD (or legacy SMTP_PASS)."
             );
         }
 
@@ -310,7 +314,7 @@ export async function sendInvitationEmail(data: InvitationEmailData): Promise<vo
         const transporter = getTransporter();
 
         const mailOptions = {
-            from: process.env.SMTP_FROM,
+            from: FROM_EMAIL,
             to: data.guestEmail,
             subject: `Invitation sur le projet "${data.projectName}" - XCCM`,
             // text: generateInvitationEmailText(data),

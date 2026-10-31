@@ -42,6 +42,7 @@ model User {
   receivedInvitations Invitation[] @relation("GuestInvitations")
   sentInvitations     Invitation[] @relation("HostInvitations")
   likes               Like[]
+  project_likes       ProjectLike[]
   views               View[]
 
   // Nouvelles relations pour les granules
@@ -116,6 +117,8 @@ model Project {
   // Versioning
   revisions         ProjectRevision[]
   granule_revisions GranuleRevision[]
+
+  project_likes ProjectLike[]
 
   // 3. Contrainte d'unicité composée (name + owner_id)
   @@unique([pr_name, owner_id])
@@ -328,6 +331,23 @@ model Like {
   @@index([liker_id])
   @@index([doc_id])
   @@map("likes")
+}
+
+model ProjectLike {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  liker_id   String @db.ObjectId
+  project_id String @db.ObjectId
+
+  like_at DateTime @default(now())
+
+  liker   User    @relation(fields: [liker_id], references: [user_id], onDelete: Cascade)
+  project Project @relation(fields: [project_id], references: [pr_id], onDelete: Cascade)
+
+  @@unique([liker_id, project_id])
+  @@index([liker_id])
+  @@index([project_id])
+  @@map("project_likes")
 }
 
 model View {

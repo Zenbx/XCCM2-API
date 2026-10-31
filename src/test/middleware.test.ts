@@ -64,6 +64,18 @@ describe("middleware — routes publiques", () => {
         const res = await middleware(req);
         expect(res.status).not.toBe(401);
     });
+
+    it("laisse passer /api/auth/forgot-password sans token", async () => {
+        const req = makeRequest("/api/auth/forgot-password", { method: "POST" });
+        const res = await middleware(req);
+        expect(res.status).not.toBe(401);
+    });
+
+    it("laisse passer /api/auth/reset-password sans token", async () => {
+        const req = makeRequest("/api/auth/reset-password", { method: "POST" });
+        const res = await middleware(req);
+        expect(res.status).not.toBe(401);
+    });
 });
 
 describe("middleware — protection JWT", () => {
